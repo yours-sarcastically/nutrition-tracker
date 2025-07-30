@@ -37,10 +37,10 @@ Usage:
 7. Use 'Clear All Selections' to reset all food choices
 
 Daily Targets:
-- Calories: 2500-2700 kcal for healthy weight gain
-- Protein: 110-125g for muscle building and recovery
-- Carbohydrates: 360-385g for energy and performance
-- Fat: 70-80g for hormone production and absorption
+- Calories: 2800-2900 kcal for healthy weight gain
+- Protein: 110-120g for muscle building and recovery
+- Carbohydrates: 410-430g for energy and performance
+- Fat: 75-85g for hormone production and absorption
 
 The application maintains session state to preserve food selections across
 user interactions and provides comprehensive feedback on nutritional adequacy
@@ -73,10 +73,10 @@ st.set_page_config(
 
 # Define daily targets for weight gain with minimum and maximum ranges
 daily_targets = {
-    'calories': {'min': 2500, 'max': 2700},
-    'protein': {'min': 110, 'max': 125},
-    'carbs': {'min': 360, 'max': 385},
-    'fat': {'min': 70, 'max': 80}
+    'calories': {'min': 2800, 'max': 2900},
+    'protein': {'min': 110, 'max': 120},
+    'carbs': {'min': 410, 'max': 430},
+    'fat': {'min': 75, 'max': 85}
 }
 
 # ------ Comprehensive Vegetarian Food Database ------
@@ -102,24 +102,16 @@ foods = {
          'carbs': 40, 'fat': 1},
         {'name': 'Mozzarella Cheese (100g)', 'calories': 280, 'protein': 22,
          'carbs': 3, 'fat': 20},
-        # {'name': 'Protein Powder - Plant Based (1 Scoop)', 'calories': 120,
-        #  'protein': 20, 'carbs': 5, 'fat': 2},
         {'name': 'Hummus (1 Cup)', 'calories': 410, 'protein': 20,
          'carbs': 36, 'fat': 24},
         {'name': 'Nuts (1 Cup)', 'calories': 815, 'protein': 30,
          'carbs': 28, 'fat': 70},
-        # {'name': 'Edamame (1 Cup)', 'calories': 190, 'protein': 17,
-        #  'carbs': 16, 'fat': 8},
-        # {'name': 'Tempeh (100g)', 'calories': 195, 'protein': 20,
-        #  'carbs': 10, 'fat': 11},
         {'name': 'Eggs (1 Medium)', 'calories': 63, 'protein': 5.5,
          'carbs': 0.5, 'fat': 4.5},
         {'name': 'Cheese (1 Slice)', 'calories': 115, 'protein': 7,
          'carbs': 0.5, 'fat': 9},
         {'name': 'Peas (1 Cup Cooked)', 'calories': 135, 'protein': 9,
          'carbs': 25, 'fat': 0.5},
-        # {'name': 'Soy Milk - Fortified (1 Cup)', 'calories': 110, 'protein': 8,
-        # 'carbs': 9, 'fat': 5},
     ],
     'PRIMARY CARBOHYDRATE SOURCES': [
         {'name': 'Oats (1 Cup Cooked)', 'calories': 165, 'protein': 6,
@@ -132,16 +124,8 @@ foods = {
          'carbs': 30, 'fat': 2},
         {'name': 'Potatoes (1 Medium)', 'calories': 160, 'protein': 4,
          'carbs': 37, 'fat': 0},
-        # {'name': 'Sweet Potatoes (1 Large)', 'calories': 160, 'protein': 4,
-        #  'carbs': 37, 'fat': 0},
         {'name': 'Bananas (1 Medium)', 'calories': 105, 'protein': 1,
          'carbs': 27, 'fat': 0.5},
-        # {'name': 'Bagels (1 Medium)', 'calories': 290, 'protein': 11,
-        #  'carbs': 56, 'fat': 2},
-        # {'name': 'Quinoa (1 Cup Cooked)', 'calories': 220, 'protein': 8,
-        #  'carbs': 39, 'fat': 3.5},
-        # {'name': 'Granola (1 Cup)', 'calories': 600, 'protein': 18,
-        #  'carbs': 65, 'fat': 30},
         {'name': 'Corn (1 Cup Cooked)', 'calories': 175, 'protein': 5,
          'carbs': 41, 'fat': 2},
         {'name': 'Muesli (1 Cup)', 'calories': 340, 'protein': 8,
@@ -154,8 +138,6 @@ foods = {
          'carbs': 127, 'fat': 1},
         {'name': 'Trail Mix (1 Cup)', 'calories': 700, 'protein': 21,
          'carbs': 67, 'fat': 44},
-        # {'name': 'Energy/Protein Bars (1 Bar)', 'calories': 250, 'protein': 10,
-        #  'carbs': 30, 'fat': 10},
     ],
     'PRIMARY FAT SOURCES': [
         {'name': 'Peanut Butter (1 Tablespoon)', 'calories': 95, 'protein': 4,
@@ -164,16 +146,8 @@ foods = {
          'carbs': 0, 'fat': 14},
         {'name': 'Avocados (1 Medium)', 'calories': 320, 'protein': 4,
          'carbs': 17, 'fat': 29},
-        # {'name': 'Almond Butter (2 Tablespoons)', 'calories': 200, 'protein': 7,
-        #  'carbs': 6, 'fat': 18},
-        # {'name': 'Dark Chocolate (1oz/28g)', 'calories': 170, 'protein': 2,
-        #  'carbs': 13, 'fat': 12},
         {'name': 'Coconut Milk - Full Fat (1 Cup)', 'calories': 552,
          'protein': 5.5, 'carbs': 13, 'fat': 57},
-        # {'name': 'Hemp Seeds (3 Tablespoons)', 'calories': 170, 'protein': 10,
-        #  'carbs': 3, 'fat': 13},
-        # {'name': 'Tahini (2 Tablespoons)', 'calories': 180, 'protein': 5,
-        #  'carbs': 6, 'fat': 16},
         {'name': 'Whole Milk (1 Cup)', 'calories': 150, 'protein': 8,
          'carbs': 12, 'fat': 8},
         {'name': 'Chia Seeds (1 Tablespoon)', 'calories': 60, 'protein': 2,
@@ -194,12 +168,8 @@ foods = {
          'carbs': 8, 'fat': 0.5},
         {'name': 'Apples (1 Medium)', 'calories': 95, 'protein': 0.5,
          'carbs': 25, 'fat': 0},
-        # {'name': 'Tomatoes (1 Cup Cooked)', 'calories': 35, 'protein': 2,
-        #  'carbs': 8, 'fat': 0},
         {'name': 'Tomato Puree (1 Cup)', 'calories': 98, 'protein': 4,
          'carbs': 22, 'fat': 0.5},
-        # {'name': 'Brussels Sprouts (1 Cup Cooked)', 'calories': 40,
-        #  'protein': 4, 'carbs': 8, 'fat': 0.5},
         {'name': 'Oranges (1 Medium)', 'calories': 60, 'protein': 1,
          'carbs': 15, 'fat': 0},
         {'name': 'Cauliflower (1 Cup Cooked)', 'calories': 30, 'protein': 2,
