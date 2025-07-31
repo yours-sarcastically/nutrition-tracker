@@ -232,14 +232,42 @@ st.set_page_config(
 # Cell 3: Daily Nutritional Targets and Food Database Configuration
 # -----------------------------------------------------------------------------
 
+# ------ Calculate Daily Nutritional Targets Based on Article Logic ------
+
+# Default user profile parameters from the article for dynamic calculation.
+# These values are not displayed in the UI.
+_WEIGHT_KG = 57.5
+_HEIGHT_CM = 180
+_AGE_YEARS = 26
+_ACTIVITY_MULTIPLIER = 1.55  # Moderately Active
+
+# Calculate BMR using the Mifflin-St Jeor equation for men.
+_bmr = (10 * _WEIGHT_KG) + (6.25 * _HEIGHT_CM) - (5 * _AGE_YEARS) + 5
+
+# Calculate TDEE by applying the activity multiplier.
+_tdee = _bmr * _ACTIVITY_MULTIPLIER
+
+# Set caloric target based on TDEE, a surplus, and rounding per the article.
+# Article: (TDEE ~2441 + Surplus 400) = ~2841, rounded to 2850.
+_calorie_target = 2850
+
+# Calculate macronutrient targets based on the final calorie goal.
+_protein_target_g = 2.0 * _WEIGHT_KG  # Protein at 2.0 g/kg
+_calories_from_fat = _calorie_target * 0.25  # Fat at 25% of calories
+_fat_target_g = _calories_from_fat / 9
+_calories_from_protein = _protein_target_g * 4
+_calories_from_carbs = _calorie_target - _calories_from_protein - _calories_from_fat
+_carbs_target_g = _calories_from_carbs / 4
+
 # ------ Daily Nutritional Targets for Weight Gain ------
 
-# Define daily targets for weight gain with minimum and maximum ranges
+# Define daily targets with min/max ranges around the calculated values.
+# This dictionary replaces the original hardcoded values.
 daily_targets = {
-    'calories': {'min': 2800, 'max': 2900},
-    'protein': {'min': 110, 'max': 120},
-    'carbs': {'min': 410, 'max': 430},
-    'fat': {'min': 75, 'max': 85}
+    'calories': {'min': _calorie_target - 50, 'max': _calorie_target + 50},
+    'protein': {'min': int(_protein_target_g) - 5, 'max': int(_protein_target_g) + 5},
+    'carbs': {'min': int(round(_carbs_target_g)) - 10, 'max': int(round(_carbs_target_g)) + 10},
+    'fat': {'min': int(round(_fat_target_g)) - 5, 'max': int(round(_fat_target_g)) + 5}
 }
 
 # ------ Dynamic Food Database Generation ------
