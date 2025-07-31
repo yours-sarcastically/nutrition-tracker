@@ -53,6 +53,168 @@ through progress tracking and targeted recommendations.
 
 import streamlit as st
 import pandas as pd
+import requests
+import time
+from typing import Dict, List, Optional
+from fractions import Fraction
+
+# -----------------------------------------------------------------------------
+# Cell 2: USDA API Logic Integration (from Program 2)
+# -----------------------------------------------------------------------------
+
+class USDANutritionAPI:
+    """
+    A class to interact with the USDA FoodData Central API
+    and retrieve nutritional information for foods.
+    """
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api.nal.usda.gov/fdc/v1"
+        self.session = requests.Session()
+
+    def _parse_measure(self, measure: str) -> Optional[tuple]:
+        if not measure:
+            return None
+        parts = measure.strip().lower().split()
+        if len(parts) < 2:
+            # Handle cases like "100g" where there is no space
+            if len(parts) == 1:
+                qty_str = ''.join(filter(str.isdigit, parts[0]))
+                unit = ''.join(filter(str.isalpha, parts[0]))
+                if qty_str and unit:
+                    parts = [qty_str, unit]
+                else:
+                    return None
+            else:
+                return None
+        
+        qty_str = parts[0]
+        unit = " ".join(parts[1:]).strip()
+        try:
+            quantity = float(Fraction(qty_str))
+        except (ValueError, ZeroDivisionError):
+            try:
+                quantity = float(qty_str)
+            except ValueError:
+                return None
+        return quantity, unit
+
+    def _find_portion_grams(self, food_details: Dict, unit: str) -> Optional[float]:
+        """
+        Look through foodPortions for a matching household measure and return
+        the gram weight for that portion. Recognizes common synonyms.
+        """
+        unit = unit.lower()
+        alias_map = {
+            'tbsp': ['tbsp', 'tablespoon', 'tablespoons', 'tbl', 'tbs'],
+            'tablespoon': ['tablespoon', 'tablespoons', 'tbsp', 'tbl', 'tbs'],
+            'tbsps': ['tablespoon', 'tablespoons', 'tbsp', 'tbl', 'tbs'],
+            'tsp': ['tsp', 'teaspoon', 'teaspoons'],
+            'teaspoon': ['teaspoon', 'teaspoons', 'tsp'],
+            'cup': ['cup', 'cups'], 'cups': ['cup', 'cups'],
+            'oz': ['oz', 'ounce', 'ounces'],
+            'fl oz': ['fl oz', 'fluid ounce', 'fluid ounces'],
+            'g': ['g', 'gram', 'grams'], 'grams': ['g', 'gram', 'grams'],
+            'kg': ['kg', 'kilogram', 'kilograms'],
+            'slice': ['slice', 'slices'], 'slices': ['slice', 'slices'],
+            'piece': ['piece', 'pieces'], 'pieces': ['piece', 'pieces'],
+            'medium': ['medium'], 'large': ['large'], 'small': ['small']
+        }
+        search_terms = alias_map.get(unit, [unit])
+        
+        # Prioritize exact matches in portionDescription
+        for portion in food_details.get("foodPortions", []):
+            desc = str(portion.get("portionDescription", "")).lower()
+            if any(f" {term} " in f" {desc} " or desc == term for term in search_terms):
+                if portion.get("gramWeight"):
+                    return portion.get("gramWeight")
+
+        # Fallback to broader search and measureUnit abbreviation
+        for portion in food_details.get("foodPortions", []):
+            desc = str(portion.get("portionDescription", "")).lower()
+            abbr = str(portion.get("measureUnit", {}).get("abbreviation", "")).lower().replace('.', '')
+            if any(term in desc or term == abbr for term in search_terms):
+                if portion.get("gramWeight"):
+                    return portion.get("gramWeight")
+        return None
+
+    def search_food(self, query: str, data_type: List[str] = None, page_size: int = 5) -> Dict:
+        url = f"{self.base_url}/foods/search"
+        params = {'api_key': self.api_key, 'query': query, 'pageSize': page_size}
+        if data_type:
+            params['dataType'] = data_type
+        try:
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error searching for {query}: {e}")
+            return {}
+
+    def get_food_details(self, fdc_id: int) -> Dict:
+        url = f"{self.base_url}/food/{fdc_id}"
+        params = {'api_key': self.api_key}
+        try:
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting details for FDC ID {fdc_id}: {e}")
+            return {}
+
+    def extract_nutrition_data(self, food_data: Dict) -> Dict:
+        nutrition = {
+            'name': food_data.get('description', 'Unknown'),
+            'fdc_id': food_data.get('fdcId'), 'calories': 0, 'protein': 0,
+            'carbs': 0, 'fat': 0
+        }
+        nutrient_map = {1008: 'calories', 1003: 'protein', 1005: 'carbs', 1004: 'fat'}
+        for nutrient in food_data.get('foodNutrients', []):
+            nid = nutrient.get('nutrient', {}).get('id')
+            if nid in nutrient_map:
+                nutrition[nutrient_map[nid]] = round(nutrient.get('amount', 0), 2)
+        return nutrition
+
+    def get_nutrition_for_food_by_measure(self, food_name: str, measure: str) -> Optional[Dict]:
+        parsed = self._parse_measure(measure)
+        if not parsed:
+            print(f"Could not parse measure '{measure}'.")
+            return None
+            
+        quantity, unit = parsed
+        search_results = self.search_food(food_name, data_type=["SR Legacy", "Foundation", "Branded"])
+        if not search_results or 'foods' not in search_results or not search_results['foods']:
+            print(f"No results found for {food_name}")
+            return None
+            
+        fdc_id = search_results['foods'][0].get('fdcId')
+        if not fdc_id: return None
+        
+        details = self.get_food_details(fdc_id)
+        if not details: return None
+        
+        base_nutrition_per_100g = self.extract_nutrition_data(details)
+        total_grams = None
+        
+        if unit in ['g', 'grams']:
+            total_grams = quantity
+        else:
+            grams_per_portion = self._find_portion_grams(details, unit)
+            if grams_per_portion:
+                total_grams = grams_per_portion * quantity
+            else:
+                print(f"No household measure '{unit}' found for {food_name}. Cannot calculate.")
+                return None
+        
+        if total_grams is None: return None
+
+        scale = total_grams / 100.0
+        for k in ['calories', 'protein', 'carbs', 'fat']:
+            base_nutrition_per_100g[k] = round(base_nutrition_per_100g[k] * scale, 2)
+        
+        return base_nutrition_per_100g
+
 
 # -----------------------------------------------------------------------------
 # Cell 2: Page Configuration and Initial Setup
@@ -64,6 +226,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
 
 # -----------------------------------------------------------------------------
 # Cell 3: Daily Nutritional Targets and Food Database Configuration
@@ -79,133 +242,103 @@ daily_targets = {
     'fat': {'min': 75, 'max': 85}
 }
 
-# ------ Comprehensive Vegetarian Food Database ------
+# ------ Dynamic Food Database Generation ------
 
-# Food database organized by nutritional categories for optimal meal planning
-foods = {
-    'PRIMARY PROTEIN SOURCES': [
-        {'name': 'Greek Yogurt (1 Cup)', 'calories': 130, 'protein': 23,
-         'carbs': 9, 'fat': 0},
-        {'name': 'Cottage Cheese (1 Cup)', 'calories': 220, 'protein': 25,
-         'carbs': 6, 'fat': 9},
-        {'name': 'Whey Protein (1 Tablespoon)', 'calories': 28, 'protein': 5,
-         'carbs': 1, 'fat': 0.5},
-        {'name': 'Chickpeas (1 Cup Cooked)', 'calories': 270, 'protein': 14,
-         'carbs': 45, 'fat': 4},
-        {'name': 'Black Beans (1 Cup Cooked)', 'calories': 240, 'protein': 15,
-         'carbs': 41, 'fat': 1},
-        {'name': 'Tofu (200 Grams)', 'calories': 152, 'protein': 17,
-         'carbs': 3, 'fat': 9},
-        {'name': 'Lentils (1 Cup Cooked)', 'calories': 230, 'protein': 18,
-         'carbs': 40, 'fat': 1},
-        {'name': 'Beans (1 Cup Cooked)', 'calories': 225, 'protein': 15,
-         'carbs': 40, 'fat': 1},
-        {'name': 'Mozzarella Cheese (100g)', 'calories': 280, 'protein': 22,
-         'carbs': 3, 'fat': 20},
-        # {'name': 'Protein Powder - Plant Based (1 Scoop)', 'calories': 120,
-        #  'protein': 20, 'carbs': 5, 'fat': 2},
-        {'name': 'Hummus (1 Cup)', 'calories': 410, 'protein': 20,
-         'carbs': 36, 'fat': 24},
-        {'name': 'Nuts (1 Cup)', 'calories': 815, 'protein': 30,
-         'carbs': 28, 'fat': 70},
-        # {'name': 'Edamame (1 Cup)', 'calories': 190, 'protein': 17,
-        #  'carbs': 16, 'fat': 8},
-        # {'name': 'Tempeh (100g)', 'calories': 195, 'protein': 20,
-        #  'carbs': 10, 'fat': 11},
-        {'name': 'Eggs (1 Medium)', 'calories': 63, 'protein': 5.5,
-         'carbs': 0.5, 'fat': 4.5},
-        {'name': 'Cheese (1 Slice)', 'calories': 115, 'protein': 7,
-         'carbs': 0.5, 'fat': 9},
-        {'name': 'Peas (1 Cup Cooked)', 'calories': 135, 'protein': 9,
-         'carbs': 25, 'fat': 0.5},
-        # {'name': 'Soy Milk - Fortified (1 Cup)', 'calories': 110, 'protein': 8,
-        # 'carbs': 9, 'fat': 5},
-    ],
-    'PRIMARY CARBOHYDRATE SOURCES': [
-        {'name': 'Oats (1 Cup Cooked)', 'calories': 165, 'protein': 6,
-         'carbs': 28, 'fat': 3.5},
-        {'name': 'Rice (1 Cup Cooked)', 'calories': 205, 'protein': 4,
-         'carbs': 45, 'fat': 0.5},
-        {'name': 'Pasta (1 Cup Cooked)', 'calories': 220, 'protein': 8,
-         'carbs': 43, 'fat': 1},
-        {'name': 'Whole Wheat Bread (2 Slices)', 'calories': 160, 'protein': 8,
-         'carbs': 30, 'fat': 2},
-        {'name': 'Potatoes (1 Medium)', 'calories': 160, 'protein': 4,
-         'carbs': 37, 'fat': 0},
-        # {'name': 'Sweet Potatoes (1 Large)', 'calories': 160, 'protein': 4,
-        #  'carbs': 37, 'fat': 0},
-        {'name': 'Bananas (1 Medium)', 'calories': 105, 'protein': 1,
-         'carbs': 27, 'fat': 0.5},
-        # {'name': 'Bagels (1 Medium)', 'calories': 290, 'protein': 11,
-        #  'carbs': 56, 'fat': 2},
-        # {'name': 'Quinoa (1 Cup Cooked)', 'calories': 220, 'protein': 8,
-        #  'carbs': 39, 'fat': 3.5},
-        # {'name': 'Granola (1 Cup)', 'calories': 600, 'protein': 18,
-        #  'carbs': 65, 'fat': 30},
-        {'name': 'Corn (1 Cup Cooked)', 'calories': 175, 'protein': 5,
-         'carbs': 41, 'fat': 2},
-        {'name': 'Muesli (1 Cup)', 'calories': 340, 'protein': 8,
-         'carbs': 66, 'fat': 5},
-        {'name': 'Couscous (1 Cup Cooked)', 'calories': 175, 'protein': 6,
-         'carbs': 36, 'fat': 0.5},
-        {'name': 'Dates (5 Pieces)', 'calories': 115, 'protein': 1,
-         'carbs': 30, 'fat': 0},
-        {'name': 'Dried Fruits (1 Cup)', 'calories': 480, 'protein': 4,
-         'carbs': 127, 'fat': 1},
-        {'name': 'Trail Mix (1 Cup)', 'calories': 700, 'protein': 21,
-         'carbs': 67, 'fat': 44},
-        # {'name': 'Energy/Protein Bars (1 Bar)', 'calories': 250, 'protein': 10,
-        #  'carbs': 30, 'fat': 10},
-    ],
-    'PRIMARY FAT SOURCES': [
-        {'name': 'Peanut Butter (1 Tablespoon)', 'calories': 95, 'protein': 4,
-         'carbs': 3, 'fat': 8},
-        {'name': 'Olive Oil (1 Tablespoon)', 'calories': 120, 'protein': 0,
-         'carbs': 0, 'fat': 14},
-        {'name': 'Avocados (1 Medium)', 'calories': 320, 'protein': 4,
-         'carbs': 17, 'fat': 29},
-        # {'name': 'Almond Butter (2 Tablespoons)', 'calories': 200, 'protein': 7,
-        #  'carbs': 6, 'fat': 18},
-        # {'name': 'Dark Chocolate (1oz/28g)', 'calories': 170, 'protein': 2,
-        #  'carbs': 13, 'fat': 12},
-        {'name': 'Coconut Milk - Full Fat (1 Cup)', 'calories': 552,
-         'protein': 5.5, 'carbs': 13, 'fat': 57},
-        # {'name': 'Hemp Seeds (3 Tablespoons)', 'calories': 170, 'protein': 10,
-        #  'carbs': 3, 'fat': 13},
-        # {'name': 'Tahini (2 Tablespoons)', 'calories': 180, 'protein': 5,
-        #  'carbs': 6, 'fat': 16},
-        {'name': 'Whole Milk (1 Cup)', 'calories': 150, 'protein': 8,
-         'carbs': 12, 'fat': 8},
-        {'name': 'Chia Seeds (1 Tablespoon)', 'calories': 60, 'protein': 2,
-         'carbs': 5, 'fat': 4},
-        {'name': 'Cream Cheese (1 Tablespoon)', 'calories': 50, 'protein': 1,
-         'carbs': 1, 'fat': 5},
-    ],
-    'PRIMARY MICRONUTRIENT SOURCES': [
-        {'name': 'Spinach (1 Cup Raw)', 'calories': 7, 'protein': 1,
-         'carbs': 1, 'fat': 0},
-        {'name': 'Broccoli (1 Cup Cooked)', 'calories': 55, 'protein': 4,
-         'carbs': 11, 'fat': 0.5},
-        {'name': 'Berries (1 Cup)', 'calories': 85, 'protein': 1,
-         'carbs': 21, 'fat': 0.5},
-        {'name': 'Carrots (1 Cup Cooked)', 'calories': 55, 'protein': 1,
-         'carbs': 13, 'fat': 0},
-        {'name': 'Mushrooms (1 Cup Cooked)', 'calories': 45, 'protein': 3,
-         'carbs': 8, 'fat': 0.5},
-        {'name': 'Apples (1 Medium)', 'calories': 95, 'protein': 0.5,
-         'carbs': 25, 'fat': 0},
-        # {'name': 'Tomatoes (1 Cup Cooked)', 'calories': 35, 'protein': 2,
-        #  'carbs': 8, 'fat': 0},
-        {'name': 'Tomato Puree (1 Cup)', 'calories': 98, 'protein': 4,
-         'carbs': 22, 'fat': 0.5},
-        # {'name': 'Brussels Sprouts (1 Cup Cooked)', 'calories': 40,
-        #  'protein': 4, 'carbs': 8, 'fat': 0.5},
-        {'name': 'Oranges (1 Medium)', 'calories': 60, 'protein': 1,
-         'carbs': 15, 'fat': 0},
-        {'name': 'Cauliflower (1 Cup Cooked)', 'calories': 30, 'protein': 2,
-         'carbs': 5, 'fat': 0.5},
-    ]
-}
+@st.cache_data
+def get_food_data(_api_client):
+    """
+    Dynamically fetches nutritional data for a predefined list of foods
+    using the USDA FoodData Central API and caches the result.
+    """
+    print("Fetching nutritional data from USDA API... (This runs only once)")
+    
+    food_items_to_fetch = {
+        'PRIMARY PROTEIN SOURCES': [
+            {'food': 'Greek Yogurt, plain, non-fat', 'measure': '1 Cup'},
+            {'food': 'Cottage Cheese, full fat', 'measure': '1 Cup'},
+            {'food': 'Whey Protein powder', 'measure': '1 Tablespoon'},
+            {'food': 'Chickpeas, cooked', 'measure': '1 Cup'},
+            {'food': 'Black Beans, cooked', 'measure': '1 Cup'},
+            {'food': 'Tofu, firm', 'measure': '200 Grams'},
+            {'food': 'Lentils, cooked', 'measure': '1 Cup'},
+            {'food': 'Pinto Beans, cooked', 'measure': '1 Cup'},
+            {'food': 'Mozzarella Cheese, whole milk', 'measure': '100g'},
+            {'food': 'Hummus', 'measure': '1 Cup'},
+            {'food': 'Nuts, mixed', 'measure': '1 Cup'},
+            {'food': 'Egg, whole, cooked', 'measure': '1 Medium'},
+            {'food': 'Cheese, cheddar, slice', 'measure': '1 Slice'},
+            {'food': 'Peas, green, cooked', 'measure': '1 Cup'},
+        ],
+        'PRIMARY CARBOHYDRATE SOURCES': [
+            {'food': 'Oats, cooked', 'measure': '1 Cup'},
+            {'food': 'Rice, white, cooked', 'measure': '1 Cup'},
+            {'food': 'Pasta, cooked', 'measure': '1 Cup'},
+            {'food': 'Whole Wheat Bread', 'measure': '2 Slices'},
+            {'food': 'Potatoes, boiled', 'measure': '1 Medium'},
+            {'food': 'Bananas', 'measure': '1 Medium'},
+            {'food': 'Corn, sweet, cooked', 'measure': '1 Cup'},
+            {'food': 'Muesli', 'measure': '1 Cup'},
+            {'food': 'Couscous, cooked', 'measure': '1 Cup'},
+            {'food': 'Dates, medjool', 'measure': '5 Pieces'},
+            {'food': 'Dried fruits, mixed', 'measure': '1 Cup'},
+            {'food': 'Trail Mix', 'measure': '1 Cup'},
+        ],
+        'PRIMARY FAT SOURCES': [
+            {'food': 'Peanut Butter, smooth', 'measure': '1 Tablespoon'},
+            {'food': 'Olive Oil', 'measure': '1 Tablespoon'},
+            {'food': 'Avocados', 'measure': '1 Medium'},
+            {'food': 'Coconut Milk, canned, full fat', 'measure': '1 Cup'},
+            {'food': 'Whole Milk, 3.25%', 'measure': '1 Cup'},
+            {'food': 'Chia Seeds, dried', 'measure': '1 Tablespoon'},
+            {'food': 'Cream Cheese', 'measure': '1 Tablespoon'},
+        ],
+        'PRIMARY MICRONUTRIENT SOURCES': [
+            {'food': 'Spinach, raw', 'measure': '1 Cup'},
+            {'food': 'Broccoli, cooked', 'measure': '1 Cup'},
+            {'food': 'Berries, mixed', 'measure': '1 Cup'},
+            {'food': 'Carrots, cooked', 'measure': '1 Cup'},
+            {'food': 'Mushrooms, white, cooked', 'measure': '1 Cup'},
+            {'food': 'Apples, with skin', 'measure': '1 Medium'},
+            {'food': 'Tomato Puree', 'measure': '1 Cup'},
+            {'food': 'Oranges', 'measure': '1 Medium'},
+            {'food': 'Cauliflower, cooked', 'measure': '1 Cup'},
+        ]
+    }
+    
+    dynamic_foods_db = {category: [] for category in food_items_to_fetch}
+    
+    for category, items in food_items_to_fetch.items():
+        for item in items:
+            food_name = item['food']
+            measure_str = item['measure']
+            
+            nutrition_data = _api_client.get_nutrition_for_food_by_measure(food_name, measure_str)
+            time.sleep(0.2)  # Short delay to be respectful to the API
+            
+            display_name = f"{food_name.split(',')[0]} ({measure_str})"
+            if nutrition_data:
+                food_entry = {
+                    'name': display_name,
+                    'calories': nutrition_data.get('calories', 0),
+                    'protein': nutrition_data.get('protein', 0),
+                    'carbs': nutrition_data.get('carbs', 0),
+                    'fat': nutrition_data.get('fat', 0)
+                }
+                dynamic_foods_db[category].append(food_entry)
+            else:
+                # Add a placeholder if API call fails
+                dynamic_foods_db[category].append({
+                    'name': f"{display_name} - DATA NOT FOUND",
+                    'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0
+                })
+
+    return dynamic_foods_db
+
+# Initialize API and fetch data
+API_KEY = "PodqZM9xrI5ByN5sS8zlEMf2haudDydBMCzt3U4N"  # Public DEMO_KEY
+api = USDANutritionAPI(API_KEY)
+foods = get_food_data(api)
+
 
 # -----------------------------------------------------------------------------
 # Cell 4: Session State Initialization and Custom Styling
@@ -274,7 +407,7 @@ st.markdown("---")
 # -----------------------------------------------------------------------------
 
 st.header("📝 Select Your Foods")
-st.markdown("Choose foods using the buttons (0-5 servings) or enter custom "
+st.markdown("Choose foods using the buttons (1-5 servings) or enter custom "
             "serving amounts.")
 
 # ------ Create Category Tabs for Food Organization ------
@@ -358,10 +491,10 @@ for i, (category, items) in enumerate(foods.items()):
                         del st.session_state.food_selections[food['name']]
 
                     # Display nutritional info
-                    st.caption(f"Per Serving: {food['calories']} kcal | "
-                               f"{food['protein']} g Protein | "
-                               f"{food['carbs']} g Carbohydrates | "
-                               f"{food['fat']} g Fat")
+                    st.caption(f"Per Serving: {food['calories']:.0f} kcal | "
+                               f"{food['protein']:.1f} g Protein | "
+                               f"{food['carbs']:.1f} g Carbohydrates | "
+                               f"{food['fat']:.1f} g Fat")
 
             # ------ Second Item in Row ------
             if j + 1 < len(items):
@@ -433,10 +566,10 @@ for i, (category, items) in enumerate(foods.items()):
                         del st.session_state.food_selections[food['name']]
 
                     # Display nutritional info
-                    st.caption(f"Per Serving: {food['calories']} kcal | "
-                               f"{food['protein']} g Protein | "
-                               f"{food['carbs']} g Carbohydrates | "
-                               f"{food['fat']} g Fat")
+                    st.caption(f"Per Serving: {food['calories']:.0f} kcal | "
+                               f"{food['protein']:.1f} g Protein | "
+                               f"{food['carbs']:.1f} g Carbohydrates | "
+                               f"{food['fat']:.1f} g Fat")
 
 st.markdown("---")
 
@@ -458,17 +591,18 @@ if st.button("📊 Calculate Daily Intake", type="primary",
 
     # ------ Calculate Total Nutritional Values ------
 
+    # Create a flattened map for easy lookup
+    all_foods_map = {food['name']: food for category_items in foods.values() for food in category_items}
+
     # Calculate totals
-    for category, items in foods.items():
-        for food in items:
-            if food['name'] in st.session_state.food_selections:
-                servings = st.session_state.food_selections[food['name']]
-                if servings > 0:
-                    total_calories += food['calories'] * servings
-                    total_protein += food['protein'] * servings
-                    total_carbs += food['carbs'] * servings
-                    total_fat += food['fat'] * servings
-                    selected_foods.append(f"{food['name']} x {servings:.1f}")
+    for food_name, servings in st.session_state.food_selections.items():
+        if servings > 0 and food_name in all_foods_map:
+            food = all_foods_map[food_name]
+            total_calories += food['calories'] * servings
+            total_protein += food['protein'] * servings
+            total_carbs += food['carbs'] * servings
+            total_fat += food['fat'] * servings
+            selected_foods.append(f"{food['name']} × {servings:.1f}")
 
     # ------ Display Comprehensive Results ------
 
@@ -479,10 +613,12 @@ if st.button("📊 Calculate Daily Intake", type="primary",
     if selected_foods:
         st.subheader("🍽️ Foods Consumed Today:")
         # Create columns for better display
-        cols = st.columns(3)
-        for i, food in enumerate(selected_foods):
-            with cols[i % 3]:
-                st.write(f"• {food}")
+        num_columns = min(3, len(selected_foods))
+        if num_columns > 0:
+            cols = st.columns(num_columns)
+            for i, food_text in enumerate(selected_foods):
+                with cols[i % num_columns]:
+                    st.write(f"• {food_text}")
     else:
         st.info("No foods selected")
 
@@ -510,28 +646,28 @@ if st.button("📊 Calculate Daily Intake", type="primary",
                        * 100, 100) if daily_targets['calories']['min'] > 0
                    else 0)
     st.progress(cal_percent / 100,
-              text=f"Calories: {cal_percent:.0f}% of minimum target")
+                text=f"Calories: {cal_percent:.0f}% of minimum target")
 
     # Protein progress
     prot_percent = (min((total_protein / daily_targets['protein']['min'])
                         * 100, 100) if daily_targets['protein']['min'] > 0
                     else 0)
     st.progress(prot_percent / 100,
-              text=f"Protein: {prot_percent:.0f}% of minimum target")
+                text=f"Protein: {prot_percent:.0f}% of minimum target")
 
     # Carbs progress
     carb_percent = (min((total_carbs / daily_targets['carbs']['min'])
                         * 100, 100) if daily_targets['carbs']['min'] > 0
                     else 0)
     st.progress(carb_percent / 100,
-              text=f"Carbohydrates: {carb_percent:.0f}% of minimum target")
+                text=f"Carbohydrates: {carb_percent:.0f}% of minimum target")
 
     # Fat progress
     fat_percent = (min((total_fat / daily_targets['fat']['min'])
                        * 100, 100) if daily_targets['fat']['min'] > 0
                    else 0)
     st.progress(fat_percent / 100,
-              text=f"Fat: {fat_percent:.0f}% of minimum target")
+                text=f"Fat: {fat_percent:.0f}% of minimum target")
 
     # ------ Personalized Recommendations ------
 
@@ -576,22 +712,21 @@ if st.button("📊 Calculate Daily Intake", type="primary",
     if selected_foods:
         st.subheader("📋 Detailed Food Log")
         food_log = []
-        for category, items in foods.items():
-            for food in items:
-                if food['name'] in st.session_state.food_selections:
-                    servings = st.session_state.food_selections[food['name']]
-                    if servings > 0:
-                        food_log.append({
-                            'Food': food['name'],
-                            'Servings': servings,
-                            'Calories': food['calories'] * servings,
-                            'Protein (g)': food['protein'] * servings,
-                            'Carbs (g)': food['carbs'] * servings,
-                            'Fat (g)': food['fat'] * servings
-                        })
-
-        df = pd.DataFrame(food_log)
-        st.dataframe(df, use_container_width=True)
+        for food_name, servings in st.session_state.food_selections.items():
+            if servings > 0 and food_name in all_foods_map:
+                food = all_foods_map[food_name]
+                food_log.append({
+                    'Food': food['name'],
+                    'Servings': f"{servings:.1f}",
+                    'Calories': f"{food['calories'] * servings:.0f}",
+                    'Protein (g)': f"{food['protein'] * servings:.1f}",
+                    'Carbs (g)': f"{food['carbs'] * servings:.1f}",
+                    'Fat (g)': f"{food['fat'] * servings:.1f}"
+                })
+        
+        if food_log:
+            df = pd.DataFrame(food_log)
+            st.dataframe(df, use_container_width=True)
 
     # ------ Thank You Message ------
 
