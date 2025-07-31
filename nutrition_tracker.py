@@ -55,166 +55,9 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-from typing import Dict, List, Optional
+import re
 from fractions import Fraction
-
-# -----------------------------------------------------------------------------
-# Cell 2: USDA API Logic Integration (from Program 2)
-# -----------------------------------------------------------------------------
-
-class USDANutritionAPI:
-    """
-    A class to interact with the USDA FoodData Central API
-    and retrieve nutritional information for foods.
-    """
-
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://api.nal.usda.gov/fdc/v1"
-        self.session = requests.Session()
-
-    def _parse_measure(self, measure: str) -> Optional[tuple]:
-        if not measure:
-            return None
-        parts = measure.strip().lower().split()
-        if len(parts) < 2:
-            # Handle cases like "100g" where there is no space
-            if len(parts) == 1:
-                qty_str = ''.join(filter(str.isdigit, parts[0]))
-                unit = ''.join(filter(str.isalpha, parts[0]))
-                if qty_str and unit:
-                    parts = [qty_str, unit]
-                else:
-                    return None
-            else:
-                return None
-        
-        qty_str = parts[0]
-        unit = " ".join(parts[1:]).strip()
-        try:
-            quantity = float(Fraction(qty_str))
-        except (ValueError, ZeroDivisionError):
-            try:
-                quantity = float(qty_str)
-            except ValueError:
-                return None
-        return quantity, unit
-
-    def _find_portion_grams(self, food_details: Dict, unit: str) -> Optional[float]:
-        """
-        Look through foodPortions for a matching household measure and return
-        the gram weight for that portion. Recognizes common synonyms.
-        """
-        unit = unit.lower()
-        alias_map = {
-            'tbsp': ['tbsp', 'tablespoon', 'tablespoons', 'tbl', 'tbs'],
-            'tablespoon': ['tablespoon', 'tablespoons', 'tbsp', 'tbl', 'tbs'],
-            'tbsps': ['tablespoon', 'tablespoons', 'tbsp', 'tbl', 'tbs'],
-            'tsp': ['tsp', 'teaspoon', 'teaspoons'],
-            'teaspoon': ['teaspoon', 'teaspoons', 'tsp'],
-            'cup': ['cup', 'cups'], 'cups': ['cup', 'cups'],
-            'oz': ['oz', 'ounce', 'ounces'],
-            'fl oz': ['fl oz', 'fluid ounce', 'fluid ounces'],
-            'g': ['g', 'gram', 'grams'], 'grams': ['g', 'gram', 'grams'],
-            'kg': ['kg', 'kilogram', 'kilograms'],
-            'slice': ['slice', 'slices'], 'slices': ['slice', 'slices'],
-            'piece': ['piece', 'pieces'], 'pieces': ['piece', 'pieces'],
-            'medium': ['medium'], 'large': ['large'], 'small': ['small']
-        }
-        search_terms = alias_map.get(unit, [unit])
-        
-        # Prioritize exact matches in portionDescription
-        for portion in food_details.get("foodPortions", []):
-            desc = str(portion.get("portionDescription", "")).lower()
-            if any(f" {term} " in f" {desc} " or desc == term for term in search_terms):
-                if portion.get("gramWeight"):
-                    return portion.get("gramWeight")
-
-        # Fallback to broader search and measureUnit abbreviation
-        for portion in food_details.get("foodPortions", []):
-            desc = str(portion.get("portionDescription", "")).lower()
-            abbr = str(portion.get("measureUnit", {}).get("abbreviation", "")).lower().replace('.', '')
-            if any(term in desc or term == abbr for term in search_terms):
-                if portion.get("gramWeight"):
-                    return portion.get("gramWeight")
-        return None
-
-    def search_food(self, query: str, data_type: List[str] = None, page_size: int = 5) -> Dict:
-        url = f"{self.base_url}/foods/search"
-        params = {'api_key': self.api_key, 'query': query, 'pageSize': page_size}
-        if data_type:
-            params['dataType'] = data_type
-        try:
-            response = self.session.get(url, params=params)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Error searching for {query}: {e}")
-            return {}
-
-    def get_food_details(self, fdc_id: int) -> Dict:
-        url = f"{self.base_url}/food/{fdc_id}"
-        params = {'api_key': self.api_key}
-        try:
-            response = self.session.get(url, params=params)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Error getting details for FDC ID {fdc_id}: {e}")
-            return {}
-
-    def extract_nutrition_data(self, food_data: Dict) -> Dict:
-        nutrition = {
-            'name': food_data.get('description', 'Unknown'),
-            'fdc_id': food_data.get('fdcId'), 'calories': 0, 'protein': 0,
-            'carbs': 0, 'fat': 0
-        }
-        nutrient_map = {1008: 'calories', 1003: 'protein', 1005: 'carbs', 1004: 'fat'}
-        for nutrient in food_data.get('foodNutrients', []):
-            nid = nutrient.get('nutrient', {}).get('id')
-            if nid in nutrient_map:
-                nutrition[nutrient_map[nid]] = round(nutrient.get('amount', 0), 2)
-        return nutrition
-
-    def get_nutrition_for_food_by_measure(self, food_name: str, measure: str) -> Optional[Dict]:
-        parsed = self._parse_measure(measure)
-        if not parsed:
-            print(f"Could not parse measure '{measure}'.")
-            return None
-            
-        quantity, unit = parsed
-        search_results = self.search_food(food_name, data_type=["SR Legacy", "Foundation", "Branded"])
-        if not search_results or 'foods' not in search_results or not search_results['foods']:
-            print(f"No results found for {food_name}")
-            return None
-            
-        fdc_id = search_results['foods'][0].get('fdcId')
-        if not fdc_id: return None
-        
-        details = self.get_food_details(fdc_id)
-        if not details: return None
-        
-        base_nutrition_per_100g = self.extract_nutrition_data(details)
-        total_grams = None
-        
-        if unit in ['g', 'grams']:
-            total_grams = quantity
-        else:
-            grams_per_portion = self._find_portion_grams(details, unit)
-            if grams_per_portion:
-                total_grams = grams_per_portion * quantity
-            else:
-                print(f"No household measure '{unit}' found for {food_name}. Cannot calculate.")
-                return None
-        
-        if total_grams is None: return None
-
-        scale = total_grams / 100.0
-        for k in ['calories', 'protein', 'carbs', 'fat']:
-            base_nutrition_per_100g[k] = round(base_nutrition_per_100g[k] * scale, 2)
-        
-        return base_nutrition_per_100g
-
+from typing import Dict, List, Optional, Any
 
 # -----------------------------------------------------------------------------
 # Cell 2: Page Configuration and Initial Setup
@@ -227,146 +70,405 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-
 # -----------------------------------------------------------------------------
 # Cell 3: Daily Nutritional Targets and Food Database Configuration
 # -----------------------------------------------------------------------------
 
-# ------ Calculate Daily Nutritional Targets Based on Article Logic ------
-
-# Default user profile parameters from the article for dynamic calculation.
-# These values are not displayed in the UI.
-_WEIGHT_KG = 57.5
-_HEIGHT_CM = 180
-_AGE_YEARS = 26
-_ACTIVITY_MULTIPLIER = 1.55  # Moderately Active
-
-# Calculate BMR using the Mifflin-St Jeor equation for men.
-_bmr = (10 * _WEIGHT_KG) + (6.25 * _HEIGHT_CM) - (5 * _AGE_YEARS) + 5
-
-# Calculate TDEE by applying the activity multiplier.
-_tdee = _bmr * _ACTIVITY_MULTIPLIER
-
-# Set caloric target based on TDEE, a surplus, and rounding per the article.
-# Article: (TDEE ~2441 + Surplus 400) = ~2841, rounded to 2850.
-_calorie_target = 2850
-
-# Calculate macronutrient targets based on the final calorie goal.
-_protein_target_g = 2.0 * _WEIGHT_KG  # Protein at 2.0 g/kg
-_calories_from_fat = _calorie_target * 0.25  # Fat at 25% of calories
-_fat_target_g = _calories_from_fat / 9
-_calories_from_protein = _protein_target_g * 4
-_calories_from_carbs = _calorie_target - _calories_from_protein - _calories_from_fat
-_carbs_target_g = _calories_from_carbs / 4
-
 # ------ Daily Nutritional Targets for Weight Gain ------
 
-# Define daily targets with min/max ranges around the calculated values.
-# This dictionary replaces the original hardcoded values.
+# Define daily targets for weight gain with minimum and maximum ranges
 daily_targets = {
-    'calories': {'min': _calorie_target - 50, 'max': _calorie_target + 50},
-    'protein': {'min': int(_protein_target_g) - 5, 'max': int(_protein_target_g) + 5},
-    'carbs': {'min': int(round(_carbs_target_g)) - 10, 'max': int(round(_carbs_target_g)) + 10},
-    'fat': {'min': int(round(_fat_target_g)) - 5, 'max': int(round(_fat_target_g)) + 5}
+    'calories': {'min': 2800, 'max': 2900},
+    'protein': {'min': 110, 'max': 120},
+    'carbs': {'min': 410, 'max': 430},
+    'fat': {'min': 75, 'max': 85}
 }
 
-# ------ Dynamic Food Database Generation ------
+# ------ USDA API Integration ------
 
-@st.cache_data
-def get_food_data(_api_client):
-    """
-    Dynamically fetches nutritional data for a predefined list of foods
-    using the USDA FoodData Central API and caches the result.
-    """
-    print("Fetching nutritional data from USDA API... (This runs only once)")
+# Category keywords to a prioritized list of preferred units.
+# This is now matched against the official 'wweiaFoodCategoryDescription' from the API.
+# --- MODIFIED: Prioritize individual units for most fruits/vegetables ---
+CATEGORY_UNITS = {
+    # Dairy & Dairy Products
+    'yogurt': ['cup', 'container', 'oz'],
+    'milk': ['cup', 'oz', 'container'],
+    'cheese': ['slice', 'stick', 'cup', 'curd', 'inch'],
+    'cream': ['tablespoon', 'cup', 'container'],
     
-    food_items_to_fetch = {
+    # Protein Foods
+    'beans': ['cup'],
+    'lentils': ['cup'],
+    'chickpeas': ['cup', 'pea'],
+    'edamame': ['cup', 'pod'],
+    'hummus': ['tablespoon', 'container'],
+    'almonds': ['cup', 'oz', 'nut', 'package'],
+    'mixed nuts': ['cup', 'package', 'oz'], # ADDED
+    'seeds': ['cup', 'oz', 'package'],
+    'peanut butter': ['tablespoon', 'serving'],
+    'almond butter': ['tablespoon'],
+    'tahini': ['tablespoon'],
+    'egg': ['egg', 'cup'],
+    
+    # Grains
+    'oats': ['cup'],
+    'rice': ['cup'],
+    'pasta': ['cup', 'oz'],
+    'bread': ['slice', 'inch'],
+    'bagel': ['bagel', 'large', 'regular', 'small', 'miniature'],
+    'quinoa': ['cup'],
+    'corn': ['cup', 'ear'],
+    'couscous': ['cup', 'oz'],
+    
+    # Fruits
+    'apple': ['medium', 'large', 'small', 'cup', 'slice', 'package'],
+    'banana': ['banana', 'cup', 'slice', 'inch'],
+    'orange': ['fruit', 'cup', 'section', 'slice'],
+    'berries': ['cup', 'berry'],
+    'raisins': ['cup', 'box', 'raisin', 'oz'],
+    'date': ['date', 'cup'],
+    
+    # Vegetables
+    'spinach': ['cup', 'leaf'],
+    'broccoli': ['cup', 'floweret', 'piece'],
+    'cauliflower': ['cup', 'floweret', 'piece'],
+    'carrots': ['cup', 'carrot', 'slice', 'stick'],
+    'mushrooms': ['cup', 'whole', 'slice'],
+    'tomatoes': ['tomato', 'whole', 'cup', 'slice', 'cherry', 'grape', 'plum'],
+    'potato': ['potato', 'cup'],
+    'sweet potato': ['medium', 'large', 'small', 'cup', 'oz'],
+    'avocado': ['fruit', 'cup', 'slice'],
+    'brussels sprouts': ['sprout', 'cup'],
+    'peas': ['cup'],
+    'green beans': ['cup', 'bean', 'piece'], # ADDED
+    
+    # Snacks & Mixtures
+    'trail mix': ['cup', 'package'], # ADDED
+    
+    # Fats, Oils & Sweets
+    'oil': ['tablespoon', 'cup'],
+    
+    # Beverages
+    'juice': ['oz', 'box', 'container', 'pouch'],
+    'drink': ['cup', 'bottle', 'can', 'oz'], # ADDED
+    'shake': ['cup', 'bottle', 'can', 'oz'], # ADDED
+}
+
+def clean_food_name(raw_name: str, is_branded: bool = False) -> str:
+    """Cleans up food description strings for better readability."""
+    if is_branded:
+        # For branded items, take the primary name before a comma.
+        # This turns "MUESLI, ORIGINAL" into "Muesli".
+        cleaned_name = raw_name.split(',')[0].strip()
+        return cleaned_name.title()
+    else:
+        # For generic foods, apply more complex cleaning logic.
+        # This list removes common USDA descriptors.
+        junk_patterns = [
+            r',? ns as to.*',
+            r',? nfs',
+            r',? from canned',
+            r',? cooked',
+            r',? raw',
+            r',? plain',
+            r',? 100%',
+            r',? regular',
+            r',? unsweetened',
+            r',? ready-to-drink',
+        ]
+        
+        # Make a lowercase copy to work with
+        cleaned_name = raw_name.lower()
+        
+        # Remove all the junk patterns using regex substitution
+        for pattern in junk_patterns:
+            cleaned_name = re.sub(pattern, '', cleaned_name)
+        
+        # Split by comma, strip whitespace from each part, and remove any empty results
+        parts = [part.strip() for part in cleaned_name.split(',') if part.strip()]
+        
+        # If there are multiple parts (e.g., "bread, whole wheat"), reverse them
+        if len(parts) > 1:
+            parts.reverse()
+
+        # Join the cleaned parts with a space and convert to title case
+        return ' '.join(parts).title()
+
+
+class USDANutritionAPI:
+    """
+    A class to get nutrition for single foods from the USDA Survey (FNDDS) database,
+    using a smart default serving size for calculations based on the food's official category.
+    """
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api.nal.usda.gov/fdc/v1"
+        self.session = requests.Session()
+
+    def _find_exact_match_id(self, query: str) -> Optional[int]:
+        """Searches only FNDDS for an exact match and returns its FDC ID."""
+        url = f"{self.base_url}/foods/search"
+        params = {
+            'api_key': self.api_key,
+            'query': query,
+            'dataType': ["Survey (FNDDS)"],
+            'pageSize': 5
+        }
+        try:
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+            results = response.json()
+            for food in results.get('foods', []):
+                if food.get('description', '').lower() == query.lower():
+                    return food.get('fdcId')
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error searching for '{query}': {e}")
+        return None
+
+    def _get_food_details(self, fdc_id: int) -> Dict:
+        """Fetches the full details for a given FDC ID."""
+        url = f"{self.base_url}/food/{fdc_id}"
+        params = {'api_key': self.api_key, 'format': 'full'}
+        try:
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error getting details for FDC ID {fdc_id}: {e}")
+        return {}
+
+    def _get_available_measures(self, food_details: Dict) -> List[str]:
+        """Extracts all available household measures from the food's portion data."""
+        portions = food_details.get('foodPortions', [])
+        if not portions:
+            return [] # Return empty list if no portions
+        
+        measures = []
+        for portion in portions:
+            desc = portion.get('portionDescription')
+            grams = portion.get('gramWeight')
+            if desc and grams and desc != 'N/A' and "Quantity not specified" not in desc:
+                # Special formatting for fluid ounces to show both volume and weight
+                if 'fl oz' in desc:
+                     measures.append(f"{desc} ({grams:.1f}g)")
+                else:
+                     measures.append(f"{desc} ({grams:.1f}g)")
+        
+        return sorted(list(set(measures))) # Use set to remove duplicates
+
+    def _get_default_measure(self, food_category: Optional[str], available_measures: List[str]) -> str:
+        """Determines the most logical default measure based on the food's WWEIA category."""
+        if food_category:
+            # --- Special handling for juice to prefer 'cup' conversion ---
+            if 'juice' in food_category.lower() or 'drink' in food_category.lower() or 'shake' in food_category.lower():
+                # If a 'cup' measure already exists, use it directly.
+                for measure in available_measures:
+                    if 'cup' in measure.lower():
+                        return 'cup'
+                # If not, but 'fl oz' exists, plan for conversion by returning 'cup'.
+                for measure in available_measures:
+                    if 'fl oz' in measure.lower():
+                        return 'cup'
+            # --- End Special Handling ---
+            category_lower = food_category.lower()
+            for category_keyword, units in CATEGORY_UNITS.items():
+                if category_keyword in category_lower:
+                    for unit in units:
+                        for measure in available_measures:
+                            if unit in measure.lower():
+                                return unit
+        
+        # Fallback for items without a matching category
+        preferred_units = [
+            'medium', 'large', 'small', 'piece', 'slice', 'cup', 'container', 
+            'tablespoon', 'tbsp', 'oz', 'ounce', 'tsp', 'teaspoon'
+        ]
+        
+        for unit in preferred_units:
+            for measure in available_measures:
+                if unit in measure.lower():
+                    return unit
+        
+        if available_measures:
+            return available_measures[0].split('(')[0].strip()
+
+        return "100g"
+
+    def _find_portion_grams(self, food_details: Dict, unit_to_find: str) -> Optional[float]:
+        """Finds the gram weight for a given unit from the food's portions."""
+        if unit_to_find == "100g":
+            return 100.0
+            
+        unit_to_find = unit_to_find.lower()
+        
+        # Create a priority list for matching to handle cases like "large" vs "extra large"
+        # We want to match "1 large" before "1 extra large" if our unit is "large"
+        exact_match_pattern = re.compile(r'\b' + re.escape(unit_to_find) + r'\b')
+        
+        best_match = None
+        
+        for portion in food_details.get('foodPortions', []):
+            desc = portion.get('portionDescription', '').lower()
+            # Prefer exact word matches first (e.g., 'large' doesn't match 'extra large')
+            if exact_match_pattern.search(desc):
+                return portion.get('gramWeight')
+            # Fallback to substring match if no exact match is found yet
+            if unit_to_find in desc and not best_match:
+                best_match = portion.get('gramWeight')
+        
+        return best_match
+
+    def get_food_nutrition(self, query: str) -> Optional[Dict]:
+        """Gets nutrition data for a food item and returns it in the format needed by the app."""
+        fdc_id = self._find_exact_match_id(query)
+        if not fdc_id:
+            return None
+
+        food_details = self._get_food_details(fdc_id)
+        if not food_details:
+            return None
+        
+        wweia_category_obj = food_details.get('wweiaFoodCategory', {})
+        food_category = wweia_category_obj.get('wweiaFoodCategoryDescription')
+        
+        available_measures = self._get_available_measures(food_details)
+        default_unit = self._get_default_measure(food_category, available_measures)
+        grams_per_portion = self._find_portion_grams(food_details, default_unit)
+
+        # --- Conversion Logic for units like 'cup' that may not exist as a direct measure ---
+        if default_unit == 'cup' and not grams_per_portion:
+            # Attempt to convert from 'fl oz' to 'cup'
+            base_grams_per_fl_oz = None
+            # Prioritize the "1 fl oz" measure for the most accurate conversion
+            for portion in food_details.get('foodPortions', []):
+                desc = portion.get('portionDescription', '').lower()
+                # Find a portion that represents a single fluid ounce
+                if re.match(r'^1\s+(fl\s*)?oz', desc):
+                    base_grams_per_fl_oz = portion.get('gramWeight')
+                    break
+            
+            if base_grams_per_fl_oz:
+                # 1 cup = 8 fl oz. Calculate grams for 1 cup.
+                grams_per_portion = base_grams_per_fl_oz * 8.0
+        # --- END NEW ---
+
+        # --- Data Extraction ---
+        nutrients_100g = {'Calories': 0.0, 'Protein': 0.0, 'Fat': 0.0, 'Carbohydrates': 0.0}
+        nutrient_map = {1008: 'Calories', 1003: 'Protein', 1004: 'Fat', 1005: 'Carbohydrates'}
+        
+        for n in food_details.get('foodNutrients', []):
+            nutrient_id = n.get('nutrient', {}).get('id')
+            if nutrient_id in nutrient_map:
+                key = nutrient_map[nutrient_id]
+                nutrients_100g[key] = n.get('amount', 0.0)
+
+        description = food_details.get('description', 'N/A')
+        cleaned_description = clean_food_name(description, is_branded=False)
+        
+        # Scale nutrition to the default serving size
+        if grams_per_portion:
+            scale = grams_per_portion / 100.0
+            serving_name = f"{cleaned_description} (1 {default_unit})"
+            return {
+                'name': serving_name,
+                'calories': nutrients_100g['Calories'] * scale,
+                'protein': nutrients_100g['Protein'] * scale,
+                'carbs': nutrients_100g['Carbohydrates'] * scale,
+                'fat': nutrients_100g['Fat'] * scale
+            }
+        else:
+            # Fallback to 100g serving
+            serving_name = f"{cleaned_description} (100g)"
+            return {
+                'name': serving_name,
+                'calories': nutrients_100g['Calories'],
+                'protein': nutrients_100g['Protein'],
+                'carbs': nutrients_100g['Carbohydrates'],
+                'fat': nutrients_100g['Fat']
+            }
+
+def get_dynamic_foods():
+    """Generates the foods dictionary using USDA API data."""
+    api_key = "PodqZM9xrI5ByN5sS8zlEMf2haudDydBMCzt3U4N" # Demo key
+    api = USDANutritionAPI(api_key)
+
+    food_queries = {
         'PRIMARY PROTEIN SOURCES': [
-            {'food': 'Greek Yogurt, plain, non-fat', 'measure': '1 Cup'},
-            {'food': 'Cottage Cheese, full fat', 'measure': '1 Cup'},
-            {'food': 'Whey Protein powder', 'measure': '1 Tablespoon'},
-            {'food': 'Chickpeas, cooked', 'measure': '1 Cup'},
-            {'food': 'Black Beans, cooked', 'measure': '1 Cup'},
-            {'food': 'Tofu, firm', 'measure': '200 Grams'},
-            {'food': 'Lentils, cooked', 'measure': '1 Cup'},
-            {'food': 'Pinto Beans, cooked', 'measure': '1 Cup'},
-            {'food': 'Mozzarella Cheese, whole milk', 'measure': '100g'},
-            {'food': 'Hummus', 'measure': '1 Cup'},
-            {'food': 'Nuts, mixed', 'measure': '1 Cup'},
-            {'food': 'Egg, whole, cooked', 'measure': '1 Medium'},
-            {'food': 'Cheese, cheddar, slice', 'measure': '1 Slice'},
-            {'food': 'Peas, green, cooked', 'measure': '1 Cup'},
+            "Yogurt, Greek, NS as to type of milk, plain",
+            "Cheese, cottage, NFS",
+            "Chickpeas, NFS",
+            "Black beans, NFS",
+            "Lentils, from canned",
+            "Lentils, NFS",
+            "Cheese, Mozzarella, NFS",
+            "Hummus, plain",
+            "Almonds, NFS",
+            "Edamame, cooked",
+            "Cheese, Cheddar",
+            "Green peas, NS as to form, cooked",
+            "Soy milk, unsweetened",
+            "Mixed nuts, NFS",
+            "Egg, whole, raw",
+            "Peas, NFS",
         ],
         'PRIMARY CARBOHYDRATE SOURCES': [
-            {'food': 'Oats, cooked', 'measure': '1 Cup'},
-            {'food': 'Rice, white, cooked', 'measure': '1 Cup'},
-            {'food': 'Pasta, cooked', 'measure': '1 Cup'},
-            {'food': 'Whole Wheat Bread', 'measure': '2 Slices'},
-            {'food': 'Potatoes, boiled', 'measure': '1 Medium'},
-            {'food': 'Bananas', 'measure': '1 Medium'},
-            {'food': 'Corn, sweet, cooked', 'measure': '1 Cup'},
-            {'food': 'Muesli', 'measure': '1 Cup'},
-            {'food': 'Couscous, cooked', 'measure': '1 Cup'},
-            {'food': 'Dates, medjool', 'measure': '5 Pieces'},
-            {'food': 'Dried fruits, mixed', 'measure': '1 Cup'},
-            {'food': 'Trail Mix', 'measure': '1 Cup'},
+            "Oats, raw",
+            "Rice, white, cooked, NS as to fat",
+            "Pasta, cooked",
+            "Bread, whole wheat",
+            "Potato, NFS",
+            "Banana, raw",
+            "Corn, raw",
+            "Couscous, plain, cooked",
+            "Date",
+            "Raisins",
+            "Trail mix, NFS",
         ],
         'PRIMARY FAT SOURCES': [
-            {'food': 'Peanut Butter, smooth', 'measure': '1 Tablespoon'},
-            {'food': 'Olive Oil', 'measure': '1 Tablespoon'},
-            {'food': 'Avocados', 'measure': '1 Medium'},
-            {'food': 'Coconut Milk, canned, full fat', 'measure': '1 Cup'},
-            {'food': 'Whole Milk, 3.25%', 'measure': '1 Cup'},
-            {'food': 'Chia Seeds, dried', 'measure': '1 Tablespoon'},
-            {'food': 'Cream Cheese', 'measure': '1 Tablespoon'},
+            "Peanut butter",
+            "Olive oil",
+            "Avocado, raw",
+            "Coconut milk",
+            "Milk, whole",
+            "Chia seeds",
+            "Cream cheese, regular, plain",
         ],
         'PRIMARY MICRONUTRIENT SOURCES': [
-            {'food': 'Spinach, raw', 'measure': '1 Cup'},
-            {'food': 'Broccoli, cooked', 'measure': '1 Cup'},
-            {'food': 'Berries, mixed', 'measure': '1 Cup'},
-            {'food': 'Carrots, cooked', 'measure': '1 Cup'},
-            {'food': 'Mushrooms, white, cooked', 'measure': '1 Cup'},
-            {'food': 'Apples, with skin', 'measure': '1 Medium'},
-            {'food': 'Tomato Puree', 'measure': '1 Cup'},
-            {'food': 'Oranges', 'measure': '1 Medium'},
-            {'food': 'Cauliflower, cooked', 'measure': '1 Cup'},
+            "Spinach, raw",
+            "Broccoli, raw",
+            "Blueberries, raw",
+            "Carrots, raw",
+            "Mushrooms, raw",
+            "Apple, raw",
+            "Tomatoes, canned, cooked",
+            "Orange, raw",
+            "Cauliflower, NS as to form, cooked",
         ]
     }
     
-    dynamic_foods_db = {category: [] for category in food_items_to_fetch}
+    foods = {}
     
-    for category, items in food_items_to_fetch.items():
-        for item in items:
-            food_name = item['food']
-            measure_str = item['measure']
-            
-            nutrition_data = _api_client.get_nutrition_for_food_by_measure(food_name, measure_str)
-            time.sleep(0.2)  # Short delay to be respectful to the API
-            
-            display_name = f"{food_name.split(',')[0]} ({measure_str})"
+    for category, queries in food_queries.items():
+        foods[category] = []
+        for query in queries:
+            nutrition_data = api.get_food_nutrition(query)
             if nutrition_data:
-                food_entry = {
-                    'name': display_name,
-                    'calories': nutrition_data.get('calories', 0),
-                    'protein': nutrition_data.get('protein', 0),
-                    'carbs': nutrition_data.get('carbs', 0),
-                    'fat': nutrition_data.get('fat', 0)
-                }
-                dynamic_foods_db[category].append(food_entry)
-            else:
-                # Add a placeholder if API call fails
-                dynamic_foods_db[category].append({
-                    'name': f"{display_name} - DATA NOT FOUND",
-                    'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0
-                })
+                foods[category].append(nutrition_data)
+            time.sleep(0.5)  # Be polite to the API
+    
+    return foods
 
-    return dynamic_foods_db
+# ------ Comprehensive Vegetarian Food Database ------
 
-# Initialize API and fetch data
-API_KEY = "PodqZM9xrI5ByN5sS8zlEMf2haudDydBMCzt3U4N"  # Public DEMO_KEY
-api = USDANutritionAPI(API_KEY)
-foods = get_food_data(api)
-
+# Initialize foods database with dynamic data
+if 'foods_loaded' not in st.session_state:
+    with st.spinner("Loading nutrition data from USDA database..."):
+        foods = get_dynamic_foods()
+        st.session_state.foods = foods
+        st.session_state.foods_loaded = True
+else:
+    foods = st.session_state.foods
 
 # -----------------------------------------------------------------------------
 # Cell 4: Session State Initialization and Custom Styling
@@ -435,7 +537,7 @@ st.markdown("---")
 # -----------------------------------------------------------------------------
 
 st.header("📝 Select Your Foods")
-st.markdown("Choose foods using the buttons (1-5 servings) or enter custom "
+st.markdown("Choose foods using the buttons (0-5 servings) or enter custom "
             "serving amounts.")
 
 # ------ Create Category Tabs for Food Organization ------
@@ -619,18 +721,17 @@ if st.button("📊 Calculate Daily Intake", type="primary",
 
     # ------ Calculate Total Nutritional Values ------
 
-    # Create a flattened map for easy lookup
-    all_foods_map = {food['name']: food for category_items in foods.values() for food in category_items}
-
     # Calculate totals
-    for food_name, servings in st.session_state.food_selections.items():
-        if servings > 0 and food_name in all_foods_map:
-            food = all_foods_map[food_name]
-            total_calories += food['calories'] * servings
-            total_protein += food['protein'] * servings
-            total_carbs += food['carbs'] * servings
-            total_fat += food['fat'] * servings
-            selected_foods.append(f"{food['name']} × {servings:.1f}")
+    for category, items in foods.items():
+        for food in items:
+            if food['name'] in st.session_state.food_selections:
+                servings = st.session_state.food_selections[food['name']]
+                if servings > 0:
+                    total_calories += food['calories'] * servings
+                    total_protein += food['protein'] * servings
+                    total_carbs += food['carbs'] * servings
+                    total_fat += food['fat'] * servings
+                    selected_foods.append(f"{food['name']} x {servings:.1f}")
 
     # ------ Display Comprehensive Results ------
 
@@ -641,12 +742,10 @@ if st.button("📊 Calculate Daily Intake", type="primary",
     if selected_foods:
         st.subheader("🍽️ Foods Consumed Today:")
         # Create columns for better display
-        num_columns = min(3, len(selected_foods))
-        if num_columns > 0:
-            cols = st.columns(num_columns)
-            for i, food_text in enumerate(selected_foods):
-                with cols[i % num_columns]:
-                    st.write(f"• {food_text}")
+        cols = st.columns(3)
+        for i, food in enumerate(selected_foods):
+            with cols[i % 3]:
+                st.write(f"• {food}")
     else:
         st.info("No foods selected")
 
@@ -674,28 +773,28 @@ if st.button("📊 Calculate Daily Intake", type="primary",
                        * 100, 100) if daily_targets['calories']['min'] > 0
                    else 0)
     st.progress(cal_percent / 100,
-                text=f"Calories: {cal_percent:.0f}% of minimum target")
+              text=f"Calories: {cal_percent:.0f}% of minimum target")
 
     # Protein progress
     prot_percent = (min((total_protein / daily_targets['protein']['min'])
                         * 100, 100) if daily_targets['protein']['min'] > 0
                     else 0)
     st.progress(prot_percent / 100,
-                text=f"Protein: {prot_percent:.0f}% of minimum target")
+              text=f"Protein: {prot_percent:.0f}% of minimum target")
 
     # Carbs progress
     carb_percent = (min((total_carbs / daily_targets['carbs']['min'])
                         * 100, 100) if daily_targets['carbs']['min'] > 0
                     else 0)
     st.progress(carb_percent / 100,
-                text=f"Carbohydrates: {carb_percent:.0f}% of minimum target")
+              text=f"Carbohydrates: {carb_percent:.0f}% of minimum target")
 
     # Fat progress
     fat_percent = (min((total_fat / daily_targets['fat']['min'])
                        * 100, 100) if daily_targets['fat']['min'] > 0
                    else 0)
     st.progress(fat_percent / 100,
-                text=f"Fat: {fat_percent:.0f}% of minimum target")
+              text=f"Fat: {fat_percent:.0f}% of minimum target")
 
     # ------ Personalized Recommendations ------
 
@@ -740,21 +839,22 @@ if st.button("📊 Calculate Daily Intake", type="primary",
     if selected_foods:
         st.subheader("📋 Detailed Food Log")
         food_log = []
-        for food_name, servings in st.session_state.food_selections.items():
-            if servings > 0 and food_name in all_foods_map:
-                food = all_foods_map[food_name]
-                food_log.append({
-                    'Food': food['name'],
-                    'Servings': f"{servings:.1f}",
-                    'Calories': f"{food['calories'] * servings:.0f}",
-                    'Protein (g)': f"{food['protein'] * servings:.1f}",
-                    'Carbs (g)': f"{food['carbs'] * servings:.1f}",
-                    'Fat (g)': f"{food['fat'] * servings:.1f}"
-                })
-        
-        if food_log:
-            df = pd.DataFrame(food_log)
-            st.dataframe(df, use_container_width=True)
+        for category, items in foods.items():
+            for food in items:
+                if food['name'] in st.session_state.food_selections:
+                    servings = st.session_state.food_selections[food['name']]
+                    if servings > 0:
+                        food_log.append({
+                            'Food': food['name'],
+                            'Servings': servings,
+                            'Calories': food['calories'] * servings,
+                            'Protein (g)': food['protein'] * servings,
+                            'Carbs (g)': food['carbs'] * servings,
+                            'Fat (g)': food['fat'] * servings
+                        })
+
+        df = pd.DataFrame(food_log)
+        st.dataframe(df, use_container_width=True)
 
     # ------ Thank You Message ------
 
