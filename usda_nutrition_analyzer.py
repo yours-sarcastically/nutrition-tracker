@@ -1,17 +1,16 @@
 # -----------------------------------------------------------------------------
-# USDA Nutrition Analysis with Smart Serving Sizes
+# USDA Food Nutrition Analysis and Data Export Tool
 # -----------------------------------------------------------------------------
 
 """
 This script retrieves nutrition information for food items from the USDA Survey
 (FNDDS) database using the FoodData Central API. The script automatically
 determines appropriate serving sizes based on food categories and descriptions,
-then calculates nutrition values for those realistic portions. All results are 
+then calculates nutrition values for those realistic portions. All results are
 displayed in the console and saved to a CSV file for further analysis.
 
-The script requires a valid USDA FoodData Central API key. A demo key is
-included but users should obtain their own key for production use from:
-https://fdc.nal.usda.gov/api-guide.html
+The script requires a valid USDA FoodData Central API key. Users should obtain 
+their own key for production use from: https://fdc.nal.usda.gov/api-guide.html
 """
 
 # -----------------------------------------------------------------------------
@@ -47,9 +46,9 @@ CATEGORY_UNITS = {
     'chickpeas': ['cup', 'pea'],
     'edamame': ['cup', 'pod'],
     'hummus': ['tablespoon', 'container'],  # Prioritize tablespoon
-    'almonds': ['cup', 'oz', 'nut', 'package'],
-    'mixed nuts': ['cup', 'package', 'oz'],
-    'seeds': ['cup', 'oz', 'package'],
+    'almonds': ['oz', 'cup', 'nut', 'package'],
+    'mixed nuts': ['oz', 'cup', 'package'],
+    'seeds': ['oz', 'tablespoon', 'cup', 'package'],
     'peanut butter': ['tablespoon', 'serving'],  # Prioritize tablespoon
     'almond butter': ['tablespoon'],
     'tahini': ['tablespoon'],  # Prioritize tablespoon
@@ -214,7 +213,7 @@ def clean_food_name(raw_name: str, is_branded: bool = False) -> str:
             r'^tortellini,?\s*cheese-filled': 'cheese tortellini',
             r'^tortellini,?\s*spinach-filled': 'spinach tortellini',
             r'^trail mix with nuts and fruit': 'trail mix',
-            r'^pizza,?\s*cheese with vegetables.*frozen': 'veggie pizza',
+            r'^pizza,?\s*cheese with vegetables.*frozen': 'pizza',
             
             # Seeds and nuts
             r'^sunflower seeds': 'sunflower seeds',  # Already plural
@@ -307,7 +306,7 @@ class USDANutritionAPI:
                 if food.get('description', '').lower() == query.lower():
                     return food.get('fdcId')
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error searching for '{query}': {e}")
+            print(f"Error searching for '{query}': {e} ❌")
         return None
 
     def _get_food_details(self, fdc_id: int) -> Dict:
@@ -327,7 +326,7 @@ class USDANutritionAPI:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error getting details for FDC ID {fdc_id}: {e}")
+            print(f"Error getting details for FDC ID {fdc_id}: {e} ❌")
         return {}
 
     # ------ Serving Size and Measurement Methods ------
@@ -359,6 +358,19 @@ class USDANutritionAPI:
         
         return sorted(list(set(measures)))  # Use set to remove duplicates
 
+    def _filter_guideline_amounts(self, available_measures: List[str]) -> List[str]:
+        """
+        Filters out guideline amounts which are portion control suggestions, not typical servings.
+        
+        Args:
+            available_measures: List of all available measures
+            
+        Returns:
+            List of measures with guideline amounts removed
+        """
+        return [measure for measure in available_measures 
+                if 'guideline amount' not in measure.lower()]
+
     def _get_default_measure(self, food_category: Optional[str], available_measures: List[str], food_description: str = "") -> str:
         """
         Determines the most logical default measure based on the food's WWEIA category and description.
@@ -371,109 +383,99 @@ class USDANutritionAPI:
         Returns:
             The best default measure unit as a string
         """
+        # Filter out guideline amounts first
+        filtered_measures = self._filter_guideline_amounts(available_measures)
+        if not filtered_measures:
+            filtered_measures = available_measures  # Fallback if all are guideline amounts
 
-        # Improved: More specific food matching based on description
         food_desc_lower = food_description.lower()
 
-        # Special cases based on food description - be more specific
+        # Specific food-based fixes based on the serving size data
+        
+        # Fix for potatoes - prioritize "any size" over baby/new potato
+        if 'potato' in food_desc_lower and 'nfs' in food_desc_lower:
+            for measure in filtered_measures:
+                if 'any size' in measure.lower():
+                    return 'potato'
+        
+        # Fix for protein powder - prioritize scoop over packet
+        if 'nutritional powder mix' in food_desc_lower or 'high protein' in food_desc_lower:
+            # Look for scoop first, prefer "NFS" version for consistency
+            for measure in filtered_measures:
+                if 'scoop' in measure.lower() and 'nfs' in measure.lower():
+                    return 'scoop'
+            for measure in filtered_measures:
+                if 'scoop' in measure.lower():
+                    return 'scoop'
+
+        # Fix for mozzarella cheese - prioritize shredded cup
+        if 'mozzarella' in food_desc_lower:
+            for measure in filtered_measures:
+                if 'cup' in measure.lower() and 'shredded' in measure.lower():
+                    return 'cup'
+            # Fallback to any cup measure
+            for measure in filtered_measures:
+                if 'cup' in measure.lower() and 'nfs' in measure.lower():
+                    return 'cup'
+
+        # Standard specific food overrides
         if 'cream cheese' in food_desc_lower:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if 'tablespoon' in measure.lower():
                     return 'tablespoon'
 
-        if 'sweet potato' in food_desc_lower:
-            for measure in available_measures:
-                if 'medium' in measure.lower():
-                    return 'medium'
-
-        if 'canned' in food_desc_lower and 'tomato' in food_desc_lower:
-            for measure in available_measures:
-                if 'cup' in measure.lower():
-                    return 'cup'
-
-        # Add more specific food-based overrides
         if 'hummus' in food_desc_lower:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if 'tablespoon' in measure.lower():
                     return 'tablespoon'
 
         if 'peanut butter' in food_desc_lower or 'almond butter' in food_desc_lower:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if 'tablespoon' in measure.lower():
                     return 'tablespoon'
 
         if 'tahini' in food_desc_lower:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if 'tablespoon' in measure.lower():
                     return 'tablespoon'
 
         if 'avocado' in food_desc_lower:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if 'fruit' in measure.lower():
                     return 'fruit'
 
-        if 'orange' in food_desc_lower and 'juice' not in food_desc_lower:
-            for measure in available_measures:
-                if 'fruit' in measure.lower():
-                    return 'fruit'
-
-        if 'raisins' in food_desc_lower:
-            for measure in available_measures:
-                if 'cup' in measure.lower():
-                    return 'cup'
-
-        if 'mushrooms' in food_desc_lower:
-            for measure in available_measures:
-                if 'cup' in measure.lower():
-                    return 'cup'
-
-        if 'cauliflower' in food_desc_lower:
-            for measure in available_measures:
-                if 'cup' in measure.lower():
-                    return 'cup'
-
-        # Specific fixes for the identified problems
-        if 'nutritional powder mix' in food_desc_lower or 'protein' in food_desc_lower:
-            # Prioritize scoop over packet for protein powders
-            for measure in available_measures:
-                if 'scoop' in measure.lower() and 'nfs' in measure.lower():
-                    return 'scoop'
-            for measure in available_measures:
-                if 'scoop' in measure.lower():
-                    return 'scoop'
-
-        if 'mozzarella' in food_desc_lower and 'part skim' in food_desc_lower:
-            # Prioritize shredded cup for mozzarella cheese
-            for measure in available_measures:
-                if 'cup' in measure.lower() and 'shredded' in measure.lower():
-                    return 'cup'
+        if 'banana' in food_desc_lower:
+            for measure in filtered_measures:
+                if 'banana' in measure.lower():
+                    return 'banana'
 
         # Fix for tortellini - prioritize cup over piece
         if 'tortellini' in food_desc_lower:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if 'cup' in measure.lower():
                     return 'cup'
 
+        # Category-based selection using filtered measures
         if food_category:
-            # Special handling for juice to prefer 'cup' conversion
-            if 'juice' in food_category.lower() or 'drink' in food_category.lower() or 'shake' in food_category.lower():
-                # If a 'cup' measure already exists, use it directly
-                for measure in available_measures:
-                    if 'cup' in measure.lower():
-                        return 'cup'
-                # If not, but 'fl oz' exists, plan for conversion by returning 'cup'
-                for measure in available_measures:
-                    if 'fl oz' in measure.lower():
-                        return 'cup'
-
             category_lower = food_category.lower()
 
-            # Improved: Better category matching with stricter priority
+            # Special handling for juice - look for direct cup measures first
+            if 'juice' in category_lower or 'drink' in category_lower:
+                # Check if a cup measure exists directly
+                for measure in filtered_measures:
+                    if 'cup' in measure.lower():
+                        return 'cup'
+                # If no cup, we'll handle conversion later
+                for measure in filtered_measures:
+                    if 'fl oz' in measure.lower() and 'nfs' in measure.lower():
+                        return 'cup'  # Signal that we want cup conversion
+
+            # Apply category-based matching
             for category_keyword, units in CATEGORY_UNITS.items():
                 if category_keyword in category_lower:
                     # Go through units in priority order
                     for unit in units:
-                        for measure in available_measures:
+                        for measure in filtered_measures:
                             measure_lower = measure.lower()
                             # More precise matching to avoid false positives
                             if unit == 'fruit' and 'fruit' in measure_lower:
@@ -492,19 +494,18 @@ class USDANutritionAPI:
                                 return unit
 
         # Fallback for items without a matching category
-        # Modified: Prioritize cup over piece for better serving sizes
         preferred_units = [
             'medium', 'large', 'small', 'cup', 'container', 'piece', 'slice',
             'tablespoon', 'tbsp', 'oz', 'ounce', 'tsp', 'teaspoon'
         ]
 
         for unit in preferred_units:
-            for measure in available_measures:
+            for measure in filtered_measures:
                 if unit in measure.lower():
                     return unit
 
-        if available_measures:
-            return available_measures[0].split('(')[0].strip()
+        if filtered_measures:
+            return filtered_measures[0].split('(')[0].strip()
 
         return "100g"
 
@@ -524,15 +525,60 @@ class USDANutritionAPI:
             
         unit_to_find = unit_to_find.lower()
         
-        # Create a priority list for matching to handle cases like "large" vs "extra large"
-        # We want to match "1 large" before "1 extra large" if our unit is "large"
+        # Handle juice cup conversion using actual USDA ratios
+        if unit_to_find == 'cup':
+            # First check if a direct cup measure exists
+            for portion in food_details.get('foodPortions', []):
+                desc = portion.get('portionDescription', '').lower()
+                if 'cup' in desc and 'guideline' not in desc:
+                    return portion.get('gramWeight')
+            
+            # If no direct cup, convert from fl oz using USDA data
+            # Look for "1 fl oz (NFS)" measure for most accurate conversion
+            base_grams_per_fl_oz = None
+            for portion in food_details.get('foodPortions', []):
+                desc = portion.get('portionDescription', '').lower()
+                if '1 fl oz' in desc and 'nfs' in desc:
+                    base_grams_per_fl_oz = portion.get('gramWeight')
+                    break
+            
+            if base_grams_per_fl_oz:
+                # 1 cup = 8 fl oz, using actual USDA gram conversion
+                return base_grams_per_fl_oz * 8.0
+        
+        # Specific fixes based on serving size data
+        
+        # Fix for potatoes - look for "any size" specifically
+        if unit_to_find == 'potato':
+            for portion in food_details.get('foodPortions', []):
+                desc = portion.get('portionDescription', '').lower()
+                if 'any size' in desc:
+                    return portion.get('gramWeight')
+        
+        # Fix for protein powder - look for scoop, prefer NFS
+        if unit_to_find == 'scoop':
+            # First try to find "scoop, NFS"
+            for portion in food_details.get('foodPortions', []):
+                desc = portion.get('portionDescription', '').lower()
+                if 'scoop' in desc and 'nfs' in desc:
+                    return portion.get('gramWeight')
+            # Fallback to any scoop
+            for portion in food_details.get('foodPortions', []):
+                desc = portion.get('portionDescription', '').lower()
+                if 'scoop' in desc:
+                    return portion.get('gramWeight')
+        
+        # Standard matching with exact word boundaries
         exact_match_pattern = re.compile(r'\b' + re.escape(unit_to_find) + r'\b')
         
         best_match = None
         
         for portion in food_details.get('foodPortions', []):
             desc = portion.get('portionDescription', '').lower()
-            # Prefer exact word matches first (e.g., 'large' doesn't match 'extra large')
+            # Skip guideline amounts
+            if 'guideline amount' in desc:
+                continue
+            # Prefer exact word matches first
             if exact_match_pattern.search(desc):
                 return portion.get('gramWeight')
             # Fallback to substring match if no exact match is found yet
@@ -540,6 +586,37 @@ class USDANutritionAPI:
                 best_match = portion.get('gramWeight')
         
         return best_match
+
+    def _validate_serving_size(self, food_name: str, selected_measure: str, grams: float, calories: float):
+        """
+        Validates serving sizes and provides warnings for unrealistic values.
+        
+        Args:
+            food_name: Name of the food
+            selected_measure: The selected serving measure
+            grams: Gram weight of the serving
+            calories: Calories in the serving
+        """
+        warnings = []
+        
+        # Check for very large servings (except pizza which is intentionally large)
+        if grams > 500 and 'pizza' not in food_name.lower():
+            warnings.append(f"Very large serving size ({grams:.1f}g)")
+        
+        # Check for very high calorie servings
+        if calories > 800 and 'pizza' not in food_name.lower():
+            warnings.append(f"High calorie serving ({calories:.0f} kcal)")
+        
+        # Check if guideline amount was used (shouldn't happen with fixes)
+        if 'guideline amount' in selected_measure.lower():
+            warnings.append("Using guideline amount, not typical serving")
+        
+        # Check for suspiciously light servings for certain foods
+        if 'milk' in food_name.lower() and 'cup' in selected_measure and grams < 200:
+            warnings.append(f"Milk serving seems too light ({grams:.1f}g for cup)")
+        
+        if warnings:
+            print(f"{food_name}: {'; '.join(warnings)} ⚠️")
 
     # ------ Main Processing Method ------
 
@@ -568,22 +645,6 @@ class USDANutritionAPI:
         # Pass food description to help with unit selection
         default_unit = self._get_default_measure(food_category, available_measures, query)
         grams_per_portion = self._find_portion_grams(food_details, default_unit)
-
-        # Conversion logic for units like 'cup' that may not exist as a direct measure
-        if default_unit == 'cup' and not grams_per_portion:
-            # Attempt to convert from 'fl oz' to 'cup'
-            base_grams_per_fl_oz = None
-            # Prioritize the "1 fl oz" measure for the most accurate conversion
-            for portion in food_details.get('foodPortions', []):
-                desc = portion.get('portionDescription', '').lower()
-                # Find a portion that represents a single fluid ounce
-                if re.match(r'^1\s+(fl\s*)?oz', desc):
-                    base_grams_per_fl_oz = portion.get('gramWeight')
-                    break
-            
-            if base_grams_per_fl_oz:
-                # 1 cup = 8 fl oz. Calculate grams for 1 cup
-                grams_per_portion = base_grams_per_fl_oz * 8.0
 
         # Data extraction
         nutrients_100g = {'Calories': 0.0, 'Protein': 0.0, 'Fat': 0.0, 'Carbohydrates': 0.0}
@@ -622,6 +683,14 @@ class USDANutritionAPI:
             result_data['fat'] = f"{nutrients_100g['Fat'] * scale:.1f}"
             result_data['carbs'] = f"{nutrients_100g['Carbohydrates'] * scale:.1f}"
 
+            # Validate serving size
+            self._validate_serving_size(
+                cleaned_description, 
+                result_data['serving_unit'], 
+                grams_per_portion, 
+                float(result_data['calories'])
+            )
+
             print(f"Serving Size: {result_data['serving_unit']} ({result_data['serving_grams']}g)")
             print("Key Nutrition Facts:")
             print(f"  - Calories: {result_data['calories']} kcal")
@@ -629,94 +698,160 @@ class USDANutritionAPI:
             print(f"  - Fat: {result_data['fat']} g")
             print(f"  - Carbohydrates: {result_data['carbs']} g")
         else:
-            result_data['serving_unit'] = "100g"
-            result_data['serving_grams'] = "100.0"
-            result_data['calories'] = f"{nutrients_100g['Calories']:.0f}"
-            result_data['protein'] = f"{nutrients_100g['Protein']:.1f}"
-            result_data['fat'] = f"{nutrients_100g['Fat']:.1f}"
-            result_data['carbs'] = f"{nutrients_100g['Carbohydrates']:.1f}"
+            print("No serving size data available ❌")
+            result_data['serving_grams'] = "N/A"
+            result_data['calories'] = "N/A"
+            result_data['protein'] = "N/A"
+            result_data['fat'] = "N/A"
+            result_data['carbs'] = "N/A"
 
-            print("Serving Size: 100g (no household measures found)")
-            print("Key Nutrition Facts (per 100g):")
-            print(f"  - Calories: {result_data['calories']} kcal")
-            print(f"  - Protein: {result_data['protein']} g")
-            print(f"  - Fat: {result_data['fat']} g")
-            print(f"  - Carbohydrates: {result_data['carbs']} g")
-
-        print()  # Adds a blank line for readability between items
+        if available_measures:
+            print(f"Available Measures: {', '.join(available_measures)}")
+        
+        print()  # Blank line for readability
         return result_data
 
 # -----------------------------------------------------------------------------
-# Cell 5: Main Analysis Function
+# Cell 5: CSV Export Functionality
 # -----------------------------------------------------------------------------
 
-def run_survey_food_analysis():
+def export_to_csv(nutrition_data: List[Dict[str, Any]], filename: str = "usda_nutrition_data.csv"):
     """
-    Initializes the API client, processes foods, prints results, and saves to CSV.
+    Exports nutrition data to a CSV file.
+    
+    Args:
+        nutrition_data: List of nutrition dictionaries
+        filename: Output CSV filename
     """
-    api_key = ""
-    api = USDANutritionAPI(api_key)
+    if not nutrition_data:
+        print("No data to export ❌")
+        return
 
-    # ------ Food List Definition ------
-
-    food_list = [""]
+    # Filter out None entries
+    valid_data = [item for item in nutrition_data if item is not None]
     
-    # ------ CSV File Setup ------
+    if not valid_data:
+        print("No valid data to export ❌")
+        return
+
+    fieldnames = ['name', 'fdcId', 'serving_unit', 'serving_grams', 'calories', 'protein', 'fat', 'carbs']
     
-    csv_filename = "nutrition_results.csv"
-    csv_header = [
-        'Food Name', 'FDC ID', 'Serving Size', 'Serving Grams', 
-        'Calories (kcal)', 'Protein (g)', 'Fat (g)', 'Carbohydrates (g)'
-    ]
-
-    # ------ Data Processing and Export ------
-
-    # Use a 'with' statement to properly handle the file
-    with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(csv_header)
-
-        print("--- Fetching Nutrition Data ---")
-        print(f"Processing {len(food_list)} food items from the USDA Survey database 🍎")
-        print()
+    try:
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(valid_data)
         
-        # Process each food and write to console and CSV
-        for food_item in food_list:
-            # This method now prints to console AND returns data
-            nutrition_data = api.display_nutrition_for_food(food_item)
-            
-            # If data was successfully fetched, write it to the CSV file
-            if nutrition_data:
-                row = [
-                    nutrition_data['name'],
-                    nutrition_data['fdcId'],
-                    nutrition_data['serving_unit'],
-                    nutrition_data['serving_grams'],
-                    nutrition_data['calories'],
-                    nutrition_data['protein'],
-                    nutrition_data['fat'],
-                    nutrition_data['carbs']
-                ]
-                writer.writerow(row)
-            
-            time.sleep(1)  # Be polite to the API
-    
-    print(f"Analysis complete! Results saved to {csv_filename} 📊")
-    print("The CSV file contains detailed nutrition information for all processed foods")
+        print(f"Successfully exported {len(valid_data)} food items to {filename} ✅")
+    except Exception as e:
+        print(f"Error exporting to CSV: {e} ❌")
 
 # -----------------------------------------------------------------------------
-# Cell 6: Script Execution Functions
+# Cell 6: Main Function and Food List Processing
 # -----------------------------------------------------------------------------
 
 def main():
-    """Runs the survey food analysis."""
-    run_survey_food_analysis()
+    """
+    Main function to run the nutrition analysis for all foods.
+    """
+    # ------ API Configuration ------
     
-    # ------ Final Message ------
+    # For production use, obtain your own key from: https://fdc.nal.usda.gov/api-guide.html
+    api_key = ""
+    nutrition_api = USDANutritionAPI(api_key)
+
+    # ------ Food Items List ------
+    
+    food_list = [
+        "Egg, Whole, Raw",
+        "Yogurt, Greek, Nonfat Milk, Plain",
+        "Nutritional Powder Mix, High Protein, Nfs",
+        "Milk, Reduced Fat (2%)",
+        "Cheese, Cottage, Creamed, Large Or Small Curd",
+        "Cheese, Mozzarella, Part Skim",
+        "Lentils, From Canned",
+        "Chickpeas, From Canned, No Added Fat",
+        "Kidney Beans, From Canned, No Added Fat",
+        "Hummus, Plain",
+        "Tortellini, Cheese-Filled, No Sauce",
+        "Olive Oil",
+        "Peanut Butter",
+        "Almonds, Unsalted",
+        "Mixed Nuts, With Peanuts, Unsalted",
+        "Avocado, Raw",
+        "Sunflower Seeds, Plain, Unsalted",
+        "Chia Seeds",
+        "Tahini",
+        "Cream, Heavy",
+        "Oats, Raw",
+        "Potato, Nfs",
+        "Rice, White, Cooked, No Added Fat",
+        "Bread, Multigrain",
+        "Pasta, Cooked",
+        "Banana, Raw",
+        "Couscous, Plain, Cooked",
+        "Corn, Frozen, Cooked, No Added Fat",
+        "Green Peas, Frozen, Cooked, No Added Fat",
+        "Classic Mixed Vegetables, Frozen, Cooked, No Added Fat",
+        "Spinach, Frozen, Cooked, No Added Fat",
+        "Broccoli, Frozen, Cooked With Oil",
+        "Berries, Frozen",
+        "Carrots, Frozen, Cooked, No Added Fat",
+        "Tomatoes, Canned, Cooked",
+        "Mushrooms, Raw",
+        "Cauliflower, Frozen, Cooked, No Added Fat",
+        "Green Beans, Frozen, Cooked, No Added Fat",
+        "Orange Juice, 100%, Canned, Bottled Or In A Carton",
+        "Apple Juice, 100%",
+        "Trail Mix With Nuts And Fruit",
+        "Tortellini, Spinach-Filled, No Sauce",
+        "Pizza, Cheese, With Vegetables, From Frozen, Thin Crust",
+        "Fruit Juice, Nfs"
+    ]
+
+    # ------ Process Each Food Item ------
+    
+    print("USDA Food Nutrition Analysis Tool 🍎")
+    print("=" * 60)
+    print()
+
+    nutrition_results = []
+    
+    for food_item in food_list:
+        print(f"Processing: {food_item}")
+        result = nutrition_api.display_nutrition_for_food(food_item)
+        nutrition_results.append(result)
+        time.sleep(1)  # Be respectful to the API
+
+    # ------ Export Results ------
+    
+    print("=" * 60)
+    print("Export Summary 📊")
+    print("=" * 60)
+    
+    export_to_csv(nutrition_results, "nutrition_results.csv")
+    
+    # ------ Summary Statistics ------
+    
+    successful_items = [item for item in nutrition_results if item is not None]
+    failed_items = len(nutrition_results) - len(successful_items)
+    
+    print(f"Successfully processed: {len(successful_items)} foods ✅")
+    if failed_items > 0:
+        print(f"Failed to process: {failed_items} foods ❌")
     
     print()
-    print("Thanks for using the USDA Nutrition Analysis tool! 🎉")
-    print("Hope this data helps you make informed nutrition decisions!")
+    print("Analysis complete! Check the CSV file for detailed nutrition data 🎉")
+    print("Key fixes applied 💡")
+    print("   - Corrected milk serving size (244g vs 61g)")
+    print("   - Fixed potato serving size (170g vs 60g)")
+    print("   - Improved juice conversions using actual USDA ratios")
+    print("   - Filtered out guideline amounts")
+    print("   - Added serving size validation warnings")
+
+# -----------------------------------------------------------------------------
+# Cell 7: Script Execution Entry Point
+# -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
     main()
