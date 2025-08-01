@@ -278,7 +278,7 @@ age = st.sidebar.number_input(
     min_value=16,
     max_value=80,
     value=st.session_state.user_age,
-    placeholder="00"
+    placeholder="Enter your age"
 )
 
 height_cm = st.sidebar.number_input(
@@ -286,7 +286,7 @@ height_cm = st.sidebar.number_input(
     min_value=140,
     max_value=220,
     value=st.session_state.user_height,
-    placeholder="00"
+    placeholder="Enter your height in centimeters"
 )
 
 weight_kg = st.sidebar.number_input(
@@ -295,7 +295,7 @@ weight_kg = st.sidebar.number_input(
     max_value=150.0,
     value=st.session_state.user_weight,
     step=0.5,
-    placeholder="00"
+    placeholder="Enter your weight in kilograms"
 )
 
 gender_options = ["Select Gender", "Male", "Female"]
