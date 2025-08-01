@@ -87,7 +87,6 @@ def load_food_database(file_path):
         'Corn': 'CARBOHYDRATE SOURCES',
         'Green Peas': 'CARBOHYDRATE SOURCES',
         'Pizza': 'CARBOHYDRATE SOURCES',
-        'Fruit Juice': 'PRIMARY MICRONUTRIENT SOURCES',
         'Mixed Vegetables': 'PRIMARY MICRONUTRIENT SOURCES',
         'Spinach': 'PRIMARY MICRONUTRIENT SOURCES',
         'Broccoli': 'PRIMARY MICRONUTRIENT SOURCES',
