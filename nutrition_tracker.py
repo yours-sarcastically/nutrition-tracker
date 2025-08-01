@@ -16,21 +16,6 @@ The targets are calculated using the following methods:
 - Protein: 2.0 grams per kilogram of body weight for muscle building
 - Fat: 25% of total calories for hormone production and nutrient absorption
 - Carbohydrates: Remaining calories after protein and fat allocation
-
-Usage:
-1. Enter personal parameters in the sidebar (age, height, weight, gender,
-   activity level)
-2. Optionally adjust advanced settings (caloric surplus, protein ratio,
-   fat percentage)
-3. Select foods from categorized tabs using quick-select buttons or custom
-   serving amounts
-4. Click "Calculate Daily Intake" to view nutritional analysis and
-   personalized recommendations
-5. Use "Clear All Selections" to reset food choices
-
-The application provides real-time progress tracking against personalized
-targets, detailed food logging, and specific recommendations for achieving
-healthy weight gain goals.
 """
 
 # -----------------------------------------------------------------------------
@@ -333,9 +318,9 @@ st.markdown("""
 
 st.title("Personalized Nutrition Tracker 🥗")
 st.markdown("""
-Welcome to your personalized nutrition tracking application! This tool calculates
-your individual daily nutritional targets based on your personal parameters and
-helps you track your food intake for healthy weight gain.
+Welcome! This tool calculates your individual daily nutritional targets based 
+on your personal parameters and helps you track your food intake for healthy 
+weight gain.
 """)
 
 # ------ Sidebar for Personal Parameters ------
@@ -478,7 +463,6 @@ targets = calculate_personalized_targets(
 # Cell 8: Display Personalized Targets
 # -----------------------------------------------------------------------------
 
-# ------ Display Header and Information Message ------
 if not user_has_entered_info:
     st.info("👈 Please enter your personal information in the sidebar to see your personalized nutritional targets.")
     st.header("Sample Daily Targets 🎯")
@@ -486,100 +470,40 @@ if not user_has_entered_info:
 else:
     st.header("Your Personalized Daily Targets 🎯")
 
-# ------ Create Container for Organized Target Display ------
-targets_container = st.container()
+# ------ Display Metabolic Information ------
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("BMR (Basal Metabolic Rate)", f"{targets['bmr']} kcal")
+with col2:
+    st.metric("TDEE (Maintenance)", f"{targets['tdee']} kcal")
+with col3:
+    st.metric("Target Weight Gain", f"{targets['target_weight_gain_per_week']} kg/week")
 
-with targets_container:
-    # ------ Metabolic Information Section ------
-    st.subheader("Metabolic Information")
-    metabolic_col1, metabolic_col2, metabolic_col3 = st.columns(3)
-    
-    with metabolic_col1:
-        st.metric(
-            label="BMR (Basal Metabolic Rate)",
-            value=f"{targets['bmr']} kcal",
-            help="Your body's energy needs at rest"
-        )
-    
-    with metabolic_col2:
-        st.metric(
-            label="TDEE (Total Daily Energy Expenditure)",
-            value=f"{targets['tdee']} kcal",
-            help="Your maintenance calories including activity"
-        )
-    
-    with metabolic_col3:
-        st.metric(
-            label="Target Weight Gain Rate",
-            value=f"{targets['target_weight_gain_per_week']} kg/week",
-            help="Recommended weekly weight gain for lean muscle building"
-        )
+# ------ Display Daily Nutritional Targets ------
+st.subheader("Daily Nutritional Targets")
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("Calories", f"{targets['total_calories']} kcal")
+with col2:
+    st.metric("Protein", f"{targets['protein_grams']}g")
+with col3:
+    st.metric("Carbohydrates", f"{targets['carb_grams']}g")
+with col4:
+    st.metric("Fat", f"{targets['fat_grams']}g")
 
-    # ------ Daily Nutritional Targets Section ------
-    st.subheader("Daily Nutritional Targets")
-    nutrition_col1, nutrition_col2, nutrition_col3, nutrition_col4 = st.columns(4)
-    
-    with nutrition_col1:
-        st.metric(
-            label="Total Daily Calories",
-            value=f"{targets['total_calories']} kcal",
-            help="Total calories needed for healthy weight gain"
-        )
-    
-    with nutrition_col2:
-        st.metric(
-            label="Daily Protein Target",
-            value=f"{targets['protein_grams']}g",
-            help="Protein needed for muscle building and recovery"
-        )
-    
-    with nutrition_col3:
-        st.metric(
-            label="Daily Carbohydrate Target",
-            value=f"{targets['carb_grams']}g",
-            help="Carbohydrates for energy and performance"
-        )
-    
-    with nutrition_col4:
-        st.metric(
-            label="Daily Fat Target",
-            value=f"{targets['fat_grams']}g",
-            help="Healthy fats for hormone production and absorption"
-        )
+# ------ Display Macronutrient Breakdown ------
+st.subheader("Macronutrient Distribution")
+protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
+carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
+fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
 
-    # ------ Macronutrient Distribution Section ------
-    st.subheader("Macronutrient Distribution Breakdown")
-    
-    # Calculate percentages for display
-    protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
-    carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
-    fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
-    
-    macro_col1, macro_col2, macro_col3 = st.columns(3)
-    
-    with macro_col1:
-        st.metric(
-            label="Protein Distribution",
-            value=f"{protein_percent:.1f}%",
-            delta=f"{targets['protein_calories']} kcal",
-            help="Percentage and calories from protein sources"
-        )
-    
-    with macro_col2:
-        st.metric(
-            label="Carbohydrate Distribution",
-            value=f"{carb_percent:.1f}%",
-            delta=f"{targets['carb_calories']} kcal",
-            help="Percentage and calories from carbohydrate sources"
-        )
-    
-    with macro_col3:
-        st.metric(
-            label="Fat Distribution",
-            value=f"{fat_percent_display:.1f}%",
-            delta=f"{targets['fat_calories']} kcal",
-            help="Percentage and calories from fat sources"
-        )
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("Protein", f"{protein_percent:.1f}%", f"{targets['protein_calories']} kcal")
+with col2:
+    st.metric("Carbohydrates", f"{carb_percent:.1f}%", f"{targets['carb_calories']} kcal")
+with col3:
+    st.metric("Fat", f"{fat_percent_display:.1f}%", f"{targets['fat_calories']} kcal")
 
 st.markdown("---")
 
@@ -829,4 +753,4 @@ st.sidebar.markdown("""
 - **Extremely Active**: Very hard exercise, physical job, or training twice daily
 """)
 
-print("Thank you for using the Personalized Nutrition Tracker! Eat well, feel well! 🌱")
+print("Thanks for using the Personalized Nutrition Tracker! Keep fueling your gains and remember that consistency is the secret sauce to success 🚀")
