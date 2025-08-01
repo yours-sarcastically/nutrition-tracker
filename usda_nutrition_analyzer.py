@@ -663,7 +663,10 @@ class USDANutritionAPI:
         result_data = {
             "name": cleaned_description,
             "fdcId": fdc_id,
-            "serving_unit": f"1 {default_unit}",
+            "serving_unit": " ".join([
+                word if word.lower() in ['oz', 'fl'] else word.capitalize()
+                for word in f"1 {default_unit}".split()
+            ]),
             "serving_grams": None,
             "calories": None,
             "protein": None,
