@@ -238,9 +238,14 @@ if 'user_gender' not in st.session_state:
 if 'user_activity' not in st.session_state:
     st.session_state.user_activity = None
 
-# ------ Custom CSS for Enhanced Button Styling ------
+# ------ Custom CSS for Enhanced Styling and Hiding Input Instructions ------
 st.markdown("""
 <style>
+/* This rule hides the "Press Enter to apply" text on number inputs */
+[data-testid="InputInstructions"] {
+    display: none;
+}
+
 .active-button {
     background-color: #ff6b6b !important;
     color: white !important;
