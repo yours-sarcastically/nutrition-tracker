@@ -16,6 +16,21 @@ The targets are calculated using the following methods:
 - Protein: 2.0 grams per kilogram of body weight for muscle building
 - Fat: 25% of total calories for hormone production and nutrient absorption
 - Carbohydrates: Remaining calories after protein and fat allocation
+
+Usage:
+1. Enter personal parameters in the sidebar (age, height, weight, gender,
+   activity level)
+2. Optionally adjust advanced settings (caloric surplus, protein ratio,
+   fat percentage)
+3. Select foods from categorized tabs using quick-select buttons or custom
+   serving amounts
+4. Click "Calculate Daily Intake" to view nutritional analysis and
+   personalized recommendations
+5. Use "Clear All Selections" to reset food choices
+
+The application provides real-time progress tracking against personalized
+targets, detailed food logging, and specific recommendations for achieving
+healthy weight gain goals.
 """
 
 # -----------------------------------------------------------------------------
@@ -318,9 +333,9 @@ st.markdown("""
 
 st.title("Personalized Nutrition Tracker 🥗")
 st.markdown("""
-Welcome! This tool calculates your individual daily nutritional targets based 
-on your personal parameters and helps you track your food intake for healthy 
-weight gain.
+Welcome to your personalized nutrition tracking application! This tool calculates
+your individual daily nutritional targets based on your personal parameters and
+helps you track your food intake for healthy weight gain.
 """)
 
 # ------ Sidebar for Personal Parameters ------
@@ -470,7 +485,7 @@ if not user_has_entered_info:
 else:
     st.header("Your Personalized Daily Targets 🎯")
 
-# ------ Display Metabolic Information ------
+# ------ Display Metabolic Information in Aligned Grid ------
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("BMR (Basal Metabolic Rate)", f"{targets['bmr']} kcal")
@@ -479,7 +494,7 @@ with col2:
 with col3:
     st.metric("Target Weight Gain", f"{targets['target_weight_gain_per_week']} kg/week")
 
-# ------ Display Daily Nutritional Targets ------
+# ------ Display Daily Nutritional Targets in Aligned Grid ------
 st.subheader("Daily Nutritional Targets")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
@@ -491,7 +506,7 @@ with col3:
 with col4:
     st.metric("Fat", f"{targets['fat_grams']}g")
 
-# ------ Display Macronutrient Breakdown ------
+# ------ Display Macronutrient Breakdown in Aligned Grid ------
 st.subheader("Macronutrient Distribution")
 protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
 carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
@@ -753,4 +768,4 @@ st.sidebar.markdown("""
 - **Extremely Active**: Very hard exercise, physical job, or training twice daily
 """)
 
-print("Thanks for using the Personalized Nutrition Tracker! Keep fueling your gains and remember that consistency is the secret sauce to success 🚀")
+print("Thank you for using the Personalized Nutrition Tracker! Eat well, feel well! 🌱")
