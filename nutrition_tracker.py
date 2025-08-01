@@ -7,7 +7,7 @@ This script implements an interactive, evidence-based nutrition tracking applica
 """
 
 # -----------------------------------------------------------------------------
-# Cell 1: Import Required Libraries And Modules
+# Cell 1: Import Required Libraries and Modules
 # -----------------------------------------------------------------------------
 
 import streamlit as st
@@ -15,7 +15,7 @@ import pandas as pd
 import math
 
 # -----------------------------------------------------------------------------
-# Cell 2: Page Configuration And Initial Setup
+# Cell 2: Page Configuration and Initial Setup
 # -----------------------------------------------------------------------------
 
 st.set_page_config(
@@ -26,10 +26,10 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# Cell 3: Default Parameter Values For User Inputs
+# Cell 3: Default Parameter Values for User Inputs
 # -----------------------------------------------------------------------------
 
-# ------ Default Parameter Values Based On Published Research ------
+# ------ Default Parameter Values Based on Published Research ------
 DEFAULT_AGE = 26
 DEFAULT_HEIGHT_CM = 180
 DEFAULT_WEIGHT_KG = 57.5
@@ -45,7 +45,7 @@ DEFAULT_FAT_PERCENTAGE = 0.25
 
 def calculate_bmr(age, height_cm, weight_kg, gender='male'):
     """
-    Calculate Basal Metabolic Rate Using The Mifflin-St Jeor Equation
+    Calculate Basal Metabolic Rate Using the Mifflin-St Jeor Equation
 
     Args:
         age: Age in years
@@ -65,7 +65,7 @@ def calculate_bmr(age, height_cm, weight_kg, gender='male'):
 
 def calculate_tdee(bmr, activity_level):
     """
-    Calculate Total Daily Energy Expenditure Based On Activity Level
+    Calculate Total Daily Energy Expenditure Based on Activity Level
 
     Args:
         bmr: Basal Metabolic Rate
@@ -130,13 +130,13 @@ def calculate_personalized_targets(
     }
 
 # -----------------------------------------------------------------------------
-# Cell 5: Load And Process Food Database
+# Cell 5: Load and Process Food Database
 # -----------------------------------------------------------------------------
 
 @st.cache_data
 def load_food_database(file_path):
     """
-    Load The Vegetarian Food Database From A CSV File
+    Load the Vegetarian Food Database From A CSV File
 
     Args:
         file_path: Path to the CSV file
@@ -146,7 +146,7 @@ def load_food_database(file_path):
     """
     df = pd.read_csv(file_path)
 
-    # ------ Map Foods To Categories For Tabbed Selection ------
+    # ------ Map Foods To Categories for Tabbed Selection ------
     category_mapping = {
         'Eggs': 'PRIMARY PROTEIN SOURCES',
         'Greek Yogurt': 'PRIMARY PROTEIN SOURCES',
@@ -215,18 +215,18 @@ def load_food_database(file_path):
             foods[category].append(food_item)
     return foods
 
-# ------ Load Food Database For Vegetarian Foods ------
+# ------ Load Food Database for Vegetarian Foods ------
 foods = load_food_database('nutrition_results.csv')
 
 # -----------------------------------------------------------------------------
-# Cell 6: Session State Initialization And Custom Styling
+# Cell 6: Session State Initialization and Custom Styling
 # -----------------------------------------------------------------------------
 
-# ------ Initialize Session State For Food Selections ------
+# ------ Initialize Session State for Food Selections ------
 if 'food_selections' not in st.session_state:
     st.session_state.food_selections = {}
 
-# ------ Initialize Session State For User Inputs ------
+# ------ Initialize Session State for User Inputs ------
 if 'user_age' not in st.session_state:
     st.session_state.user_age = None
 if 'user_height' not in st.session_state:
@@ -238,7 +238,7 @@ if 'user_gender' not in st.session_state:
 if 'user_activity' not in st.session_state:
     st.session_state.user_activity = None
 
-# ------ Custom CSS For Enhanced Button Styling ------
+# ------ Custom CSS for Enhanced Button Styling ------
 st.markdown("""
 <style>
 .active-button {
@@ -261,16 +261,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# Cell 7: Application Title And Sidebar Parameters
+# Cell 7: Application Title and Sidebar Parameters
 # -----------------------------------------------------------------------------
 
 st.title("Personalized Nutrition Tracker 🍽️")
 st.markdown("""
-Ready to fuel your journey to better health? This tool creates personalized daily nutrition targets tailored just for you and makes tracking your meals a breeze. Let's get your macros working in your favor! 🚀
+Ready to fuel your journey to better health? This tool creates personalized recommendations tailored just for you and makes tracking your meals a breeze. Let's get your macros working in your favor! 🚀
 """)
 
-# ------ Sidebar For Personal Parameters ------
-st.sidebar.header("Personal Parameters For Daily Target Calculation 📊")
+# ------ Sidebar for Personal Parameters ------
+st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
 # ------ Personal Information Inputs With Placeholder Text ------
 age = st.sidebar.number_input(
@@ -339,7 +339,7 @@ st.session_state.user_gender = gender
 st.session_state.user_activity = activity_level
 
 # ------ Advanced Parameters Collapsible Section ------
-with st.sidebar.expander("Advanced Settings For Nutrition Targets ⚙️"):
+with st.sidebar.expander("Advanced Settings for Nutritional Targets ⚙️"):
     caloric_surplus = st.number_input(
         "Caloric Surplus (Kilocalories Per Day)",
         min_value=200, max_value=800,
@@ -357,7 +357,7 @@ with st.sidebar.expander("Advanced Settings For Nutrition Targets ⚙️"):
         help="Protein intake per kilogram of body weight"
     )
     fat_percentage_input = st.number_input(
-        "Fat (Percent Of Total Calories)",
+        "Fat (Percent of Total Calories)",
         min_value=15, max_value=40,
         value=None,
         placeholder=f"Default: {int(DEFAULT_FAT_PERCENTAGE * 100)}",
@@ -384,7 +384,7 @@ user_has_entered_info = (
     activity_level is not None
 )
 
-# ------ Calculate Personalized Targets For The User ------
+# ------ Calculate Personalized Targets for the User ------
 targets = calculate_personalized_targets(
     age=final_age,
     height_cm=final_height,
@@ -397,15 +397,15 @@ targets = calculate_personalized_targets(
 )
 
 # -----------------------------------------------------------------------------
-# Cell 8: Display Personalized Targets And Daily Goals
+# Cell 8: Display Personalized Targets and Daily Goals
 # -----------------------------------------------------------------------------
 
 if not user_has_entered_info:
-    st.info("👈 Please enter your personal information in the sidebar to view your personalized nutritional targets")
-    st.header("Sample Daily Targets For Reference 🎯")
+    st.info("👈 Please enter your personal information in the sidebar to view your daily nutritional targets")
+    st.header("Sample Daily Targets for Reference 🎯")
     st.caption("These are example targets. Enter your information in the sidebar for personalized calculations")
 else:
-    st.header("Your Personalized Daily Nutrition Targets For Healthy Weight Gain 🎯")
+    st.header("Your Personalized Daily Nutritional Targets for Healthy Weight Gain 🎯")
 
 # ------ Display Metabolic Information In Four Columns ------
 col1, col2, col3, col4 = st.columns(4)
@@ -431,7 +431,7 @@ with col4:
     st.metric("Fat Target", f"{targets['fat_grams']} grams")
 
 # ------ Display Macronutrient Percentages In Four Columns ------
-st.subheader("Macronutrient Distribution As Percent Of Daily Calories")
+st.subheader("Macronutrient Distribution As Percent of Daily Calories")
 protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
 carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
 fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
@@ -451,10 +451,10 @@ st.markdown("---")
 # Cell 9: Interactive Food Selection Interface
 # -----------------------------------------------------------------------------
 
-st.header("Select Foods And Log Servings For Today 📝")
+st.header("Select Foods and Log Servings for Today 📝")
 st.markdown("Choose foods using the buttons for preset servings or enter a custom serving amount for each item")
 
-# ------ Create Category Tabs For Food Organization ------
+# ------ Create Category Tabs for Food Organization ------
 available_categories = [cat for cat, items in foods.items() if items]
 tabs = st.tabs(available_categories)
 
@@ -480,7 +480,7 @@ for i, category in enumerate(available_categories):
                                 st.session_state.food_selections[food['name']] = float(k)
                                 st.rerun()
                     custom_serving = st.number_input(
-                        "Custom Number Of Servings:",
+                        "Custom Number of Servings:",
                         min_value=0.0, max_value=10.0,
                         value=float(current_serving), step=0.1,
                         key=f"{key}_custom"
@@ -513,7 +513,7 @@ for i, category in enumerate(available_categories):
                                 st.session_state.food_selections[food['name']] = float(k)
                                 st.rerun()
                     custom_serving = st.number_input(
-                        "Custom Number Of Servings:",
+                        "Custom Number of Servings:",
                         min_value=0.0, max_value=10.0,
                         value=float(current_serving), step=0.1,
                         key=f"{key}_custom"
@@ -534,7 +534,7 @@ for i, category in enumerate(available_categories):
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# Cell 10: Calculation Button And Nutritional Results Display
+# Cell 10: Calculation Button and Nutritional Results Display
 # -----------------------------------------------------------------------------
 
 if st.button("Calculate Daily Intake", type="primary", use_container_width=True):
@@ -550,10 +550,10 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
                 total_fat += food['fat'] * servings
                 selected_foods.append({'food': food, 'servings': servings})
 
-    st.header("Summary Of Daily Nutritional Intake 📊")
+    st.header("Summary of Daily Nutritional Intake 📊")
 
     if selected_foods:
-        st.subheader("Foods Logged For Today 🥣")
+        st.subheader("Foods Logged for Today 🥣")
         cols = st.columns(3)
         for i, item in enumerate(selected_foods):
             with cols[i % 3]:
@@ -561,7 +561,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     else:
         st.info("No foods have been selected for today 🍽️")
 
-    st.subheader("Total Nutritional Intake For The Day 📈")
+    st.subheader("Total Nutritional Intake for the Day 📈")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Calories Consumed", f"{total_calories:.0f} kcal")
@@ -572,9 +572,9 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     with col4:
         st.metric("Total Fat Consumed", f"{total_fat:.1f} grams")
 
-    st.subheader("Progress Toward Daily Nutrition Targets 🎯")
+    st.subheader("Progress Toward Daily Nutritional Targets 🎯")
 
-    # ------ Calculate Percentages For Progress Bars ------
+    # ------ Calculate Percentages for Progress Bars ------
     cal_percent = (min(total_calories / targets['total_calories'] * 100, 100)
                    if targets['total_calories'] > 0 else 0)
     st.progress(
@@ -600,7 +600,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         text=f"Fat: {fat_percent_progress:.0f} percent of daily target ({targets['fat_grams']} grams)"
     )
 
-    st.subheader("Personalized Recommendations For Today’s Nutrition 💡")
+    st.subheader("Personalized Recommendations for Today’s Nutrition 💡")
     recommendations = []
     if total_calories < targets['total_calories']:
         deficit = targets['total_calories'] - total_calories
@@ -626,10 +626,10 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         for rec in recommendations:
             st.write(rec)
     else:
-        st.success("All daily nutrition targets have been met. Keep up the good work! 🎉")
+        st.success("All daily nutritional targets have been met. Keep up the good work! 🎉")
 
-    # ------ Show Surplus And Deficit Information ------
-    st.subheader("Daily Caloric Balance And Weight Gain Summary ⚖️")
+    # ------ Show Surplus and Deficit Information ------
+    st.subheader("Daily Caloric Balance and Weight Gain Summary ⚖️")
     cal_balance = total_calories - targets['tdee']
     if cal_balance > 0:
         st.info(
@@ -641,11 +641,11 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         )
 
     if selected_foods:
-        st.subheader("Detailed Food Log For Today 📋")
+        st.subheader("Detailed Food Log for Today 📋")
         food_log = [
             {
                 'Food Item Name': item['food']['name'],
-                'Number Of Servings Consumed': f"{item['servings']:.1f}",
+                'Number of Servings Consumed': f"{item['servings']:.1f}",
                 'Total Calories Consumed': item['food']['calories'] * item['servings'],
                 'Total Protein Consumed (Grams)': item['food']['protein'] * item['servings'],
                 'Total Carbohydrates Consumed (Grams)': item['food']['carbs'] * item['servings'],
@@ -668,7 +668,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     print("Daily nutritional intake calculation and summary completed successfully 📊")
 
 # -----------------------------------------------------------------------------
-# Cell 11: Clear Selections Button And Application Reset
+# Cell 11: Clear Selections Button and Application Reset
 # -----------------------------------------------------------------------------
 
 if st.button("Clear All Selections", use_container_width=True):
@@ -677,7 +677,7 @@ if st.button("Clear All Selections", use_container_width=True):
     print("All food selections have been cleared. Ready for a fresh start! 🔄")
 
 # -----------------------------------------------------------------------------
-# Cell 12: Footer Information And Application Documentation
+# Cell 12: Footer Information and Application Documentation
 # -----------------------------------------------------------------------------
 
 st.sidebar.markdown("---")
@@ -691,7 +691,7 @@ Calculations use the following methods:
 - Weight gain target: 0.25 percent of body weight per week for lean gains
 """)
 
-st.sidebar.markdown("### Activity Level Guide For Accurate TDEE 🏃‍♂️")
+st.sidebar.markdown("### Activity Level Guide for Accurate TDEE 🏃‍♂️")
 st.sidebar.markdown("""
 - Sedentary: Little to no exercise or desk job
 - Lightly Active: Light exercise or sports one to three days per week
