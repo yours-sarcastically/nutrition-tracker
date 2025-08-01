@@ -123,7 +123,7 @@ def load_food_database(file_path):
             row = matching_row.iloc[0]
             category = category_mapping.get(food_name, 'PRIMARY MICRONUTRIENT SOURCES')
             food_item = {
-                'name': f"{row['Food Name']} ({row['Serving Size'].title()})",
+                'name': f"{row['Food Name']} ({row['Serving Size']})",
                 'calories': row['Calories (kcal)'],
                 'protein': row['Protein (g)'],
                 'carbs': row['Carbohydrates (g)'],
