@@ -475,7 +475,7 @@ targets = calculate_personalized_targets(
 )
 
 # -----------------------------------------------------------------------------
-# Cell 8: Display Personalized Targets
+# Cell 8: Display Personalized Targets (FIXED ALIGNMENT)
 # -----------------------------------------------------------------------------
 
 if not user_has_entered_info:
@@ -485,40 +485,51 @@ if not user_has_entered_info:
 else:
     st.header("Your Personalized Daily Targets 🎯")
 
-# ------ Display Metabolic Information in Aligned Grid ------
-col1, col2, col3 = st.columns(3)
+# ------ Display ALL Metrics in Consistent 4-Column Grid ------
+col1, col2, col3, col4 = st.columns(4)
+
 with col1:
     st.metric("BMR (Basal Metabolic Rate)", f"{targets['bmr']} kcal")
 with col2:
     st.metric("TDEE (Maintenance)", f"{targets['tdee']} kcal")
 with col3:
     st.metric("Target Weight Gain", f"{targets['target_weight_gain_per_week']} kg/week")
+with col4:
+    st.metric("Daily Calorie Target", f"{targets['total_calories']} kcal")
 
-# ------ Display Daily Nutritional Targets in Aligned Grid ------
+# ------ Display Daily Nutritional Targets in Same 4-Column Grid ------
 st.subheader("Daily Nutritional Targets")
 col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric("Calories", f"{targets['total_calories']} kcal")
-with col2:
-    st.metric("Protein", f"{targets['protein_grams']}g")
-with col3:
-    st.metric("Carbohydrates", f"{targets['carb_grams']}g")
-with col4:
-    st.metric("Fat", f"{targets['fat_grams']}g")
 
-# ------ Display Macronutrient Breakdown in Aligned Grid ------
+with col1:
+    st.metric("Protein", f"{targets['protein_grams']}g", f"{targets['protein_calories']} kcal")
+with col2:
+    st.metric("Carbohydrates", f"{targets['carb_grams']}g", f"{targets['carb_calories']} kcal")
+with col3:
+    st.metric("Fat", f"{targets['fat_grams']}g", f"{targets['fat_calories']} kcal")
+with col4:
+    # Calculate and display fiber target (recommended 14g per 1000 kcal)
+    fiber_target = round((targets['total_calories'] / 1000) * 14)
+    st.metric("Fiber Target", f"{fiber_target}g", "Daily recommendation")
+
+# ------ Display Macronutrient Percentages in Same 4-Column Grid ------
 st.subheader("Macronutrient Distribution")
 protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
 carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
 fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
+
 with col1:
-    st.metric("Protein", f"{protein_percent:.1f}%", f"{targets['protein_calories']} kcal")
+    st.metric("Protein", f"{protein_percent:.1f}%", "of total calories")
 with col2:
-    st.metric("Carbohydrates", f"{carb_percent:.1f}%", f"{targets['carb_calories']} kcal")
+    st.metric("Carbohydrates", f"{carb_percent:.1f}%", "of total calories")
 with col3:
-    st.metric("Fat", f"{fat_percent_display:.1f}%", f"{targets['fat_calories']} kcal")
+    st.metric("Fat", f"{fat_percent_display:.1f}%", "of total calories")
+with col4:
+    # Calculate calories per gram for reference
+    cal_per_gram = targets['total_calories'] / (targets['protein_grams'] + targets['carb_grams'] + targets['fat_grams'])
+    st.metric("Energy Density", f"{cal_per_gram:.1f}", "kcal/g average")
 
 st.markdown("---")
 
