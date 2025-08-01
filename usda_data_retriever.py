@@ -116,9 +116,7 @@ def main() -> None:
     
     # ------ Food Search Terms Configuration ------
     
-    food_list = [
-        "Fruit Juice"
-    ]
+    food_list = [""]
 
     # ------ USDA API Configuration ------
     
