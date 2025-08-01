@@ -264,9 +264,9 @@ st.markdown("""
 # Cell 7: Application Title And Sidebar Parameters
 # -----------------------------------------------------------------------------
 
-st.title("Personalized Nutrition Tracker For Healthy Weight Gain 🍽️")
+st.title("Personalized Nutrition Tracker 🍽️")
 st.markdown("""
-Welcome! This tool calculates your individual daily nutritional targets based on your personal parameters and helps you track your food intake for healthy weight gain.
+Ready to fuel your journey to better health? This tool creates personalized daily nutrition targets tailored just for you and makes tracking your meals a breeze. Let's get your macros working in your favor! 🚀
 """)
 
 # ------ Sidebar For Personal Parameters ------
