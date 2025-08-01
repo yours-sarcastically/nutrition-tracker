@@ -153,7 +153,6 @@ def main():
     """
     # ------ API Configuration and Initialization ------
 
-    # NOTE: Using the public DEMO_KEY from api.nal.usda.gov
     api_key = ""
     finder = USDAServingFinder(api_key)
 
