@@ -663,7 +663,7 @@ class USDANutritionAPI:
         result_data = {
             "name": cleaned_description,
             "fdcId": fdc_id,
-            "serving_unit": f"1 {default_unit}",
+            "serving_unit": f"1 {default_unit}".title(),
             "serving_grams": None,
             "calories": None,
             "protein": None,
@@ -756,8 +756,9 @@ def main():
     """
     # ------ API Configuration ------
     
+    # NOTE: Using the public DEMO_KEY from api.nal.usda.gov
     # For production use, obtain your own key from: https://fdc.nal.usda.gov/api-guide.html
-    api_key = ""
+    api_key = "PodqZM9xrI5ByN5sS8zlEMf2haudDydBMCzt3U4N"
     nutrition_api = USDANutritionAPI(api_key)
 
     # ------ Food Items List ------
