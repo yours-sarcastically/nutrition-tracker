@@ -37,7 +37,21 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# Cell 3: Nutritional Calculation Functions
+# Cell 3: Hidden Default Values (Not displayed on website)
+# -----------------------------------------------------------------------------
+
+# Default values from the article - these are not shown to users
+DEFAULT_AGE = 26
+DEFAULT_HEIGHT_CM = 180
+DEFAULT_WEIGHT_KG = 57.5
+DEFAULT_GENDER = "Male"
+DEFAULT_ACTIVITY_LEVEL = "moderately_active"
+DEFAULT_CALORIC_SURPLUS = 400
+DEFAULT_PROTEIN_PER_KG = 2.0
+DEFAULT_FAT_PERCENTAGE = 0.25
+
+# -----------------------------------------------------------------------------
+# Cell 4: Nutritional Calculation Functions
 # -----------------------------------------------------------------------------
 
 def calculate_bmr(age, height_cm, weight_kg, gender='male'):
@@ -135,7 +149,7 @@ def calculate_personalized_targets(age, height_cm, weight_kg, gender='male',
     }
 
 # -----------------------------------------------------------------------------
-# Cell 4: Load and Process Food Database
+# Cell 5: Load and Process Food Database
 # -----------------------------------------------------------------------------
 
 @st.cache_data
@@ -243,12 +257,24 @@ def load_food_database(file_path):
 foods = load_food_database('nutrition_results.csv')
 
 # -----------------------------------------------------------------------------
-# Cell 5: Session State Initialization and Custom Styling
+# Cell 6: Session State Initialization and Custom Styling
 # -----------------------------------------------------------------------------
 
 # Initialize Session State for Food Selections
 if 'food_selections' not in st.session_state:
     st.session_state.food_selections = {}
+
+# Initialize session state for user inputs with empty values
+if 'user_age' not in st.session_state:
+    st.session_state.user_age = None
+if 'user_height' not in st.session_state:
+    st.session_state.user_height = None
+if 'user_weight' not in st.session_state:
+    st.session_state.user_weight = None
+if 'user_gender' not in st.session_state:
+    st.session_state.user_gender = None
+if 'user_activity' not in st.session_state:
+    st.session_state.user_activity = None
 
 # Custom CSS for Enhanced Button Styling
 st.markdown("""
@@ -271,11 +297,16 @@ st.markdown("""
 .sidebar .sidebar-content {
     background-color: #f0f2f6;
 }
+
+/* Hide default values in number inputs */
+.stNumberInput > div > div > input[value] {
+    color: #666;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# Cell 6: Application Title and Sidebar Parameters
+# Cell 7: Application Title and Sidebar Parameters
 # -----------------------------------------------------------------------------
 
 st.title("Personalized Nutrition Tracker 🥗")
@@ -288,63 +319,144 @@ helps you track your food intake for healthy weight gain.
 # Sidebar for personal parameters
 st.sidebar.header("Personal Parameters 📊")
 
-# Personal information inputs
-age = st.sidebar.number_input("Age (years)", min_value=16, max_value=80, value=26)
-height_cm = st.sidebar.number_input("Height (cm)", min_value=140, max_value=220, value=180)
-weight_kg = st.sidebar.number_input("Weight (kg)", min_value=40.0, max_value=150.0, value=57.5, step=0.5)
+# Personal information inputs with placeholder text instead of default values
+age = st.sidebar.number_input(
+    "Age (years)", 
+    min_value=16, 
+    max_value=80, 
+    value=st.session_state.user_age,
+    placeholder="Enter your age"
+)
 
-gender = st.sidebar.selectbox("Gender", ["Male", "Female"], index=0)
+height_cm = st.sidebar.number_input(
+    "Height (cm)", 
+    min_value=140, 
+    max_value=220, 
+    value=st.session_state.user_height,
+    placeholder="Enter your height in cm"
+)
 
-activity_level = st.sidebar.selectbox(
+weight_kg = st.sidebar.number_input(
+    "Weight (kg)", 
+    min_value=40.0, 
+    max_value=150.0, 
+    value=st.session_state.user_weight,
+    step=0.5,
+    placeholder="Enter your weight in kg"
+)
+
+gender_options = ["Select Gender", "Male", "Female"]
+gender_index = 0
+if st.session_state.user_gender:
+    try:
+        gender_index = gender_options.index(st.session_state.user_gender)
+    except ValueError:
+        gender_index = 0
+
+gender = st.sidebar.selectbox("Gender", gender_options, index=gender_index)
+
+activity_options = [
+    ("Select Activity Level", None),
+    ("Sedentary", "sedentary"),
+    ("Lightly Active", "lightly_active"),
+    ("Moderately Active", "moderately_active"),
+    ("Very Active", "very_active"),
+    ("Extremely Active", "extremely_active")
+]
+
+activity_index = 0
+if st.session_state.user_activity:
+    for i, (label, value) in enumerate(activity_options):
+        if value == st.session_state.user_activity:
+            activity_index = i
+            break
+
+activity_selection = st.sidebar.selectbox(
     "Activity Level",
-    [
-        ("Sedentary", "sedentary"),
-        ("Lightly Active", "lightly_active"),
-        ("Moderately Active", "moderately_active"),
-        ("Very Active", "very_active"),
-        ("Extremely Active", "extremely_active")
-    ],
-    index=2,  # Default to Moderately Active
+    activity_options,
+    index=activity_index,
     format_func=lambda x: x[0]
-)[1]
+)
+
+activity_level = activity_selection[1]
+
+# Update session state
+st.session_state.user_age = age
+st.session_state.user_height = height_cm
+st.session_state.user_weight = weight_kg
+st.session_state.user_gender = gender
+st.session_state.user_activity = activity_level
 
 # Advanced parameters (collapsible)
 with st.sidebar.expander("Advanced Settings ⚙️"):
     caloric_surplus = st.number_input(
         "Caloric Surplus (kcal/day)", 
-        min_value=200, max_value=800, value=400, step=50,
+        min_value=200, max_value=800, 
+        value=None,
+        placeholder=f"Default: {DEFAULT_CALORIC_SURPLUS}",
+        step=50,
         help="Additional calories above maintenance for weight gain"
     )
     
     protein_per_kg = st.number_input(
         "Protein (g/kg body weight)", 
-        min_value=1.2, max_value=3.0, value=2.0, step=0.1,
+        min_value=1.2, max_value=3.0, 
+        value=None,
+        placeholder=f"Default: {DEFAULT_PROTEIN_PER_KG}",
+        step=0.1,
         help="Protein intake per kg of body weight"
     )
     
-    fat_percentage = st.number_input(
+    fat_percentage_input = st.number_input(
         "Fat (% of total calories)", 
-        min_value=15, max_value=40, value=25, step=1,
+        min_value=15, max_value=40, 
+        value=None,
+        placeholder=f"Default: {int(DEFAULT_FAT_PERCENTAGE * 100)}",
+        step=1,
         help="Percentage of total calories from fat"
-    ) / 100
+    )
+
+# Use default values if user hasn't entered custom values
+final_age = age if age is not None else DEFAULT_AGE
+final_height = height_cm if height_cm is not None else DEFAULT_HEIGHT_CM
+final_weight = weight_kg if weight_kg is not None else DEFAULT_WEIGHT_KG
+final_gender = gender if gender != "Select Gender" else DEFAULT_GENDER
+final_activity = activity_level if activity_level is not None else DEFAULT_ACTIVITY_LEVEL
+final_surplus = caloric_surplus if caloric_surplus is not None else DEFAULT_CALORIC_SURPLUS
+final_protein = protein_per_kg if protein_per_kg is not None else DEFAULT_PROTEIN_PER_KG
+final_fat_percent = (fat_percentage_input / 100) if fat_percentage_input is not None else DEFAULT_FAT_PERCENTAGE
+
+# Check if user has entered all required information
+user_has_entered_info = (
+    age is not None and 
+    height_cm is not None and 
+    weight_kg is not None and 
+    gender != "Select Gender" and 
+    activity_level is not None
+)
 
 # Calculate personalized targets
 targets = calculate_personalized_targets(
-    age=age,
-    height_cm=height_cm,
-    weight_kg=weight_kg,
-    gender=gender.lower(),
-    activity_level=activity_level,
-    caloric_surplus=caloric_surplus,
-    protein_per_kg=protein_per_kg,
-    fat_percentage=fat_percentage
+    age=final_age,
+    height_cm=final_height,
+    weight_kg=final_weight,
+    gender=final_gender.lower(),
+    activity_level=final_activity,
+    caloric_surplus=final_surplus,
+    protein_per_kg=final_protein,
+    fat_percentage=final_fat_percent
 )
 
 # -----------------------------------------------------------------------------
-# Cell 7: Display Personalized Targets
+# Cell 8: Display Personalized Targets
 # -----------------------------------------------------------------------------
 
-st.header("Your Personalized Daily Targets 🎯")
+if not user_has_entered_info:
+    st.info("👈 Please enter your personal information in the sidebar to see your personalized nutritional targets.")
+    st.header("Sample Daily Targets 🎯")
+    st.caption("*These are example targets. Enter your information in the sidebar for personalized calculations.*")
+else:
+    st.header("Your Personalized Daily Targets 🎯")
 
 # Display metabolic information
 col1, col2, col3 = st.columns(3)
@@ -371,7 +483,7 @@ with col4:
 st.subheader("Macronutrient Distribution")
 protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
 carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
-fat_percent = (targets['fat_calories'] / targets['total_calories']) * 100
+fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -379,12 +491,12 @@ with col1:
 with col2:
     st.metric("Carbohydrates", f"{carb_percent:.1f}%", f"{targets['carb_calories']} kcal")
 with col3:
-    st.metric("Fat", f"{fat_percent:.1f}%", f"{targets['fat_calories']} kcal")
+    st.metric("Fat", f"{fat_percent_display:.1f}%", f"{targets['fat_calories']} kcal")
 
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# Cell 8: Interactive Food Selection Interface
+# Cell 9: Interactive Food Selection Interface
 # -----------------------------------------------------------------------------
 
 st.header("Select Your Foods 📝")
@@ -476,7 +588,7 @@ for i, category in enumerate(available_categories):
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# Cell 9: Calculation Button and Nutritional Results Display
+# Cell 10: Calculation Button and Nutritional Results Display
 # -----------------------------------------------------------------------------
 
 if st.button("Calculate Daily Intake", type="primary", use_container_width=True):
@@ -528,8 +640,8 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     carb_percent = min(total_carbs / targets['carb_grams'] * 100, 100) if targets['carb_grams'] > 0 else 0
     st.progress(carb_percent / 100, text=f"Carbohydrates: {carb_percent:.0f}% of target ({targets['carb_grams']}g)")
 
-    fat_percent = min(total_fat / targets['fat_grams'] * 100, 100) if targets['fat_grams'] > 0 else 0
-    st.progress(fat_percent / 100, text=f"Fat: {fat_percent:.0f}% of target ({targets['fat_grams']}g)")
+    fat_percent_progress = min(total_fat / targets['fat_grams'] * 100, 100) if targets['fat_grams'] > 0 else 0
+    st.progress(fat_percent_progress / 100, text=f"Fat: {fat_percent_progress:.0f}% of target ({targets['fat_grams']}g)")
 
     st.subheader("Personalized Recommendations: 💡")
     recommendations = []
@@ -589,7 +701,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     st.markdown("Thanks for using the Personalized Nutrition Tracker! Keep up the great work! 💪")
 
 # -----------------------------------------------------------------------------
-# Cell 10: Clear Selections Button and Application Reset
+# Cell 11: Clear Selections Button and Application Reset
 # -----------------------------------------------------------------------------
 
 if st.button("Clear All Selections", use_container_width=True):
@@ -597,7 +709,7 @@ if st.button("Clear All Selections", use_container_width=True):
     st.rerun()
 
 # -----------------------------------------------------------------------------
-# Cell 11: Footer Information
+# Cell 12: Footer Information
 # -----------------------------------------------------------------------------
 
 st.sidebar.markdown("---")
