@@ -54,45 +54,57 @@ daily_targets = {
 
 # ------ Load and Process Food Database from CSV ------
 
-# Function to load and categorize food data from the CSV file
+# Function to load and categorize food data from the CSV file according to the specified scheme
 @st.cache_data
 def load_food_database(file_path):
+    # Define the custom classification and order
+    classification_scheme = {
+        'PRIMARY PROTEIN SOURCES': [
+            'Eggs', 'Greek Yogurt', 'Protein Powder', 'Lentils', 'Chickpeas',
+            'Cottage Cheese', 'Kidney Beans', 'Milk', 'Cheese', 'Hummus', 'Tortellini'
+        ],
+        'PRIMARY FAT SOURCES': [
+            'Olive Oil', 'Almonds', 'Chia Seeds', 'Avocado', 'Sunflower Seeds',
+            'Mixed Nuts', 'Peanut Butter', 'Tahini', 'Trail Mix', 'Heavy Cream'
+        ],
+        'CARBOHYDRATE SOURCES': [
+            'Oats', 'Potato', 'Mixed Vegetables', 'Green Peas', 'Bread',
+            'Corn', 'Banana', 'Couscous', 'Rice', 'Pasta',
+            'Spinach Tortellini', 'Pizza'
+        ],
+        'PRIMARY MICRONUTRIENT SOURCES': [
+            'Spinach', 'Broccoli', 'Berries', 'Tomatoes', 'Carrots',
+            'Cauliflower', 'Green Beans', 'Mushrooms', 'Orange Juice',
+            'Apple Juice', 'Fruit Juice'
+        ]
+    }
+
     # Load the CSV file into a pandas DataFrame
     df = pd.read_csv(file_path)
 
-    # Function to determine the category of each food item
-    def get_category(row):
-        protein_calories = row['Protein (g)'] * 4
-        carb_calories = row['Carbohydrates (g)'] * 4
-        fat_calories = row['Fat (g)'] * 9
-        total_calories = row['Calories (kcal)']
+    # Create a mapping from Food Name to Category and Sort Order
+    food_map = {}
+    for category, food_list in classification_scheme.items():
+        for i, food_name in enumerate(food_list):
+            food_map[food_name] = {'category': category, 'order': i}
 
-        # Avoid division by zero for foods with 0 calories
-        if total_calories == 0:
-            return 'PRIMARY MICRONUTRIENT SOURCES'
+    # Apply the mapping to the DataFrame
+    df['Category'] = df['Food Name'].map(lambda x: food_map.get(x, {}).get('category'))
+    df['SortOrder'] = df['Food Name'].map(lambda x: food_map.get(x, {}).get('order'))
 
-        # Categorize based on the macronutrient with the highest calorie contribution
-        if protein_calories > carb_calories and protein_calories > fat_calories:
-            return 'PRIMARY PROTEIN SOURCES'
-        elif carb_calories > protein_calories and carb_calories > fat_calories:
-            return 'PRIMARY CARBOHYDRATE SOURCES'
-        elif fat_calories > protein_calories and fat_calories > carb_calories:
-            return 'PRIMARY FAT SOURCES'
-        else:
-            return 'PRIMARY MICRONUTRIENT SOURCES'
-
-    # Apply the categorization function to create a 'Category' column
-    df['Category'] = df.apply(get_category, axis=1)
+    # Drop foods that are not in the classification scheme and sort
+    df.dropna(subset=['Category'], inplace=True)
+    df.sort_values(by=['Category', 'SortOrder'], inplace=True)
 
     # Create the food dictionary in the required format
     foods = {
         'PRIMARY PROTEIN SOURCES': [],
-        'PRIMARY CARBOHYDRATE SOURCES': [],
         'PRIMARY FAT SOURCES': [],
+        'CARBOHYDRATE SOURCES': [],
         'PRIMARY MICRONUTRIENT SOURCES': []
     }
 
-    # Populate the foods dictionary from the DataFrame
+    # Populate the foods dictionary from the sorted DataFrame
     for _, row in df.iterrows():
         category = row['Category']
         food_item = {
@@ -106,6 +118,7 @@ def load_food_database(file_path):
             foods[category].append(food_item)
 
     return foods
+
 
 # Load the food database from the CSV file
 try:
@@ -228,7 +241,7 @@ for i, category in enumerate(available_categories):
                         elif food['name'] in st.session_state.food_selections:
                             del st.session_state.food_selections[food['name']]
                         st.rerun()
-                    
+
                     st.caption(f"Per Serving: {food['calories']} kcal | "
                                f"{food['protein']}g Protein | "
                                f"{food['carbs']}g Carbs | "
@@ -239,7 +252,7 @@ for i, category in enumerate(available_categories):
                 with col2:
                     food = items[j + 1]
                     st.subheader(food['name'])
-                    
+
                     key = f"{category}_{food['name']}"
                     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
 
@@ -257,7 +270,7 @@ for i, category in enumerate(available_categories):
                         value=float(current_serving), step=0.1,
                         key=f"{key}_custom"
                     )
-                    
+
                     if custom_serving != current_serving:
                         if custom_serving > 0:
                             st.session_state.food_selections[food['name']] = custom_serving
