@@ -1,23 +1,50 @@
 # -----------------------------------------------------------------------------
-# Nutrition Tracker for Healthy Weight Gain
+# Streamlit Vegetarian Nutrition Tracker for Healthy Weight Gain
 # -----------------------------------------------------------------------------
 
 """
-This application offers a tool for tracking daily nutritional intake using 
-vegetarian food sources. It calculates total caloric and macronutrient  
-consumption based on user-selected foods and serving sizes, then compares the 
-results to established daily targets for healthy weight gain.
+Interactive nutrition tracking application for vegetarian weight gain planning.
 
-The application includes a categorized food database organized by nutritional
-focus, such as primary protein sources, carbohydrate sources, fat sources,
-and micronutrient sources. Users can select foods using quick-select buttons
+This Streamlit application provides a comprehensive tool for tracking daily
+nutritional intake using vegetarian food sources. The application calculates
+total caloric and macronutrient consumption based on user-selected foods and
+serving sizes, then compares results against established daily targets for
+healthy weight gain.
+
+The application features a categorized food database organized by nutritional
+focus including primary protein sources, carbohydrate sources, fat sources,
+and micronutrient sources. Users can select foods through quick-select buttons
 or custom serving inputs, with real-time calculation of nutritional totals.
 
+Key Features:
+- Daily nutritional targets with minimum and maximum ranges for calories,
+  protein, carbohydrates, and fat
+- Categorized vegetarian food database with detailed nutritional information
+- Interactive food selection interface with quick-select buttons and custom
+  serving inputs
+- Real-time calculation and display of total nutritional intake
+- Progress tracking against daily targets with visual progress bars
+- Personalized recommendations for meeting nutritional goals
+- Detailed food log with tabular display of selected items
+
+Usage:
+1. Run the Streamlit application using 'streamlit run nutrition_tracker.py'
+2. View daily nutritional targets displayed at the top of the interface
+3. Navigate through food category tabs to select desired foods
+4. Use quick-select buttons (1x-5x) or custom serving inputs for portions
+5. Click 'Calculate Daily Intake' to view comprehensive nutritional summary
+6. Review progress bars and personalized recommendations
+7. Use 'Clear All Selections' to reset all food choices
+
 Daily Targets:
-- Calories: 2800–2900 kcal for healthy weight gain
-- Protein: 110–120g for muscle building and recovery
-- Carbohydrates: 410–430g for energy and performance
-- Fat: 75–85g for hormone production and absorption
+- Calories: 2800-2900 kcal for healthy weight gain
+- Protein: 110-120g for muscle building and recovery
+- Carbohydrates: 410-430g for energy and performance
+- Fat: 75-85g for hormone production and absorption
+
+The application maintains session state to preserve food selections across
+user interactions and provides comprehensive feedback on nutritional adequacy
+through progress tracking and targeted recommendations.
 """
 
 # -----------------------------------------------------------------------------
@@ -54,49 +81,58 @@ daily_targets = {
 
 # ------ Load and Process Food Database from CSV ------
 
-# Function to load and categorize food data from the CSV file according to the specified scheme
+# Function to load and categorize food data from the CSV file
 @st.cache_data
 def load_food_database(file_path):
-    # Define the custom classification and order
-    classification_scheme = {
-        'PRIMARY PROTEIN SOURCES': [
-            'Eggs', 'Greek Yogurt', 'Protein Powder', 'Lentils', 'Chickpeas',
-            'Cottage Cheese', 'Kidney Beans', 'Milk', 'Cheese', 'Hummus', 'Tortellini'
-        ],
-        'PRIMARY FAT SOURCES': [
-            'Olive Oil', 'Almonds', 'Chia Seeds', 'Avocado', 'Sunflower Seeds',
-            'Mixed Nuts', 'Peanut Butter', 'Tahini', 'Trail Mix', 'Heavy Cream'
-        ],
-        'CARBOHYDRATE SOURCES': [
-            'Oats', 'Potato', 'Mixed Vegetables', 'Green Peas', 'Bread',
-            'Corn', 'Banana', 'Couscous', 'Rice', 'Pasta',
-            'Spinach Tortellini', 'Pizza'
-        ],
-        'PRIMARY MICRONUTRIENT SOURCES': [
-            'Spinach', 'Broccoli', 'Berries', 'Tomatoes', 'Carrots',
-            'Cauliflower', 'Green Beans', 'Mushrooms', 'Orange Juice',
-            'Apple Juice', 'Fruit Juice'
-        ]
-    }
-
     # Load the CSV file into a pandas DataFrame
     df = pd.read_csv(file_path)
+    
+    # Define the exact categorization mapping based on the provided specification
+    category_mapping = {
+        'Eggs': 'PRIMARY PROTEIN SOURCES',
+        'Greek Yogurt': 'PRIMARY PROTEIN SOURCES',
+        'Protein Powder': 'PRIMARY PROTEIN SOURCES',
+        'Lentils': 'PRIMARY PROTEIN SOURCES',
+        'Chickpeas': 'PRIMARY PROTEIN SOURCES',
+        'Cottage Cheese': 'PRIMARY PROTEIN SOURCES',
+        'Kidney Beans': 'PRIMARY PROTEIN SOURCES',
+        'Milk': 'PRIMARY PROTEIN SOURCES',
+        'Mozzarella Cheese': 'PRIMARY PROTEIN SOURCES',
+        'Hummus': 'PRIMARY PROTEIN SOURCES',
+        'Cheese Tortellini': 'PRIMARY PROTEIN SOURCES',
+        'Olive Oil': 'PRIMARY FAT SOURCES',
+        'Almonds': 'PRIMARY FAT SOURCES',
+        'Chia Seeds': 'PRIMARY FAT SOURCES',
+        'Avocados': 'PRIMARY FAT SOURCES',
+        'Sunflower Seeds': 'PRIMARY FAT SOURCES',
+        'Mixed Nuts': 'PRIMARY FAT SOURCES',
+        'Peanut Butter': 'PRIMARY FAT SOURCES',
+        'Tahini': 'PRIMARY FAT SOURCES',
+        'Trail Mix': 'PRIMARY FAT SOURCES',
+        'Heavy Cream': 'PRIMARY FAT SOURCES',
+        'Oats': 'CARBOHYDRATE SOURCES',
+        'Potatoes': 'CARBOHYDRATE SOURCES',
+        'Mixed Vegetables': 'CARBOHYDRATE SOURCES',
+        'Green Peas': 'CARBOHYDRATE SOURCES',
+        'Multigrain Bread': 'CARBOHYDRATE SOURCES',
+        'Corn': 'CARBOHYDRATE SOURCES',
+        'Bananas': 'CARBOHYDRATE SOURCES',
+        'Couscous': 'CARBOHYDRATE SOURCES',
+        'White Rice': 'CARBOHYDRATE SOURCES',
+        'Pasta': 'CARBOHYDRATE SOURCES',
+        'Spinach Tortellini': 'CARBOHYDRATE SOURCES',
+        'Spinach': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Broccoli': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Berries': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Tomatoes': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Carrots': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Mushrooms': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Orange Juice': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Apple Juice': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Fruit Juice': 'PRIMARY MICRONUTRIENT SOURCES'
+    }
 
-    # Create a mapping from Food Name to Category and Sort Order
-    food_map = {}
-    for category, food_list in classification_scheme.items():
-        for i, food_name in enumerate(food_list):
-            food_map[food_name] = {'category': category, 'order': i}
-
-    # Apply the mapping to the DataFrame
-    df['Category'] = df['Food Name'].map(lambda x: food_map.get(x, {}).get('category'))
-    df['SortOrder'] = df['Food Name'].map(lambda x: food_map.get(x, {}).get('order'))
-
-    # Drop foods that are not in the classification scheme and sort
-    df.dropna(subset=['Category'], inplace=True)
-    df.sort_values(by=['Category', 'SortOrder'], inplace=True)
-
-    # Create the food dictionary in the required format
+    # Create the food dictionary in the required format with exact ordering
     foods = {
         'PRIMARY PROTEIN SOURCES': [],
         'PRIMARY FAT SOURCES': [],
@@ -104,21 +140,30 @@ def load_food_database(file_path):
         'PRIMARY MICRONUTRIENT SOURCES': []
     }
 
-    # Populate the foods dictionary from the sorted DataFrame
-    for _, row in df.iterrows():
-        category = row['Category']
-        food_item = {
-            'name': f"{row['Food Name']} ({row['Serving Size']})",
-            'calories': row['Calories (kcal)'],
-            'protein': row['Protein (g)'],
-            'carbs': row['Carbohydrates (g)'],
-            'fat': row['Fat (g)']
-        }
-        if category in foods:
-            foods[category].append(food_item)
+    # Define the exact order for each category as specified
+    protein_order = ['Eggs', 'Greek Yogurt', 'Protein Powder', 'Lentils', 'Chickpeas', 'Cottage Cheese', 'Kidney Beans', 'Milk', 'Mozzarella Cheese', 'Hummus', 'Cheese Tortellini']
+    fat_order = ['Olive Oil', 'Almonds', 'Chia Seeds', 'Avocados', 'Sunflower Seeds', 'Mixed Nuts', 'Peanut Butter', 'Tahini', 'Trail Mix', 'Heavy Cream']
+    carb_order = ['Oats', 'Potatoes', 'Mixed Vegetables', 'Green Peas', 'Multigrain Bread', 'Corn', 'Bananas', 'Couscous', 'White Rice', 'Pasta', 'Spinach Tortellini']
+    micro_order = ['Spinach', 'Broccoli', 'Berries', 'Tomatoes', 'Carrots', 'Mushrooms', 'Orange Juice', 'Apple Juice', 'Fruit Juice']
+
+    # Process foods in the specified order
+    for food_name in protein_order + fat_order + carb_order + micro_order:
+        # Find the matching row in the DataFrame
+        matching_row = df[df['Food Name'] == food_name]
+        if not matching_row.empty:
+            row = matching_row.iloc[0]
+            category = category_mapping.get(food_name, 'PRIMARY MICRONUTRIENT SOURCES')
+            food_item = {
+                'name': f"{row['Food Name']} ({row['Serving Size']})",
+                'calories': row['Calories (kcal)'],
+                'protein': row['Protein (g)'],
+                'carbs': row['Carbohydrates (g)'],
+                'fat': row['Fat (g)']
+            }
+            if category in foods:
+                foods[category].append(food_item)
 
     return foods
-
 
 # Load the food database from the CSV file
 try:
@@ -241,7 +286,7 @@ for i, category in enumerate(available_categories):
                         elif food['name'] in st.session_state.food_selections:
                             del st.session_state.food_selections[food['name']]
                         st.rerun()
-
+                    
                     st.caption(f"Per Serving: {food['calories']} kcal | "
                                f"{food['protein']}g Protein | "
                                f"{food['carbs']}g Carbs | "
@@ -252,7 +297,7 @@ for i, category in enumerate(available_categories):
                 with col2:
                     food = items[j + 1]
                     st.subheader(food['name'])
-
+                    
                     key = f"{category}_{food['name']}"
                     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
 
@@ -270,7 +315,7 @@ for i, category in enumerate(available_categories):
                         value=float(current_serving), step=0.1,
                         key=f"{key}_custom"
                     )
-
+                    
                     if custom_serving != current_serving:
                         if custom_serving > 0:
                             st.session_state.food_selections[food['name']] = custom_serving
