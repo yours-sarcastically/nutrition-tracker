@@ -1,50 +1,19 @@
 # -----------------------------------------------------------------------------
-# Streamlit Vegetarian Nutrition Tracker for Healthy Weight Gain
+# Nutrition Tracker for Healthy Weight Gain
 # -----------------------------------------------------------------------------
 
 """
-Interactive nutrition tracking application for vegetarian weight gain planning.
-
-This Streamlit application provides a comprehensive tool for tracking daily
-nutritional intake using vegetarian food sources. The application calculates
-total caloric and macronutrient consumption based on user-selected foods and
+This application provides a comprehensive tool for tracking daily nutritional 
+intake using vegetarian food sources. The application calculates total 
+caloric and macronutrient consumption based on user-selected foods and
 serving sizes, then compares results against established daily targets for
 healthy weight gain.
-
-The application features a categorized food database organized by nutritional
-focus including primary protein sources, carbohydrate sources, fat sources,
-and micronutrient sources. Users can select foods through quick-select buttons
-or custom serving inputs, with real-time calculation of nutritional totals.
-
-Key Features:
-- Daily nutritional targets with minimum and maximum ranges for calories,
-  protein, carbohydrates, and fat
-- Categorized vegetarian food database with detailed nutritional information
-- Interactive food selection interface with quick-select buttons and custom
-  serving inputs
-- Real-time calculation and display of total nutritional intake
-- Progress tracking against daily targets with visual progress bars
-- Personalized recommendations for meeting nutritional goals
-- Detailed food log with tabular display of selected items
-
-Usage:
-1. Run the Streamlit application using 'streamlit run nutrition_tracker.py'
-2. View daily nutritional targets displayed at the top of the interface
-3. Navigate through food category tabs to select desired foods
-4. Use quick-select buttons (1x-5x) or custom serving inputs for portions
-5. Click 'Calculate Daily Intake' to view comprehensive nutritional summary
-6. Review progress bars and personalized recommendations
-7. Use 'Clear All Selections' to reset all food choices
 
 Daily Targets:
 - Calories: 2800-2900 kcal for healthy weight gain
 - Protein: 110-120g for muscle building and recovery
 - Carbohydrates: 410-430g for energy and performance
 - Fat: 75-85g for hormone production and absorption
-
-The application maintains session state to preserve food selections across
-user interactions and provides comprehensive feedback on nutritional adequacy
-through progress tracking and targeted recommendations.
 """
 
 # -----------------------------------------------------------------------------
@@ -154,7 +123,7 @@ def load_food_database(file_path):
             row = matching_row.iloc[0]
             category = category_mapping.get(food_name, 'PRIMARY MICRONUTRIENT SOURCES')
             food_item = {
-                'name': f"{row['Food Name']} ({row['Serving Size']})",
+                'name': f"{row['Food Name']} ({row['Serving Size'].title()})",
                 'calories': row['Calories (kcal)'],
                 'protein': row['Protein (g)'],
                 'carbs': row['Carbohydrates (g)'],
