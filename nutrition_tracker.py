@@ -1,10 +1,10 @@
 # -----------------------------------------------------------------------------
-# Streamlit Vegetarian Nutrition Tracker for Healthy Weight Gain
+# Nutrition Tracker for Healthy Weight Gain
 # -----------------------------------------------------------------------------
 
 """
-This Streamlit application offers a tool for tracking daily nutritional intake 
-using vegetarian food sources. It calculates total caloric and macronutrient  
+This application offers a tool for tracking daily nutritional intake using 
+vegetarian food sources. It calculates total caloric and macronutrient  
 consumption based on user-selected foods and serving sizes, then compares the 
 results to established daily targets for healthy weight gain.
 
