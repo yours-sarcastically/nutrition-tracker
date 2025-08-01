@@ -502,7 +502,7 @@ st.subheader("Daily Nutritional Targets")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Calories", f"{targets['total_calories']} kcal")
+    st.metric("Daily Calorie Target", f"{targets['total_calories']} kcal")
 with col2:
     st.metric("Protein", f"{targets['protein_grams']}g")
 with col3:
