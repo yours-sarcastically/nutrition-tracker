@@ -38,9 +38,7 @@ st.set_page_config(
 # Cell 3: Daily Nutritional Targets and Food Database Configuration
 # -----------------------------------------------------------------------------
 
-# ------ Daily Nutritional Targets for Weight Gain ------
-
-# Define daily targets for weight gain with minimum and maximum ranges
+# Daily targets remain the same
 daily_targets = {
     'calories': {'min': 2800, 'max': 2900},
     'protein': {'min': 110, 'max': 120},
@@ -48,60 +46,62 @@ daily_targets = {
     'fat': {'min': 75, 'max': 85}
 }
 
-# ------ Load and Process Food Database from CSV ------
+# ------ CORRECTED: Load and Process Food Database from CSV ------
 
-# Function to load and categorize food data from the CSV file
 @st.cache_data
 def load_food_database(file_path):
     # Load the CSV file into a pandas DataFrame
     df = pd.read_csv(file_path)
     
-    # Define the exact categorization mapping based on the provided specification
+    # CORRECTED: Updated category mapping to match ALL foods in your CSV
     category_mapping = {
         'Eggs': 'PRIMARY PROTEIN SOURCES',
         'Greek Yogurt': 'PRIMARY PROTEIN SOURCES',
         'Protein Powder': 'PRIMARY PROTEIN SOURCES',
+        'Milk': 'PRIMARY PROTEIN SOURCES',
+        'Cottage Cheese': 'PRIMARY PROTEIN SOURCES',
+        'Mozzarella Cheese': 'PRIMARY PROTEIN SOURCES',
         'Lentils': 'PRIMARY PROTEIN SOURCES',
         'Chickpeas': 'PRIMARY PROTEIN SOURCES',
-        'Cottage Cheese': 'PRIMARY PROTEIN SOURCES',
         'Kidney Beans': 'PRIMARY PROTEIN SOURCES',
-        'Milk': 'PRIMARY PROTEIN SOURCES',
-        'Mozzarella Cheese': 'PRIMARY PROTEIN SOURCES',
         'Hummus': 'PRIMARY PROTEIN SOURCES',
         'Cheese Tortellini': 'PRIMARY PROTEIN SOURCES',
+        'Spinach Tortellini': 'PRIMARY PROTEIN SOURCES',
         'Olive Oil': 'PRIMARY FAT SOURCES',
+        'Peanut Butter': 'PRIMARY FAT SOURCES',
         'Almonds': 'PRIMARY FAT SOURCES',
-        'Chia Seeds': 'PRIMARY FAT SOURCES',
+        'Mixed Nuts': 'PRIMARY FAT SOURCES',
         'Avocados': 'PRIMARY FAT SOURCES',
         'Sunflower Seeds': 'PRIMARY FAT SOURCES',
-        'Mixed Nuts': 'PRIMARY FAT SOURCES',
-        'Peanut Butter': 'PRIMARY FAT SOURCES',
+        'Chia Seeds': 'PRIMARY FAT SOURCES',
         'Tahini': 'PRIMARY FAT SOURCES',
-        'Trail Mix': 'PRIMARY FAT SOURCES',
         'Heavy Cream': 'PRIMARY FAT SOURCES',
+        'Trail Mix': 'PRIMARY FAT SOURCES',
         'Oats': 'CARBOHYDRATE SOURCES',
         'Potatoes': 'CARBOHYDRATE SOURCES',
-        'Mixed Vegetables': 'CARBOHYDRATE SOURCES',
-        'Green Peas': 'CARBOHYDRATE SOURCES',
+        'White Rice': 'CARBOHYDRATE SOURCES',
         'Multigrain Bread': 'CARBOHYDRATE SOURCES',
-        'Corn': 'CARBOHYDRATE SOURCES',
+        'Pasta': 'CARBOHYDRATE SOURCES',
         'Bananas': 'CARBOHYDRATE SOURCES',
         'Couscous': 'CARBOHYDRATE SOURCES',
-        'White Rice': 'CARBOHYDRATE SOURCES',
-        'Pasta': 'CARBOHYDRATE SOURCES',
-        'Spinach Tortellini': 'CARBOHYDRATE SOURCES',
+        'Corn': 'CARBOHYDRATE SOURCES',
+        'Green Peas': 'CARBOHYDRATE SOURCES',
+        'Pizza': 'CARBOHYDRATE SOURCES',
+        'Mixed Vegetables': 'PRIMARY MICRONUTRIENT SOURCES',
         'Spinach': 'PRIMARY MICRONUTRIENT SOURCES',
         'Broccoli': 'PRIMARY MICRONUTRIENT SOURCES',
         'Berries': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Tomatoes': 'PRIMARY MICRONUTRIENT SOURCES',
         'Carrots': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Tomatoes': 'PRIMARY MICRONUTRIENT SOURCES',
         'Mushrooms': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Cauliflower': 'PRIMARY MICRONUTRIENT SOURCES',
+        'Green Beans': 'PRIMARY MICRONUTRIENT SOURCES',
         'Orange Juice': 'PRIMARY MICRONUTRIENT SOURCES',
         'Apple Juice': 'PRIMARY MICRONUTRIENT SOURCES',
         'Fruit Juice': 'PRIMARY MICRONUTRIENT SOURCES'
     }
 
-    # Create the food dictionary in the required format with exact ordering
+    # Create the food dictionary
     foods = {
         'PRIMARY PROTEIN SOURCES': [],
         'PRIMARY FAT SOURCES': [],
@@ -109,28 +109,21 @@ def load_food_database(file_path):
         'PRIMARY MICRONUTRIENT SOURCES': []
     }
 
-    # Define the exact order for each category as specified
-    protein_order = ['Eggs', 'Greek Yogurt', 'Protein Powder', 'Lentils', 'Chickpeas', 'Cottage Cheese', 'Kidney Beans', 'Milk', 'Mozzarella Cheese', 'Hummus', 'Cheese Tortellini']
-    fat_order = ['Olive Oil', 'Almonds', 'Chia Seeds', 'Avocados', 'Sunflower Seeds', 'Mixed Nuts', 'Peanut Butter', 'Tahini', 'Trail Mix', 'Heavy Cream']
-    carb_order = ['Oats', 'Potatoes', 'Mixed Vegetables', 'Green Peas', 'Multigrain Bread', 'Corn', 'Bananas', 'Couscous', 'White Rice', 'Pasta', 'Spinach Tortellini']
-    micro_order = ['Spinach', 'Broccoli', 'Berries', 'Tomatoes', 'Carrots', 'Mushrooms', 'Orange Juice', 'Apple Juice', 'Fruit Juice']
-
-    # Process foods in the specified order
-    for food_name in protein_order + fat_order + carb_order + micro_order:
-        # Find the matching row in the DataFrame
-        matching_row = df[df['Food Name'] == food_name]
-        if not matching_row.empty:
-            row = matching_row.iloc[0]
-            category = category_mapping.get(food_name, 'PRIMARY MICRONUTRIENT SOURCES')
-            food_item = {
-                'name': f"{row['Food Name']} ({row['Serving Size']})",
-                'calories': row['Calories (kcal)'],
-                'protein': row['Protein (g)'],
-                'carbs': row['Carbohydrates (g)'],
-                'fat': row['Fat (g)']
-            }
-            if category in foods:
-                foods[category].append(food_item)
+    # CORRECTED: Process all foods from the CSV file
+    for _, row in df.iterrows():
+        food_name = row['name']  # CORRECTED: Use 'name' instead of 'Food Name'
+        category = category_mapping.get(food_name, 'PRIMARY MICRONUTRIENT SOURCES')
+        
+        food_item = {
+            'name': f"{food_name} ({row['serving_unit']})",  # CORRECTED: Use 'serving_unit'
+            'calories': row['calories'],      # CORRECTED: Use 'calories'
+            'protein': row['protein'],        # CORRECTED: Use 'protein'
+            'carbs': row['carbs'],           # CORRECTED: Use 'carbs'
+            'fat': row['fat']                # CORRECTED: Use 'fat'
+        }
+        
+        if category in foods:
+            foods[category].append(food_item)
 
     return foods
 
@@ -140,7 +133,6 @@ try:
 except FileNotFoundError:
     st.error("The 'nutrition_results.csv' file was not found. Please make sure it's in the same directory as the script. 📄")
     st.stop()
-
 
 # -----------------------------------------------------------------------------
 # Cell 4: Session State Initialization and Custom Styling
