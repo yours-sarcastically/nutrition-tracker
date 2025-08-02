@@ -50,11 +50,11 @@ def calculate_bmr(age, height_cm, weight_kg, sex='male'):
     Args:
         age: Age in years
         height_cm: Height in centimeters
-        weight_kg: Weight in kilograms
+        weight_kg: Weight in kg
         sex: 'male' or 'female'
 
     Returns:
-        BMR in kilocalories per day
+        BMR in kcal per day
     """
     if sex.lower() == 'male':
         bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
@@ -71,7 +71,7 @@ def calculate_tdee(bmr, activity_level):
         activity_level: Activity level as a string
 
     Returns:
-        TDEE in kilocalories per day
+        TDEE in kcal per day
     """
     activity_multipliers = {
         'sedentary': 1.2,
@@ -94,11 +94,11 @@ def calculate_personalized_targets(
     Args:
         age: Age in years
         height_cm: Height in centimeters
-        weight_kg: Weight in kilograms
+        weight_kg: Weight in kg
         sex: 'male' or 'female'
         activity_level: Activity level as a string
         caloric_surplus: Additional calories per day
-        protein_per_kg: Protein grams per kilogram body weight
+        protein_per_kg: Protein g per kilogram body weight
         fat_percentage: Fraction of calories from fat
 
     Returns:
@@ -107,22 +107,22 @@ def calculate_personalized_targets(
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
     total_calories = tdee + caloric_surplus
-    protein_grams = protein_per_kg * weight_kg
-    protein_calories = protein_grams * 4
+    protein_g = protein_per_kg * weight_kg
+    protein_calories = protein_g * 4
     fat_calories = total_calories * fat_percentage
-    fat_grams = fat_calories / 9
+    fat_g = fat_calories / 9
     carb_calories = total_calories - protein_calories - fat_calories
-    carb_grams = carb_calories / 4
+    carb_g = carb_calories / 4
 
     return {
         'bmr': round(bmr),
         'tdee': round(tdee),
         'total_calories': round(total_calories),
-        'protein_grams': round(protein_grams),
+        'protein_g': round(protein_g),
         'protein_calories': round(protein_calories),
-        'fat_grams': round(fat_grams),
+        'fat_g': round(fat_g),
         'fat_calories': round(fat_calories),
-        'carb_grams': round(carb_grams),
+        'carb_g': round(carb_g),
         'carb_calories': round(carb_calories),
         'target_weight_gain_per_week': round(weight_kg * 0.0025, 2)
     }
@@ -364,7 +364,7 @@ height_cm = st.sidebar.number_input(
 )
 
 weight_kg = st.sidebar.number_input(
-    "Weight (Kilograms)",
+    "Weight (kg)",
     min_value=40.0,
     max_value=150.0,
     value=st.session_state.user_weight,
@@ -415,7 +415,7 @@ st.session_state.user_activity = activity_level
 # ------ Advanced Parameters Collapsible Section ------
 with st.sidebar.expander("Advanced Settings ⚙️"):
     caloric_surplus = st.number_input(
-        "Caloric Surplus (Kilocalories Per Day)",
+        "Caloric Surplus (kcal Per Day)",
         min_value=200, max_value=800,
         value=None,
         placeholder=f"Default: {DEFAULT_CALORIC_SURPLUS}",
@@ -423,7 +423,7 @@ with st.sidebar.expander("Advanced Settings ⚙️"):
         help="Additional calories above maintenance for weight gain"
     )
     protein_per_kg = st.number_input(
-        "Protein (Grams Per Kilogram Body Weight)",
+        "Protein (g Per Kilogram Body Weight)",
         min_value=1.2, max_value=3.0,
         value=None,
         placeholder=f"Default: {DEFAULT_PROTEIN_PER_KG}",
@@ -484,11 +484,11 @@ else:
 # ------ Display Metabolic Information In Four Columns ------
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kilocalories per day")
+    st.metric("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day")
 with col2:
-    st.metric("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kilocalories per day")
+    st.metric("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day")
 with col3:
-    st.metric("Estimated Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kilograms per week")
+    st.metric("Estimated Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg per week")
 with col4:
     pass  # Empty column for alignment
 
@@ -496,13 +496,13 @@ with col4:
 st.subheader("Daily Nutritional Target Breakdown")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Daily Calorie Target", f"{targets['total_calories']} kilocalories")
+    st.metric("Daily Calorie Target", f"{targets['total_calories']} kcal")
 with col2:
-    st.metric("Protein Target", f"{targets['protein_grams']} grams")
+    st.metric("Protein Target", f"{targets['protein_g']} g")
 with col3:
-    st.metric("Carbohydrate Target", f"{targets['carb_grams']} grams")
+    st.metric("Carbohydrate Target", f"{targets['carb_g']} g")
 with col4:
-    st.metric("Fat Target", f"{targets['fat_grams']} grams")
+    st.metric("Fat Target", f"{targets['fat_g']} g")
 
 # ------ Display Macronutrient Percentages In Four Columns ------
 st.subheader("Macronutrient Distribution as Percent of Daily Calories")
@@ -511,11 +511,11 @@ carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
 fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Protein Contribution", f"{protein_percent:.1f} percent", f"+ {targets['protein_calories']} kilocalories")
+    st.metric("Protein Contribution", f"{protein_percent:.1f} percent", f"+ {targets['protein_calories']} kcal")
 with col2:
-    st.metric("Carbohydrate Contribution", f"{carb_percent:.1f} percent", f"+ {targets['carb_calories']} kilocalories")
+    st.metric("Carbohydrate Contribution", f"{carb_percent:.1f} percent", f"+ {targets['carb_calories']} kcal")
 with col3:
-    st.metric("Fat Contribution", f"{fat_percent_display:.1f} percent", f"+ {targets['fat_calories']} kilocalories")
+    st.metric("Fat Contribution", f"{fat_percent_display:.1f} percent", f"+ {targets['fat_calories']} kcal")
 with col4:
     pass  # Empty column for alignment
 
@@ -571,10 +571,10 @@ for i, category in enumerate(available_categories):
                             del st.session_state.food_selections[food['name']]
                         st.rerun()
                     st.caption(
-                        f"Per Serving: {food['calories']} kilocalories | "
-                        f"{food['protein']} grams protein | "
-                        f"{food['carbs']} grams carbohydrates | "
-                        f"{food['fat']} grams fat"
+                        f"Per Serving: {food['calories']} kcal | "
+                        f"{food['protein']} g protein | "
+                        f"{food['carbs']} g carbohydrates | "
+                        f"{food['fat']} g fat"
                     )
 
             # ------ Second Food Item In Row ------
@@ -604,10 +604,10 @@ for i, category in enumerate(available_categories):
                             del st.session_state.food_selections[food['name']]
                         st.rerun()
                     st.caption(
-                        f"Per Serving: {food['calories']} kilocalories | "
-                        f"{food['protein']} grams protein | "
-                        f"{food['carbs']} grams carbohydrates | "
-                        f"{food['fat']} grams fat"
+                        f"Per Serving: {food['calories']} kcal | "
+                        f"{food['protein']} g protein | "
+                        f"{food['carbs']} g carbohydrates | "
+                        f"{food['fat']} g fat"
                     )
 
 st.markdown("---")
@@ -643,13 +643,13 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     st.subheader("Total Nutritional Intake for the Day 📈")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Calories Consumed", f"{total_calories:.0f} kilocalories")
+        st.metric("Total Calories Consumed", f"{total_calories:.0f} kcal")
     with col2:
-        st.metric("Total Protein Consumed", f"{total_protein:.1f} grams")
+        st.metric("Total Protein Consumed", f"{total_protein:.1f} g")
     with col3:
-        st.metric("Total Carbohydrates Consumed", f"{total_carbs:.1f} grams")
+        st.metric("Total Carbohydrates Consumed", f"{total_carbs:.1f} g")
     with col4:
-        st.metric("Total Fat Consumed", f"{total_fat:.1f} grams")
+        st.metric("Total Fat Consumed", f"{total_fat:.1f} g")
 
     st.subheader("Progress Toward Daily Nutritional Targets 🎯")
 
@@ -658,25 +658,25 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
                    if targets['total_calories'] > 0 else 0)
     st.progress(
         cal_percent / 100,
-        text=f"Calories: {cal_percent:.0f} percent of daily target ({targets['total_calories']} kilocalories)"
+        text=f"Calories: {cal_percent:.0f} percent of daily target ({targets['total_calories']} kcal)"
     )
-    prot_percent = (min(total_protein / targets['protein_grams'] * 100, 100)
-                    if targets['protein_grams'] > 0 else 0)
+    prot_percent = (min(total_protein / targets['protein_g'] * 100, 100)
+                    if targets['protein_g'] > 0 else 0)
     st.progress(
         prot_percent / 100,
-        text=f"Protein: {prot_percent:.0f} percent of daily target ({targets['protein_grams']} grams)"
+        text=f"Protein: {prot_percent:.0f} percent of daily target ({targets['protein_g']} g)"
     )
-    carb_percent = (min(total_carbs / targets['carb_grams'] * 100, 100)
-                    if targets['carb_grams'] > 0 else 0)
+    carb_percent = (min(total_carbs / targets['carb_g'] * 100, 100)
+                    if targets['carb_g'] > 0 else 0)
     st.progress(
         carb_percent / 100,
-        text=f"Carbohydrates: {carb_percent:.0f} percent of daily target ({targets['carb_grams']} grams)"
+        text=f"Carbohydrates: {carb_percent:.0f} percent of daily target ({targets['carb_g']} g)"
     )
-    fat_percent_progress = (min(total_fat / targets['fat_grams'] * 100, 100)
-                            if targets['fat_grams'] > 0 else 0)
+    fat_percent_progress = (min(total_fat / targets['fat_g'] * 100, 100)
+                            if targets['fat_g'] > 0 else 0)
     st.progress(
         fat_percent_progress / 100,
-        text=f"Fat: {fat_percent_progress:.0f} percent of daily target ({targets['fat_grams']} grams)"
+        text=f"Fat: {fat_percent_progress:.0f} percent of daily target ({targets['fat_g']} g)"
     )
 
     st.subheader("Personalized Recommendations for Today’s Nutrition 💡")
@@ -684,22 +684,22 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     if total_calories < targets['total_calories']:
         deficit = targets['total_calories'] - total_calories
         recommendations.append(
-            f"• You need {deficit:.0f} more kilocalories to reach your weight gain target"
+            f"• You need {deficit:.0f} more kcal to reach your weight gain target"
         )
-    if total_protein < targets['protein_grams']:
-        deficit = targets['protein_grams'] - total_protein
+    if total_protein < targets['protein_g']:
+        deficit = targets['protein_g'] - total_protein
         recommendations.append(
-            f"• You need {deficit:.0f} more grams of protein for muscle building"
+            f"• You need {deficit:.0f} more g of protein for muscle building"
         )
-    if total_carbs < targets['carb_grams']:
-        deficit = targets['carb_grams'] - total_carbs
+    if total_carbs < targets['carb_g']:
+        deficit = targets['carb_g'] - total_carbs
         recommendations.append(
-            f"• You need {deficit:.0f} more grams of carbohydrates for energy and performance"
+            f"• You need {deficit:.0f} more g of carbohydrates for energy and performance"
         )
-    if total_fat < targets['fat_grams']:
-        deficit = targets['fat_grams'] - total_fat
+    if total_fat < targets['fat_g']:
+        deficit = targets['fat_g'] - total_fat
         recommendations.append(
-            f"• You need {deficit:.0f} more grams of healthy fats for hormone production"
+            f"• You need {deficit:.0f} more g of healthy fats for hormone production"
         )
     if recommendations:
         for rec in recommendations:
@@ -712,11 +712,11 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     cal_balance = total_calories - targets['tdee']
     if cal_balance > 0:
         st.info(
-            f"📈 You are consuming {cal_balance:.0f} kilocalories above maintenance, supporting weight gain"
+            f"📈 You are consuming {cal_balance:.0f} kcal above maintenance, supporting weight gain"
         )
     else:
         st.warning(
-            f"📉 You are consuming {abs(cal_balance):.0f} kilocalories below maintenance"
+            f"📉 You are consuming {abs(cal_balance):.0f} kcal below maintenance"
         )
 
     if selected_foods:
@@ -726,9 +726,9 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
                 'Food Item Name': f"{item['food'].get('emoji', '')} {item['food']['name']}",
                 'Number of Servings Consumed': f"{item['servings']:.1f}",
                 'Total Calories Consumed': item['food']['calories'] * item['servings'],
-                'Total Protein Consumed (Grams)': item['food']['protein'] * item['servings'],
-                'Total Carbohydrates Consumed (Grams)': item['food']['carbs'] * item['servings'],
-                'Total Fat Consumed (Grams)': item['food']['fat'] * item['servings']
+                'Total Protein Consumed (g)': item['food']['protein'] * item['servings'],
+                'Total Carbohydrates Consumed (g)': item['food']['carbs'] * item['servings'],
+                'Total Fat Consumed (g)': item['food']['fat'] * item['servings']
             }
             for item in selected_foods
         ]
@@ -736,9 +736,9 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         st.dataframe(
             df_log.style.format({
                 'Total Calories Consumed': '{:.0f}',
-                'Total Protein Consumed (Grams)': '{:.1f}',
-                'Total Carbohydrates Consumed (Grams)': '{:.1f}',
-                'Total Fat Consumed (Grams)': '{:.1f}'
+                'Total Protein Consumed (g)': '{:.1f}',
+                'Total Carbohydrates Consumed (g)': '{:.1f}',
+                'Total Fat Consumed (g)': '{:.1f}'
             }),
             use_container_width=True
         )
@@ -786,7 +786,7 @@ st.sidebar.markdown("### About This Nutrition Calculator 📖")
 st.sidebar.markdown("""
 Calculations use the following methods:
 - Basal Metabolic Rate (BMR): Mifflin-St Jeor equation
-- Protein: 2.0 grams per kilogram of body weight for muscle building
+- Protein: 2.0 g per kilogram of body weight for muscle building
 - Fat: 25 percent of total calories for hormone production
 - Carbohydrates: Remaining calories after protein and fat allocation
 - Weight gain target: 0.25 percent of body weight per week for lean gains
