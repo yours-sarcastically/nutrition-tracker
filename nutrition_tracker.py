@@ -215,8 +215,81 @@ def load_food_database(file_path):
             foods[category].append(food_item)
     return foods
 
-# ------ Load Food Database for Vegetarian Foods ------
+def assign_food_emojis(foods):
+    """
+    Assigns an emoji to each food item based on a nutritional hierarchy.
+
+    Args:
+        foods (dict): The dictionary of categorized food items.
+
+    Returns:
+        dict: The foods dictionary with an 'emoji' key added to each food item.
+    """
+    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
+    nutrient_map = {
+        'PRIMARY PROTEIN SOURCES': 'protein',
+        'PRIMARY CARBOHYDRATE SOURCES': 'carbs',
+        'PRIMARY FAT SOURCES': 'fat',
+        'PRIMARY MICRONUTRIENT SOURCES': 'protein'
+    }
+
+    # Identify top 3 nutrient and calorie contributors in each category
+    for category, items in foods.items():
+        if not items: continue
+        sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
+        top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
+
+        nutrient = nutrient_map.get(category)
+        if nutrient:
+            sorted_by_nutrient = sorted(items, key=lambda x: x[nutrient], reverse=True)
+            if category == 'PRIMARY PROTEIN SOURCES':
+                top_foods['protein'] = [food['name'] for food in sorted_by_nutrient[:3]]
+            elif category == 'PRIMARY CARBOHYDRATE SOURCES':
+                top_foods['carbs'] = [food['name'] for food in sorted_by_nutrient[:3]]
+            elif category == 'PRIMARY FAT SOURCES':
+                top_foods['fat'] = [food['name'] for food in sorted_by_nutrient[:3]]
+            elif category == 'PRIMARY MICRONUTRIENT SOURCES':
+                top_foods['micro'] = [food['name'] for food in sorted_by_nutrient[:3]]
+
+    # Identify superfoods (high rank in multiple nutrient categories)
+    food_rank_counts = {}
+    all_top_nutrient_foods = set(top_foods['protein'] + top_foods['carbs'] + top_foods['fat'] + top_foods['micro'])
+    for food_name in all_top_nutrient_foods:
+        count = sum([
+            1 for nutrient_list in ['protein', 'carbs', 'fat', 'micro']
+            if food_name in top_foods[nutrient_list]
+        ])
+        food_rank_counts[food_name] = count
+    superfoods = {name for name, count in food_rank_counts.items() if count > 1}
+
+    # Apply emojis based on the specified hierarchy
+    for category, items in foods.items():
+        for food in items:
+            food_name = food['name']
+            food['emoji'] = ''  # Default to no emoji
+            is_top_nutrient = food_name in all_top_nutrient_foods
+            is_high_calorie = food_name in top_foods['calories'].get(category, [])
+
+            if food_name in superfoods:
+                food['emoji'] = '🥇'
+            elif is_high_calorie and is_top_nutrient:
+                food['emoji'] = '💥'
+            elif is_high_calorie:
+                food['emoji'] = '🔥'
+            elif food_name in top_foods['protein']:
+                food['emoji'] = '💪'
+            elif food_name in top_foods['carbs']:
+                food['emoji'] = '🍚'
+            elif food_name in top_foods['fat']:
+                food['emoji'] = '🥑'
+            elif food_name in top_foods['micro']:
+                food['emoji'] = '🥦'
+    return foods
+
+
+# ------ Load Food Database and Assign Emojis ------
 foods = load_food_database('nutrition_results.csv')
+foods = assign_food_emojis(foods)
 
 # -----------------------------------------------------------------------------
 # Cell 6: Session State Initialization and Custom Styling
@@ -474,7 +547,7 @@ for i, category in enumerate(available_categories):
             if j < len(items):
                 with col1:
                     food = items[j]
-                    st.subheader(food['name'])
+                    st.subheader(f"{food.get('emoji', '')} {food['name']}")
                     key = f"{category}_{food['name']}"
                     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
                     button_cols = st.columns(5)
@@ -507,7 +580,7 @@ for i, category in enumerate(available_categories):
             if j + 1 < len(items):
                 with col2:
                     food = items[j + 1]
-                    st.subheader(food['name'])
+                    st.subheader(f"{food.get('emoji', '')} {food['name']}")
                     key = f"{category}_{food['name']}"
                     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
                     button_cols = st.columns(5)
@@ -562,7 +635,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         cols = st.columns(3)
         for i, item in enumerate(selected_foods):
             with cols[i % 3]:
-                st.write(f"• {item['food']['name']} × {item['servings']:.1f}")
+                st.write(f"• {item['food'].get('emoji', '')} {item['food']['name']} × {item['servings']:.1f}")
     else:
         st.info("No foods have been selected for today 🍽️")
 
@@ -649,7 +722,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         st.subheader("Detailed Food Log for Today 📋")
         food_log = [
             {
-                'Food Item Name': item['food']['name'],
+                'Food Item Name': f"{item['food'].get('emoji', '')} {item['food']['name']}",
                 'Number of Servings Consumed': f"{item['servings']:.1f}",
                 'Total Calories Consumed': item['food']['calories'] * item['servings'],
                 'Total Protein Consumed (Grams)': item['food']['protein'] * item['servings'],
