@@ -770,6 +770,7 @@ Calculations use the following methods:
 - Weight gain target: 0.25 percent of body weight per week for lean gains
 """)
 
+st.sidebar.markdown("---")
 st.sidebar.markdown("### Activity Level Guide for Accurate TDEE 🏃‍♂️")
 st.sidebar.markdown("""
 - Sedentary: Little to no exercise or desk job
@@ -779,7 +780,6 @@ st.sidebar.markdown("""
 # - Extremely Active: Very hard exercise, physical job, or training twice daily
 # """
 
-st.sidebar.markdown("---")
 st.sidebar.markdown("### Emoji Guide for Food Ranking 💡")
 st.sidebar.markdown("""
 - 🥇 **Superfood**: Excels across multiple nutrient categories
