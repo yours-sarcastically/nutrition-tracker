@@ -537,7 +537,7 @@ for i, category in enumerate(available_categories):
 
     # ------ Define Sort Order and Sort Items by Emoji Hierarchy ------
     emoji_order = {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4}
-    sorted_items = sorted(items, key=lambda x: emoji_order.get(x.get('emoji', ''), 4))
+    sorted_items = sorted(items, key=lambda x: (emoji_order.get(x.get('emoji', ''), 4), -x['calories']))
 
     with tabs[i]:
         # ------ Display Foods In Two-Column Layout ------
