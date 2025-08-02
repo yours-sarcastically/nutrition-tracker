@@ -338,7 +338,7 @@ st.markdown("""
 # Cell 7: Application Title and Sidebar Parameters
 # -----------------------------------------------------------------------------
 
-st.title("Personalized Nutrition Tracker With Evidence-Based Vegetarian Macros 🍽️")
+st.title("Personalized Evidence-Based Nutrition Tracker 🍽️")
 st.markdown("""
 Ready to fuel your journey to better health? This tool creates personalized recommendations tailored just for you and makes tracking your meals a breeze. Let's get your macros working in your favor! 🚀
 """)
