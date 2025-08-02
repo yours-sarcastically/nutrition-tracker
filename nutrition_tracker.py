@@ -775,10 +775,10 @@ st.sidebar.markdown("### Activity Level Guide for Accurate TDEE 🏃‍♂️")
 st.sidebar.markdown("""
 - Sedentary: Little to no exercise or desk job
 - Lightly Active: Light exercise or sports one to three days per week
-# - Moderately Active: Moderate exercise or sports three to five days per week
-# - Very Active: Hard exercise or sports six to seven days per week
-# - Extremely Active: Very hard exercise, physical job, or training twice daily
-# """)
+- Moderately Active: Moderate exercise or sports three to five days per week
+- Very Active: Hard exercise or sports six to seven days per week
+- Extremely Active: Very hard exercise, physical job, or training twice daily
+""")
 
 st.sidebar.markdown("### Emoji Guide for Food Ranking 💡")
 st.sidebar.markdown("""
