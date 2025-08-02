@@ -413,7 +413,7 @@ st.session_state.user_gender = gender
 st.session_state.user_activity = activity_level
 
 # ------ Advanced Parameters Collapsible Section ------
-with st.sidebar.expander("Advanced Settings for Nutritional Targets ⚙️"):
+with st.sidebar.expander("Advanced Settings ⚙️"):
     caloric_surplus = st.number_input(
         "Caloric Surplus (Kilocalories Per Day)",
         min_value=200, max_value=800,
@@ -780,6 +780,7 @@ st.sidebar.markdown("""
 - Extremely Active: Very hard exercise, physical job, or training twice daily
 """)
 
+st.sidebar.markdown("---")
 st.sidebar.markdown("### Emoji Guide for Food Ranking 💡")
 st.sidebar.markdown("""
 - 🥇 **Superfood**: Excels across multiple nutrient categories
