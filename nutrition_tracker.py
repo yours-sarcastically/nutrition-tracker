@@ -43,7 +43,7 @@ DEFAULT_FAT_PERCENTAGE = 0.25
 # Cell 4: Nutritional Calculation Functions
 # -----------------------------------------------------------------------------
 
-def calculate_bmr(age, height_cm, weight_kg, gender='male'):
+def calculate_bmr(age, height_cm, weight_kg, sex='male'):
     """
     Calculate Basal Metabolic Rate Using the Mifflin-St Jeor Equation
 
@@ -51,12 +51,12 @@ def calculate_bmr(age, height_cm, weight_kg, gender='male'):
         age: Age in years
         height_cm: Height in centimeters
         weight_kg: Weight in kilograms
-        gender: 'male' or 'female'
+        sex: 'male' or 'female'
 
     Returns:
         BMR in kilocalories per day
     """
-    if gender.lower() == 'male':
+    if sex.lower() == 'male':
         bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
     else:
         bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
@@ -84,7 +84,7 @@ def calculate_tdee(bmr, activity_level):
     return bmr * multiplier
 
 def calculate_personalized_targets(
-    age, height_cm, weight_kg, gender='male',
+    age, height_cm, weight_kg, sex='male',
     activity_level='moderately_active',
     caloric_surplus=400, protein_per_kg=2.0, fat_percentage=0.25
 ):
@@ -95,7 +95,7 @@ def calculate_personalized_targets(
         age: Age in years
         height_cm: Height in centimeters
         weight_kg: Weight in kilograms
-        gender: 'male' or 'female'
+        sex: 'male' or 'female'
         activity_level: Activity level as a string
         caloric_surplus: Additional calories per day
         protein_per_kg: Protein grams per kilogram body weight
@@ -104,7 +104,7 @@ def calculate_personalized_targets(
     Returns:
         Dictionary containing daily targets for calories, protein, fat, and carbohydrates
     """
-    bmr = calculate_bmr(age, height_cm, weight_kg, gender)
+    bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
     total_calories = tdee + caloric_surplus
     protein_grams = protein_per_kg * weight_kg
@@ -304,8 +304,8 @@ if 'user_height' not in st.session_state:
     st.session_state.user_height = None
 if 'user_weight' not in st.session_state:
     st.session_state.user_weight = None
-if 'user_gender' not in st.session_state:
-    st.session_state.user_gender = None
+if 'user_sex' not in st.session_state:
+    st.session_state.user_sex = None
 if 'user_activity' not in st.session_state:
     st.session_state.user_activity = None
 
@@ -372,15 +372,15 @@ weight_kg = st.sidebar.number_input(
     placeholder="Enter your weight"
 )
 
-gender_options = ["Select Gender", "Male", "Female"]
-gender_index = 0
-if st.session_state.user_gender:
+sex_options = ["Select Sex", "Male", "Female"]
+sex_index = 0
+if st.session_state.user_sex:
     try:
-        gender_index = gender_options.index(st.session_state.user_gender)
+        sex_index = sex_options.index(st.session_state.user_sex)
     except ValueError:
-        gender_index = 0
+        sex_index = 0
 
-gender = st.sidebar.selectbox("Gender", gender_options, index=gender_index)
+sex = st.sidebar.selectbox("Sex", sex_options, index=sex_index)
 
 activity_options = [
     ("Select Activity Level", None),
@@ -409,7 +409,7 @@ activity_level = activity_selection[1]
 st.session_state.user_age = age
 st.session_state.user_height = height_cm
 st.session_state.user_weight = weight_kg
-st.session_state.user_gender = gender
+st.session_state.user_sex = sex
 st.session_state.user_activity = activity_level
 
 # ------ Advanced Parameters Collapsible Section ------
@@ -443,7 +443,7 @@ with st.sidebar.expander("Advanced Settings ⚙️"):
 final_age = age if age is not None else DEFAULT_AGE
 final_height = height_cm if height_cm is not None else DEFAULT_HEIGHT_CM
 final_weight = weight_kg if weight_kg is not None else DEFAULT_WEIGHT_KG
-final_gender = gender if gender != "Select Gender" else DEFAULT_GENDER
+final_sex = sex if sex != "Select Sex" else DEFAULT_GENDER
 final_activity = activity_level if activity_level is not None else DEFAULT_ACTIVITY_LEVEL
 final_surplus = caloric_surplus if caloric_surplus is not None else DEFAULT_CALORIC_SURPLUS
 final_protein = protein_per_kg if protein_per_kg is not None else DEFAULT_PROTEIN_PER_KG
@@ -454,7 +454,7 @@ user_has_entered_info = (
     age is not None and
     height_cm is not None and
     weight_kg is not None and
-    gender != "Select Gender" and
+    sex != "Select Sex" and
     activity_level is not None
 )
 
@@ -463,7 +463,7 @@ targets = calculate_personalized_targets(
     age=final_age,
     height_cm=final_height,
     weight_kg=final_weight,
-    gender=final_gender.lower(),
+    sex=final_sex.lower(),
     activity_level=final_activity,
     caloric_surplus=final_surplus,
     protein_per_kg=final_protein,
