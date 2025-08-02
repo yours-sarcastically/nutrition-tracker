@@ -786,7 +786,7 @@ st.sidebar.markdown("""
 - 🥇 **Superfood**: Excels across multiple nutrient categories
 - 💥 **Nutrient and Calorie Dense**: High in both calories and its primary nutrient
 - 🔥 **High-Calorie**: Among the most energy-dense options in its group
-- 💪 **Top Protein Source**: A leading contributor of protein in its category
+- 💪 **Top Protein Source**: A leading contributor of protein
 - 🍚 **Top Carb Source**: A leading contributor of carbohydrates
 - 🥑 **Top Fat Source**: A leading contributor of healthy fats
 - 🥦 **Top Micronutrient Source**: Rich in vitamins and minerals
