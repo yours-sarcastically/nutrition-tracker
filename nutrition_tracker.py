@@ -538,15 +538,20 @@ tabs = st.tabs(available_categories)
 
 for i, category in enumerate(available_categories):
     items = foods[category]
+    
+    # ------ Define Sort Order and Sort Items by Emoji Hierarchy ------
+    emoji_order = {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4}
+    sorted_items = sorted(items, key=lambda x: emoji_order.get(x.get('emoji', ''), 4))
+    
     with tabs[i]:
         # ------ Display Foods In Two-Column Layout ------
-        for j in range(0, len(items), 2):
+        for j in range(0, len(sorted_items), 2):
             col1, col2 = st.columns(2)
 
             # ------ First Food Item In Row ------
-            if j < len(items):
+            if j < len(sorted_items):
                 with col1:
-                    food = items[j]
+                    food = sorted_items[j]
                     st.subheader(f"{food.get('emoji', '')} {food['name']}")
                     key = f"{category}_{food['name']}"
                     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
@@ -577,9 +582,9 @@ for i, category in enumerate(available_categories):
                     )
 
             # ------ Second Food Item In Row ------
-            if j + 1 < len(items):
+            if j + 1 < len(sorted_items):
                 with col2:
-                    food = items[j + 1]
+                    food = sorted_items[j + 1]
                     st.subheader(f"{food.get('emoji', '')} {food['name']}")
                     key = f"{category}_{food['name']}"
                     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
@@ -757,6 +762,18 @@ if st.button("Clear All Selections", use_container_width=True):
 # -----------------------------------------------------------------------------
 # Cell 12: Footer Information and Application Documentation
 # -----------------------------------------------------------------------------
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Emoji Guide for Food Ranking 💡")
+st.sidebar.markdown("""
+- 🥇 **Superfood**: Excels across multiple nutrient categories.
+- 💥 **Nutrient & Calorie Dense**: High in both calories and its primary nutrient.
+- 🔥 **High-Calorie**: Among the most energy-dense options in its group.
+- 💪 **Top Protein Source**: A leading contributor of protein in its category.
+- 🍚 **Top Carb Source**: A leading contributor of carbohydrates.
+- 🥑 **Top Fat Source**: A leading contributor of healthy fats.
+- 🥦 **Top Micronutrient Source**: Rich in vitamins and minerals.
+""")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### About This Nutrition Calculator 📖")
