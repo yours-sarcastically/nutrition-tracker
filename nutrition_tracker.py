@@ -760,17 +760,6 @@ if st.button("Clear All Selections", use_container_width=True):
 # -----------------------------------------------------------------------------
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### About This Nutrition Calculator 📖")
-st.sidebar.markdown("""
-Calculations use the following methods:
-- Basal Metabolic Rate (BMR): Mifflin-St Jeor equation
-- Protein: 2.0 grams per kilogram of body weight for muscle building
-- Fat: 25 percent of total calories for hormone production
-- Carbohydrates: Remaining calories after protein and fat allocation
-- Weight gain target: 0.25 percent of body weight per week for lean gains
-""")
-
-st.sidebar.markdown("---")
 st.sidebar.markdown("### Activity Level Guide for Accurate TDEE 🏃‍♂️")
 st.sidebar.markdown("""
 - Sedentary: Little to no exercise or desk job
@@ -790,6 +779,17 @@ st.sidebar.markdown("""
 - 🍚 **Top Carb Source**: A leading contributor of carbohydrates
 - 🥑 **Top Fat Source**: A leading contributor of healthy fats
 - 🥦 **Top Micronutrient Source**: Rich in vitamins and minerals
+""")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### About This Nutrition Calculator 📖")
+st.sidebar.markdown("""
+Calculations use the following methods:
+- Basal Metabolic Rate (BMR): Mifflin-St Jeor equation
+- Protein: 2.0 grams per kilogram of body weight for muscle building
+- Fat: 25 percent of total calories for hormone production
+- Carbohydrates: Remaining calories after protein and fat allocation
+- Weight gain target: 0.25 percent of body weight per week for lean gains
 """)
 
 print("Thank you for using the Personalized Nutrition Tracker! Eat well, feel well! 🌱")
