@@ -1,9 +1,9 @@
 # -----------------------------------------------------------------------------
-# Personalized Nutrition Tracker
+# Personalized Evidence-Based Nutrition Tracker
 # -----------------------------------------------------------------------------
 
 """
-This script implements an interactive, evidence-based nutrition tracking application designed to support healthy weight gain using vegetarian food sources. The application utilizes the Mifflin-St Jeor equation for Basal Metabolic Rate (BMR) calculation, multiplies BMR by an activity-specific factor to estimate Total Daily Energy Expenditure (TDEE), and sets a caloric surplus for lean bulking. Protein, fat, and carbohydrate targets are determined based on established nutritional guidelines.
+This script implements an interactive nutrition tracking application for healthy weight gain using vegetarian food sources. It calculates personalized daily targets for calories, protein, fat, and carbohydrates based on user-specific attributes and activity levels, using the Mifflin-St Jeor equation for Basal Metabolic Rate (BMR) and multiplies by an activity factor to estimate Total Daily Energy Expenditure (TDEE). A caloric surplus is added to support lean bulking. Macronutrient targets follow current nutritional guidelines, with protein and fat set relative to body weight and total calories, and carbohydrates filling the remainder.
 """
 
 # -----------------------------------------------------------------------------
@@ -62,7 +62,6 @@ def calculate_bmr(age, height_cm, weight_kg, gender='male'):
         bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
     return bmr
 
-
 def calculate_tdee(bmr, activity_level):
     """
     Calculate Total Daily Energy Expenditure Based on Activity Level
@@ -83,7 +82,6 @@ def calculate_tdee(bmr, activity_level):
     }
     multiplier = activity_multipliers.get(activity_level, 1.55)
     return bmr * multiplier
-
 
 def calculate_personalized_targets(
     age, height_cm, weight_kg, gender='male',
@@ -136,7 +134,7 @@ def calculate_personalized_targets(
 @st.cache_data
 def load_food_database(file_path):
     """
-    Load the Vegetarian Food Database From A CSV File
+    Load the Vegetarian Food Database From a CSV File
 
     Args:
         file_path: Path to the CSV file
@@ -217,13 +215,13 @@ def load_food_database(file_path):
 
 def assign_food_emojis(foods):
     """
-    Assigns an emoji to each food item based on a nutritional hierarchy.
+    Assign an Emoji to Each Food Item Based on Nutritional Hierarchy
 
     Args:
-        foods (dict): The dictionary of categorized food items.
+        foods (dict): Dictionary of categorized food items
 
     Returns:
-        dict: The foods dictionary with an 'emoji' key added to each food item.
+        dict: Foods dictionary with an 'emoji' key added to each food item
     """
     top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
     nutrient_map = {
@@ -233,9 +231,10 @@ def assign_food_emojis(foods):
         'PRIMARY MICRONUTRIENT SOURCES': 'protein'
     }
 
-    # Identify top 3 nutrient and calorie contributors in each category
+    # Identify top three nutrient and calorie contributors in each category
     for category, items in foods.items():
-        if not items: continue
+        if not items:
+            continue
         sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
         top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
 
@@ -266,7 +265,7 @@ def assign_food_emojis(foods):
     for category, items in foods.items():
         for food in items:
             food_name = food['name']
-            food['emoji'] = ''  # Default to no emoji
+            food['emoji'] = ''
             is_top_nutrient = food_name in all_top_nutrient_foods
             is_high_calorie = food_name in top_foods['calories'].get(category, [])
 
@@ -285,7 +284,6 @@ def assign_food_emojis(foods):
             elif food_name in top_foods['micro']:
                 food['emoji'] = '🥦'
     return foods
-
 
 # ------ Load Food Database and Assign Emojis ------
 foods = load_food_database('nutrition_results.csv')
@@ -314,11 +312,9 @@ if 'user_activity' not in st.session_state:
 # ------ Custom CSS for Enhanced Styling and Hiding Input Instructions ------
 st.markdown("""
 <style>
-/* This rule hides the "Press Enter to apply" text on number inputs */
 [data-testid="InputInstructions"] {
     display: none;
 }
-
 .active-button {
     background-color: #ff6b6b !important;
     color: white !important;
@@ -342,7 +338,7 @@ st.markdown("""
 # Cell 7: Application Title and Sidebar Parameters
 # -----------------------------------------------------------------------------
 
-st.title("Personalized Nutrition Tracker 🍽️")
+st.title("Personalized Nutrition Tracker With Evidence-Based Vegetarian Macros 🍽️")
 st.markdown("""
 Ready to fuel your journey to better health? This tool creates personalized recommendations tailored just for you and makes tracking your meals a breeze. Let's get your macros working in your favor! 🚀
 """)
@@ -488,11 +484,11 @@ else:
 # ------ Display Metabolic Information In Four Columns ------
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal")
+    st.metric("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kilocalories per day")
 with col2:
-    st.metric("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal")
+    st.metric("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kilocalories per day")
 with col3:
-    st.metric("Estimated Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg per week")
+    st.metric("Estimated Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kilograms per week")
 with col4:
     pass  # Empty column for alignment
 
@@ -500,7 +496,7 @@ with col4:
 st.subheader("Daily Nutritional Target Breakdown")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Daily Calorie Target", f"{targets['total_calories']} kcal")
+    st.metric("Daily Calorie Target", f"{targets['total_calories']} kilocalories")
 with col2:
     st.metric("Protein Target", f"{targets['protein_grams']} grams")
 with col3:
@@ -509,17 +505,17 @@ with col4:
     st.metric("Fat Target", f"{targets['fat_grams']} grams")
 
 # ------ Display Macronutrient Percentages In Four Columns ------
-st.subheader("Macronutrient Distribution As Percent of Daily Calories")
+st.subheader("Macronutrient Distribution as Percent of Daily Calories")
 protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
 carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
 fat_percent_display = (targets['fat_calories'] / targets['total_calories']) * 100
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Protein Contribution", f"{protein_percent:.1f}%", f"+ {targets['protein_calories']} kcal")
+    st.metric("Protein Contribution", f"{protein_percent:.1f} percent", f"+ {targets['protein_calories']} kilocalories")
 with col2:
-    st.metric("Carbohydrate Contribution", f"{carb_percent:.1f}%", f"+ {targets['carb_calories']} kcal")
+    st.metric("Carbohydrate Contribution", f"{carb_percent:.1f} percent", f"+ {targets['carb_calories']} kilocalories")
 with col3:
-    st.metric("Fat Contribution", f"{fat_percent_display:.1f}%", f"+ {targets['fat_calories']} kcal")
+    st.metric("Fat Contribution", f"{fat_percent_display:.1f} percent", f"+ {targets['fat_calories']} kilocalories")
 with col4:
     pass  # Empty column for alignment
 
@@ -538,11 +534,11 @@ tabs = st.tabs(available_categories)
 
 for i, category in enumerate(available_categories):
     items = foods[category]
-    
+
     # ------ Define Sort Order and Sort Items by Emoji Hierarchy ------
     emoji_order = {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4}
     sorted_items = sorted(items, key=lambda x: emoji_order.get(x.get('emoji', ''), 4))
-    
+
     with tabs[i]:
         # ------ Display Foods In Two-Column Layout ------
         for j in range(0, len(sorted_items), 2):
@@ -575,10 +571,10 @@ for i, category in enumerate(available_categories):
                             del st.session_state.food_selections[food['name']]
                         st.rerun()
                     st.caption(
-                        f"Per Serving: {food['calories']} kcal | "
-                        f"{food['protein']} grams Protein | "
-                        f"{food['carbs']} grams Carbohydrates | "
-                        f"{food['fat']} grams Fat"
+                        f"Per Serving: {food['calories']} kilocalories | "
+                        f"{food['protein']} grams protein | "
+                        f"{food['carbs']} grams carbohydrates | "
+                        f"{food['fat']} grams fat"
                     )
 
             # ------ Second Food Item In Row ------
@@ -608,10 +604,10 @@ for i, category in enumerate(available_categories):
                             del st.session_state.food_selections[food['name']]
                         st.rerun()
                     st.caption(
-                        f"Per Serving: {food['calories']} kcal | "
-                        f"{food['protein']} grams Protein | "
-                        f"{food['carbs']} grams Carbohydrates | "
-                        f"{food['fat']} grams Fat"
+                        f"Per Serving: {food['calories']} kilocalories | "
+                        f"{food['protein']} grams protein | "
+                        f"{food['carbs']} grams carbohydrates | "
+                        f"{food['fat']} grams fat"
                     )
 
 st.markdown("---")
@@ -647,7 +643,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     st.subheader("Total Nutritional Intake for the Day 📈")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Calories Consumed", f"{total_calories:.0f} kcal")
+        st.metric("Total Calories Consumed", f"{total_calories:.0f} kilocalories")
     with col2:
         st.metric("Total Protein Consumed", f"{total_protein:.1f} grams")
     with col3:
@@ -662,7 +658,7 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
                    if targets['total_calories'] > 0 else 0)
     st.progress(
         cal_percent / 100,
-        text=f"Calories: {cal_percent:.0f} percent of daily target ({targets['total_calories']} kcal)"
+        text=f"Calories: {cal_percent:.0f} percent of daily target ({targets['total_calories']} kilocalories)"
     )
     prot_percent = (min(total_protein / targets['protein_grams'] * 100, 100)
                     if targets['protein_grams'] > 0 else 0)
@@ -764,18 +760,6 @@ if st.button("Clear All Selections", use_container_width=True):
 # -----------------------------------------------------------------------------
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### Emoji Guide for Food Ranking 💡")
-st.sidebar.markdown("""
-- 🥇 **Superfood**: Excels across multiple nutrient categories.
-- 💥 **Nutrient & Calorie Dense**: High in both calories and its primary nutrient.
-- 🔥 **High-Calorie**: Among the most energy-dense options in its group.
-- 💪 **Top Protein Source**: A leading contributor of protein in its category.
-- 🍚 **Top Carb Source**: A leading contributor of carbohydrates.
-- 🥑 **Top Fat Source**: A leading contributor of healthy fats.
-- 🥦 **Top Micronutrient Source**: Rich in vitamins and minerals.
-""")
-
-st.sidebar.markdown("---")
 st.sidebar.markdown("### About This Nutrition Calculator 📖")
 st.sidebar.markdown("""
 Calculations use the following methods:
@@ -790,9 +774,21 @@ st.sidebar.markdown("### Activity Level Guide for Accurate TDEE 🏃‍♂️")
 st.sidebar.markdown("""
 - Sedentary: Little to no exercise or desk job
 - Lightly Active: Light exercise or sports one to three days per week
-- Moderately Active: Moderate exercise or sports three to five days per week
-- Very Active: Hard exercise or sports six to seven days per week
-- Extremely Active: Very hard exercise, physical job, or training twice daily
+# - Moderately Active: Moderate exercise or sports three to five days per week
+# - Very Active: Hard exercise or sports six to seven days per week
+# - Extremely Active: Very hard exercise, physical job, or training twice daily
+# """
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Emoji Guide for Food Ranking 💡")
+st.sidebar.markdown("""
+- 🥇 **Superfood**: Excels across multiple nutrient categories
+- 💥 **Nutrient and Calorie Dense**: High in both calories and its primary nutrient
+- 🔥 **High-Calorie**: Among the most energy-dense options in its group
+- 💪 **Top Protein Source**: A leading contributor of protein in its category
+- 🍚 **Top Carb Source**: A leading contributor of carbohydrates
+- 🥑 **Top Fat Source**: A leading contributor of healthy fats
+- 🥦 **Top Micronutrient Source**: Rich in vitamins and minerals
 """)
 
-print("Thank you for using the Personalized Nutrition Tracker! Bon appétit! 🌱")
+print("Thank you for using the Personalized Nutrition Tracker! Eat well, feel well! 🌱")
