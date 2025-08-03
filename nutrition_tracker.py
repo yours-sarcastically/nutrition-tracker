@@ -340,7 +340,7 @@ st.markdown("""
 
 st.title("Personalized Evidence-Based Nutrition Tracker 🍽️")
 st.markdown("""
-Ready to fuel your journey to better health? This tool creates personalized recommendations tailored just for you and makes tracking your meals a breeze. Let's get your macros working in your favor! 🚀
+Ready to turbocharge your health game? This awesome tool dishes out daily nutrition goals made just for you and makes tracking meals as easy as pie. Let's get those macros on your team! 🚀
 """)
 
 # ------ Sidebar for Personal Parameters ------
