@@ -644,57 +644,11 @@ def main():
     It includes progress tracking and summary reporting.
     """
     # ------ Initialize API Client ------
-    # NOTE: Using the public DEMO_KEY. For production use, get your own key
-    api_key = "PodqZM9xrI5ByN5sS8zlEMf2haudDydBMCzt3U4N"
+    api_key = ""
     nutrition_api = USDANutritionAPI(api_key)
 
     # ------ Define Food List for Analysis ------
-    food_list = [
-        "Egg, Whole, Raw",
-        "Yogurt, Greek, Nonfat Milk, Plain",
-        "Nutritional Powder Mix, High Protein, Nfs",
-        "Milk, Reduced Fat (2%)",
-        "Cheese, Cottage, Creamed, Large Or Small Curd",
-        "Cheese, Mozzarella, Part Skim",
-        "Lentils, From Canned",
-        "Chickpeas, From Canned, No Added Fat",
-        "Kidney Beans, From Canned, No Added Fat",
-        "Hummus, Plain",
-        "Tortellini, Cheese-Filled, No Sauce",
-        "Olive Oil",
-        "Peanut Butter",
-        "Almonds, Unsalted",
-        "Mixed Nuts, With Peanuts, Unsalted",
-        "Avocado, Raw",
-        "Sunflower Seeds, Plain, Unsalted",
-        "Chia Seeds",
-        "Tahini",
-        "Cream, Heavy",
-        "Oats, Raw",
-        "Potato, Nfs",
-        "Rice, White, Cooked, No Added Fat",
-        "Bread, Multigrain",
-        "Pasta, Cooked",
-        "Banana, Raw",
-        "Couscous, Plain, Cooked",
-        "Corn, Frozen, Cooked, No Added Fat",
-        "Green Peas, Frozen, Cooked, No Added Fat",
-        "Classic Mixed Vegetables, Frozen, Cooked, No Added Fat",
-        "Spinach, Frozen, Cooked, No Added Fat",
-        "Broccoli, Frozen, Cooked With Oil",
-        "Berries, Frozen",
-        "Carrots, Frozen, Cooked, No Added Fat",
-        "Tomatoes, Canned, Cooked",
-        "Mushrooms, Raw",
-        "Cauliflower, Frozen, Cooked, No Added Fat",
-        "Green Beans, Frozen, Cooked, No Added Fat",
-        "Orange Juice, 100%, Canned, Bottled Or In A Carton",
-        "Apple Juice, 100%",
-        "Trail Mix With Nuts And Fruit",
-        "Tortellini, Spinach-Filled, No Sauce",
-        "Pizza, Cheese, With Vegetables, From Frozen, Thin Crust",
-        "Fruit Juice, Nfs"
-    ]
+    food_list = [""]
 
     # ------ Display Program Header ------
     print("USDA Food Nutrition Analysis Tool 🍎")
