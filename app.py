@@ -58,10 +58,11 @@ def main():
         st.header("Your Personalized Daily Nutritional Targets 🎯")
 
     metrics_config = [
-        {'title': 'Metabolic Information', 'columns': 3, 'metrics': [
+        {'title': 'Metabolic Information', 'columns': 4, 'metrics': [
             ("BMR", f"{targets.bmr} kcal"),
             ("TDEE", f"{targets.tdee} kcal"),
             ("Est. Weekly Gain", f"{targets.target_weight_gain_per_week} kg"),
+            ("", ""),  # Blank placeholder for alignment
         ]},
         {'title': 'Daily Nutritional Target Breakdown', 'columns': 4, 'metrics': [
             ("Calorie Target", f"{targets.total_calories} kcal"),
@@ -69,10 +70,11 @@ def main():
             ("Carb Target", f"{targets.carb_g:.0f} g"),
             ("Fat Target", f"{targets.fat_g:.0f} g"),
         ]},
-        {'title': 'Macronutrient Distribution (% of Calories)', 'columns': 3, 'metrics': [
+        {'title': 'Macronutrient Distribution (% of Calories)', 'columns': 4, 'metrics': [
             ("Protein", f"{targets.protein_percent:.1f}%", f"{targets.protein_calories:.0f} kcal"),
             ("Carbohydrates", f"{targets.carb_percent:.1f}%", f"{targets.carb_calories:.0f} kcal"),
             ("Fat", f"{targets.fat_percent:.1f}%", f"{targets.fat_calories:.0f} kcal"),
+            ("", ""),  # Blank placeholder for alignment
         ]}
     ]
     for config in metrics_config:
