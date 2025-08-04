@@ -80,7 +80,7 @@ CONFIG = {
         ]},
         'caloric_surplus': {'type': 'number', 'label': 'Caloric Surplus (kcal Per Day)', 'min': 200, 'max': 800, 'step': 50, 'help': 'Additional calories above maintenance for weight gain', 'advanced': True},
         'protein_per_kg': {'type': 'number', 'label': 'Protein (g Per Kilogram Body Weight)', 'min': 1.2, 'max': 3.0, 'step': 0.1, 'help': 'Protein intake per kilogram of body weight', 'advanced': True},
-        'fat_percentage': {'type': 'number', 'label': 'Fat (Percent of Total Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Percentage of total calories from fat', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True}
+        'fat_percentage': {'type': 'number', 'label': 'Fat (Percent of Total Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Percentage of total calories from fat', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True, 'placeholder_multiplier': 100}
     },
     'info_sections': [
         {
@@ -131,6 +131,15 @@ def get_food_key(category, food_name):
     """Generate consistent food selection keys"""
     return f"{category}_{food_name}"
 
+def update_servings(food_name, num_servings):
+    """Update session state for a given food's servings and rerun."""
+    num_servings = float(num_servings)
+    if num_servings > 0:
+        st.session_state.food_selections[food_name] = num_servings
+    elif food_name in st.session_state.food_selections:
+        del st.session_state.food_selections[food_name]
+    st.rerun()
+
 def initialize_session_state():
     """Initialize all session state variables using unified approach"""
     session_vars = ['food_selections'] + [get_session_key(field) for field in CONFIG['form_fields'].keys()]
@@ -155,7 +164,8 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
     if field_config['type'] == 'number':
         if field_config.get('advanced'):
             default_val = DEFAULTS.get(field_name, 0)
-            display_val = int(default_val * 100) if field_name == 'fat_percentage' else default_val
+            multiplier = field_config.get('placeholder_multiplier', 1)
+            display_val = int(default_val * multiplier) if multiplier != 1 else default_val
             placeholder = f"Default: {display_val}"
         else:
             placeholder = field_config.get('placeholder')
@@ -414,8 +424,7 @@ def render_food_item(food, category):
         with button_cols[k - 1]:
             button_type = "primary" if current_serving == float(k) else "secondary"
             if st.button(f"{k}", key=f"{key}_{k}", type=button_type, help=f"Set to {k} servings"):
-                st.session_state.food_selections[food['name']] = float(k)
-                st.rerun()
+                update_servings(food['name'], float(k))
     
     # Custom serving input
     custom_serving = st.number_input(
@@ -426,11 +435,7 @@ def render_food_item(food, category):
     )
     
     if custom_serving != current_serving:
-        if custom_serving > 0:
-            st.session_state.food_selections[food['name']] = custom_serving
-        elif food['name'] in st.session_state.food_selections:
-            del st.session_state.food_selections[food['name']]
-        st.rerun()
+        update_servings(food['name'], custom_serving)
     
     # Nutritional info
     st.caption(
