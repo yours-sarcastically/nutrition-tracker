@@ -27,36 +27,72 @@ def load_food_database(file_path: str) -> Dict[str, List[FoodItem]]:
 
 def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodItem]]:
     """Assign emojis to foods using unified ranking system."""
-    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
     
+    # Collect all foods across categories for global ranking
+    all_foods = []
     for category, items in foods.items():
-        if not items: continue
-        
-        sorted_by_calories = sorted(items, key=lambda x: x.calories, reverse=True)
-        top_foods['calories'][category] = [food.name for food in sorted_by_calories[:3]]
-        
-        map_info = CONFIG['nutrient_map'].get(category)
-        if map_info:
-            sorted_by_nutrient = sorted(items, key=lambda x: getattr(x, map_info['sort_by']), reverse=True)
-            top_foods[map_info['key']] = [food.name for food in sorted_by_nutrient[:3]]
-
-    all_top_foods = {food for key in ['protein', 'carbs', 'fat', 'micro'] for food in top_foods[key]}
-    food_rank_counts = {name: sum(1 for key in ['protein', 'carbs', 'fat', 'micro'] if name in top_foods[key]) for name in all_top_foods}
-    superfoods = {name for name, count in food_rank_counts.items() if count > 1}
-
-    emoji_mapping = {'superfoods': '🥇', 'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑', 'micro': '🥦'}
-    
-    for items in foods.values():
         for food in items:
-            is_top_nutrient = food.name in all_top_foods
-            is_high_calorie = food.name in top_foods['calories'].get(food.name.split(' (')[0], [])
-
-            if food.name in superfoods: food.emoji = emoji_mapping['superfoods']
-            elif is_high_calorie and is_top_nutrient: food.emoji = emoji_mapping['high_cal_nutrient']
-            elif is_high_calorie: food.emoji = emoji_mapping['high_calorie']
-            elif food.name in top_foods['protein']: food.emoji = emoji_mapping['protein']
-            elif food.name in top_foods['carbs']: food.emoji = emoji_mapping['carbs']
-            elif food.name in top_foods['fat']: food.emoji = emoji_mapping['fat']
-            elif food.name in top_foods['micro']: food.emoji = emoji_mapping['micro']
-            else: food.emoji = ''
+            all_foods.append((food, category))
+    
+    if not all_foods:
+        return foods
+    
+    # Global rankings across all foods
+    all_foods_sorted_calories = sorted(all_foods, key=lambda x: x[0].calories, reverse=True)
+    all_foods_sorted_protein = sorted(all_foods, key=lambda x: x[0].protein, reverse=True)
+    all_foods_sorted_carbs = sorted(all_foods, key=lambda x: x[0].carbs, reverse=True)
+    all_foods_sorted_fat = sorted(all_foods, key=lambda x: x[0].fat, reverse=True)
+    
+    # Get top foods for each category (top 20% or minimum 3)
+    top_count = max(3, len(all_foods) // 5)
+    
+    top_calorie_foods = {food.name for food, _ in all_foods_sorted_calories[:top_count]}
+    top_protein_foods = {food.name for food, _ in all_foods_sorted_protein[:top_count]}
+    top_carb_foods = {food.name for food, _ in all_foods_sorted_carbs[:top_count]}
+    top_fat_foods = {food.name for food, _ in all_foods_sorted_fat[:top_count]}
+    
+    # Identify superfoods (foods that appear in multiple top categories)
+    all_nutrient_categories = [top_protein_foods, top_carb_foods, top_fat_foods]
+    superfoods = set()
+    
+    for food_name in top_protein_foods | top_carb_foods | top_fat_foods:
+        category_count = sum(1 for category_set in all_nutrient_categories if food_name in category_set)
+        if category_count >= 2:  # Appears in 2+ nutrient categories
+            superfoods.add(food_name)
+    
+    # Assign emojis based on priority
+    for category, items in foods.items():
+        for food in items:
+            food_name = food.name
+            
+            # Priority 1: Superfoods (top in multiple nutrients)
+            if food_name in superfoods:
+                food.emoji = '🥇'
+            
+            # Priority 2: High-calorie AND nutrient-dense
+            elif (food_name in top_calorie_foods and 
+                  food_name in (top_protein_foods | top_carb_foods | top_fat_foods)):
+                food.emoji = '💥'
+            
+            # Priority 3: High-calorie only
+            elif food_name in top_calorie_foods:
+                food.emoji = '🔥'
+            
+            # Priority 4: Top in specific nutrients
+            elif food_name in top_protein_foods:
+                food.emoji = '💪'
+            elif food_name in top_carb_foods:
+                food.emoji = '🍚'
+            elif food_name in top_fat_foods:
+                food.emoji = '🥑'
+            
+            # Priority 5: Category-specific micronutrient sources
+            elif category == 'PRIMARY MICRONUTRIENT SOURCES':
+                food.emoji = '🥦'
+            
+            # No emoji for other foods
+            else:
+                food.emoji = ''
+    
     return foods
+
