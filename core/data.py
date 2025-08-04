@@ -34,23 +34,44 @@ def load_food_database(file_path: str) -> Dict[str, List[FoodItem]]:
     return foods
 
 def assign_food_emojis(foods: Dict[str, List[FoodItem]], n_top: int = 3) -> Dict[str, List[FoodItem]]:
-    ...
-    # -------- Build global top-N lists --------------------------------------
+    """
+    Attach an emoji badge to every FoodItem based on its global ranking.
+
+    Legend
+    -------
+    🥇  Superfood                – ranks in the global top-N of ≥ 2 nutrients
+    💥  Nutrient + Calorie Dense – high-calorie AND top-N of a nutrient
+    🔥  High-Calorie             – high-calorie only
+    💪  Top-protein source
+    🍚  Top-carb source
+    🥑  Top-fat source
+    🥦  Top-micronutrient source (optional)
+    """
+    # ------------------------------------------------------------------ #
+    # 1. flatten the nested dict into one list
+    all_items: List[FoodItem] = [food for sub in foods.values() for food in sub]
+
+    # 2. helper to grab the global top-N list for a given attribute
+    def _top_n(items: List[FoodItem], attr: str, n: int = n_top) -> List[FoodItem]:
+        return sorted(items, key=lambda x: getattr(x, attr, 0), reverse=True)[:n]
+
+    # 3. build the individual leader lists
     top_protein = [f.name for f in _top_n(all_items, "protein")]
     top_carbs   = [f.name for f in _top_n(all_items, "carbs")]
     top_fat     = [f.name for f in _top_n(all_items, "fat")]
-    top_micro   = []                              # optional / left empty
+    top_micro   = []   # leave empty if you aren’t tracking micronutrients
     top_cals    = [f.name for f in _top_n(all_items, "calories")]
 
-    # -------- Superfoods: ≥ 2 nutrient lists (calories NOT counted) ---------
+    # 4. superfoods = appear in ≥ 2 *nutrient* lists (calories excluded!)
+    from collections import Counter
     appearance_counter = Counter(
         name
-        for lst in [top_protein, top_carbs, top_fat, top_micro]  # ← calories removed
+        for lst in [top_protein, top_carbs, top_fat, top_micro]
         for name in lst
     )
     superfoods = {name for name, cnt in appearance_counter.items() if cnt >= 2}
 
-    # -------- Attach emojis --------------------------------------------------
+    # 5. iterate once and assign the correct badge
     for food in all_items:
         is_high_calorie = food.name in top_cals
         is_top_nutrient = (
@@ -60,20 +81,21 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]], n_top: int = 3) -> Dict
             or food.name in top_micro
         )
 
-        if food.name in superfoods:                    # 🥇
+        if food.name in superfoods:
             food.emoji = "🥇"
-        elif is_high_calorie and is_top_nutrient:      # 💥
+        elif is_high_calorie and is_top_nutrient:
             food.emoji = "💥"
-        elif is_high_calorie:                          # 🔥
+        elif is_high_calorie:
             food.emoji = "🔥"
-        elif food.name in top_protein:                 # 💪
+        elif food.name in top_protein:
             food.emoji = "💪"
-        elif food.name in top_carbs:                   # 🍚
+        elif food.name in top_carbs:
             food.emoji = "🍚"
-        elif food.name in top_fat:                     # 🥑
+        elif food.name in top_fat:
             food.emoji = "🥑"
-        elif food.name in top_micro:                   # 🥦
+        elif food.name in top_micro:
             food.emoji = "🥦"
         else:
             food.emoji = ""
+
     return foods
