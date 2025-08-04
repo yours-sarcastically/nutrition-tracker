@@ -53,13 +53,11 @@ ACTIVITY_MULTIPLIERS = {
 # ------ Unified Configuration for All App Components ------
 CONFIG = {
     'emoji_order': {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4},
-    # Refactored nutrient_map to be the single source of truth for category-to-nutrient mapping.
-    # 'sort_by' is the data column for ranking; 'key' is the dictionary key for storing top foods.
     'nutrient_map': {
         'PRIMARY PROTEIN SOURCES': {'sort_by': 'protein', 'key': 'protein'},
         'PRIMARY CARBOHYDRATE SOURCES': {'sort_by': 'carbs', 'key': 'carbs'},
         'PRIMARY FAT SOURCES': {'sort_by': 'fat', 'key': 'fat'},
-        'PRIMARY MICRONUTRIENT SOURCES': {'sort_by': 'protein', 'key': 'micro'} # Sort by protein as a proxy for nutrient density
+        'PRIMARY MICRONUTRIENT SOURCES': {'sort_by': 'protein', 'key': 'micro'}
     },
     'nutrient_configs': {
         'calories': {'unit': 'kcal', 'label': 'Calories', 'target_key': 'total_calories'},
@@ -67,12 +65,12 @@ CONFIG = {
         'carbs': {'unit': 'g', 'label': 'Carbohydrates', 'target_key': 'carb_g'},
         'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
     },
-    # Refactored: Merged advanced_fields into form_fields with an 'advanced' flag.
+    # REFACTORED: Added 'required' and 'placeholder' keys for dynamic validation.
     'form_fields': {
-        'age': {'type': 'number', 'label': 'Age (Years)', 'min': 16, 'max': 80, 'step': 1, 'placeholder': 'Enter your age'},
-        'height_cm': {'type': 'number', 'label': 'Height (Centimeters)', 'min': 140, 'max': 220, 'step': 1, 'placeholder': 'Enter your height'},
-        'weight_kg': {'type': 'number', 'label': 'Weight (kg)', 'min': 40.0, 'max': 150.0, 'step': 0.5, 'placeholder': 'Enter your weight'},
-        'sex': {'type': 'selectbox', 'label': 'Sex', 'options': ["Select Sex", "Male", "Female"]},
+        'age': {'type': 'number', 'label': 'Age (Years)', 'min': 16, 'max': 80, 'step': 1, 'placeholder': 'Enter your age', 'required': True},
+        'height_cm': {'type': 'number', 'label': 'Height (Centimeters)', 'min': 140, 'max': 220, 'step': 1, 'placeholder': 'Enter your height', 'required': True},
+        'weight_kg': {'type': 'number', 'label': 'Weight (kg)', 'min': 40.0, 'max': 150.0, 'step': 0.5, 'placeholder': 'Enter your weight', 'required': True},
+        'sex': {'type': 'selectbox', 'label': 'Sex', 'options': ["Select Sex", "Male", "Female"], 'required': True, 'placeholder': "Select Sex"},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level', 'options': [
             ("Select Activity Level", None),
             ("Sedentary", "sedentary"),
@@ -80,10 +78,10 @@ CONFIG = {
             ("Moderately Active", "moderately_active"),
             ("Very Active", "very_active"),
             ("Extremely Active", "extremely_active")
-        ]},
-        'caloric_surplus': {'type': 'number', 'label': 'Caloric Surplus (kcal Per Day)', 'min': 200, 'max': 800, 'step': 50, 'help': 'Additional calories above maintenance for weight gain', 'advanced': True},
-        'protein_per_kg': {'type': 'number', 'label': 'Protein (g Per Kilogram Body Weight)', 'min': 1.2, 'max': 3.0, 'step': 0.1, 'help': 'Protein intake per kilogram of body weight', 'advanced': True},
-        'fat_percentage': {'type': 'number', 'label': 'Fat (Percent of Total Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Percentage of total calories from fat', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True}
+        ], 'required': True, 'placeholder': None},
+        'caloric_surplus': {'type': 'number', 'label': 'Caloric Surplus (kcal Per Day)', 'min': 200, 'max': 800, 'step': 50, 'help': 'Additional calories above maintenance for weight gain', 'advanced': True, 'required': False},
+        'protein_per_kg': {'type': 'number', 'label': 'Protein (g Per Kilogram Body Weight)', 'min': 1.2, 'max': 3.0, 'step': 0.1, 'help': 'Protein intake per kilogram of body weight', 'advanced': True, 'required': False},
+        'fat_percentage': {'type': 'number', 'label': 'Fat (Percent of Total Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Percentage of total calories from fat', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True, 'required': False}
     }
 }
 
@@ -234,13 +232,23 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
     carb_calories = total_calories - protein_calories - fat_calories
     carb_g = carb_calories / 4
 
-    return {
+    targets = {
         'bmr': round(bmr), 'tdee': round(tdee), 'total_calories': round(total_calories),
         'protein_g': round(protein_g), 'protein_calories': round(protein_calories),
         'fat_g': round(fat_g), 'fat_calories': round(fat_calories),
         'carb_g': round(carb_g), 'carb_calories': round(carb_calories),
         'target_weight_gain_per_week': round(weight_kg * 0.0025, 2)
     }
+
+    # REFACTORED: Centralize percentage calculations here to avoid doing it in the display layer.
+    if targets['total_calories'] > 0:
+        targets['protein_percent'] = (targets['protein_calories'] / targets['total_calories']) * 100
+        targets['carb_percent'] = (targets['carb_calories'] / targets['total_calories']) * 100
+        targets['fat_percent'] = (targets['fat_calories'] / targets['total_calories']) * 100
+    else:
+        targets['protein_percent'] = targets['carb_percent'] = targets['fat_percent'] = 0
+        
+    return targets
 
 # -----------------------------------------------------------------------------
 # Cell 6: Food Database Processing Functions
@@ -381,21 +389,17 @@ Ready to turbocharge your health game? This awesome tool dishes out daily nutrit
 st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
 all_inputs = {}
-# Define containers for standard and advanced inputs to streamline creation.
-# The expander is created once and used as the container for all advanced fields.
 containers = {
     'standard': st.sidebar,
     'advanced': st.sidebar.expander("Advanced Settings ⚙️")
 }
 
-# Single loop to create all input fields, placing them in the correct container.
 for field_name, field_config in CONFIG['form_fields'].items():
     is_advanced = field_config.get('advanced', False)
     container = containers['advanced'] if is_advanced else containers['standard']
     
     value = create_unified_input(field_name, field_config, container=container)
     
-    # Apply conversion at input time for specific fields
     if 'convert' in field_config:
         value = field_config['convert'](value)
         
@@ -404,13 +408,13 @@ for field_name, field_config in CONFIG['form_fields'].items():
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
 
-# ------ Check User Input Completeness ------
-user_has_entered_info = (
-    all_inputs['age'] is not None and
-    all_inputs['height_cm'] is not None and
-    all_inputs['weight_kg'] is not None and
-    all_inputs['sex'] != "Select Sex" and
-    all_inputs['activity_level'] is not None
+# ------ REFACTORED: Check User Input Completeness Dynamically ------
+required_fields = [
+    field for field, config in CONFIG['form_fields'].items() if config.get('required')
+]
+user_has_entered_info = all(
+    (all_inputs[field] is not None and all_inputs[field] != CONFIG['form_fields'][field].get('placeholder'))
+    for field in required_fields
 )
 
 # ------ Calculate Personalized Targets ------
