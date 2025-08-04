@@ -1,4 +1,11 @@
 # core/data.py
+# Description: Functions for loading and processing the food database.
+
+import pandas as pd
+import streamlit as st
+from typing import Dict, List
+from .models import FoodItem
+from config import CONFIG
 
 @st.cache_data
 def get_processed_food_data(file_path: str) -> Dict[str, List[FoodItem]]:
@@ -14,7 +21,7 @@ def get_processed_food_data(file_path: str) -> Dict[str, List[FoodItem]]:
         return {}
 
     foods: Dict[str, List[FoodItem]] = {cat: [] for cat in CONFIG['nutrient_map'].keys()}
-    all_foods_flat: List[FoodItem] = [] # A single list of all food items
+    all_foods_flat: List[FoodItem] = []
 
     for _, row in df.iterrows():
         category = row['category']
@@ -29,30 +36,33 @@ def get_processed_food_data(file_path: str) -> Dict[str, List[FoodItem]]:
             foods[category].append(food_item)
         all_foods_flat.append(food_item)
 
-    # --- Part 2: Assign Emojis (with Corrected Global Ranking Logic) ---
-    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
+    # --- Part 2: Assign Emojis (with Final Corrected Logic) ---
+    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'calories': {}}
 
-    # CORRECTED LOGIC: Rank across ALL foods, not within categories
     if all_foods_flat:
         top_foods['protein'] = [f.name for f in sorted(all_foods_flat, key=lambda x: x.protein, reverse=True)[:3]]
         top_foods['carbs'] = [f.name for f in sorted(all_foods_flat, key=lambda x: x.carbs, reverse=True)[:3]]
         top_foods['fat'] = [f.name for f in sorted(all_foods_flat, key=lambda x: x.fat, reverse=True)[:3]]
-        # 'micro' is still sorted by protein as per config, but across all foods
-        top_foods['micro'] = [f.name for f in sorted(all_foods_flat, key=lambda x: x.protein, reverse=True)[:3]]
 
-    # High-calorie check remains category-specific as it's for context within the tab
     for category, items in foods.items():
         top_foods['calories'][category] = [f.name for f in sorted(items, key=lambda x: x.calories, reverse=True)[:3]]
 
-    all_top_nutrient_foods = {food for key in ['protein', 'carbs', 'fat', 'micro'] for food in top_foods[key]}
-    food_rank_counts = {name: sum(1 for key in ['protein', 'carbs', 'fat', 'micro'] if name in top_foods[key]) for name in all_top_nutrient_foods}
+    # FINAL FIX: Superfood calculation now only considers the 3 distinct macronutrient lists.
+    macronutrient_keys = ['protein', 'carbs', 'fat']
+    all_top_macronutrient_foods = {food for key in macronutrient_keys for food in top_foods[key]}
+    food_rank_counts = {name: sum(1 for key in macronutrient_keys if name in top_foods[key]) for name in all_top_macronutrient_foods}
     superfoods = {name for name, count in food_rank_counts.items() if count > 1}
+
+    # The 'micro' key is still needed for basic emoji assignment, but it's not part of the superfood logic.
+    # It is populated by the top protein sources from the "Micronutrient Sources" category specifically.
+    micro_items = foods.get('PRIMARY MICRONUTRIENT SOURCES', [])
+    top_foods['micro'] = [f.name for f in sorted(micro_items, key=lambda x: x.protein, reverse=True)[:3]]
 
     emoji_mapping = {'superfoods': '🥇', 'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑', 'micro': '🥦'}
 
     for category, items in foods.items():
         for food in items:
-            is_top_nutrient = food.name in all_top_nutrient_foods
+            is_top_nutrient = food.name in all_top_macronutrient_foods
             is_high_calorie = food.name in top_foods['calories'].get(category, [])
 
             if food.name in superfoods: food.emoji = emoji_mapping['superfoods']
