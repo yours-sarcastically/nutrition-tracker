@@ -1,158 +1,83 @@
 # Personalized Evidence-Based Nutrition Tracker
 
-A comprehensive Streamlit application for calculating personalized daily nutritional targets and tracking food intake for healthy weight gain.
+This project is a complete, two-part system for generating a personalized, evidence-based nutrition plan. It consists of a data processing pipeline and an interactive user application.
 
-## Features
-
-- **Personalized Calculations**: BMR and TDEE calculations using the Mifflin-St Jeor equation
-- **Customizable Targets**: Adjustable caloric surplus, protein intake, and macronutrient ratios
-- **Food Database**: Comprehensive database with nutritional rankings and emoji indicators
-- **Progress Tracking**: Real-time progress bars and personalized recommendations
-- **Clean Architecture**: Modular design with separated business logic and UI components
-
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd nutrition-tracker
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Ensure `nutrition_database_final.csv` is in the project root directory
-
-4. Run the application:
-   ```bash
-   streamlit run main.py
-   ```
+1.  USDA Data Client (Jupyter Notebook): A powerful tool for querying the USDA FoodData Central API. It searches for foods, applies advanced filters, intelligently selects serving sizes, and exports clean, standardized nutritional data to a CSV file.
+2.  Nutrition Tracker (Streamlit App): An interactive web application that uses the data from the notebook. It allows users to input their personal metrics, calculates their unique nutritional targets, and lets them log food intake to track their progress.
 
 ## Project Structure
 
+The project is organized into a modular structure that separates the data pipeline from the user-facing application.
+
 ```
-nutrition-tracker/
-├── main.py                          # Main application entry point
-├── requirements.txt                 # Python dependencies
-├── README.md                        # Project documentation
-├── nutrition_database_final.csv     # Food database (not included)
-└── src/                            # Source code package
-    ├── __init__.py                 # Package initialization
-    ├── config.py                   # Configuration management and constants
-    ├── data_models.py              # Data classes for type safety and structure
-    ├── nutrition_calculator.py     # Business logic for nutritional calculations
-    ├── food_database.py            # Food data loading and processing
-    └── ui_components.py            # Streamlit UI components
-```
-
-## Usage
-
-1. **Enter Personal Information**: Use the sidebar to input your age, height, weight, sex, and activity level
-2. **Adjust Advanced Settings**: Optionally modify caloric surplus, protein intake, and fat percentage
-3. **View Nutritional Targets**: See your personalized daily targets for calories and macronutrients
-4. **Select Foods**: Choose foods from categorized tabs and specify serving amounts
-5. **Monitor Progress**: Track your daily intake against targets with progress bars
-6. **Follow Recommendations**: Get personalized suggestions based on your current intake
-
-## Architecture
-
-The application follows clean architecture principles with clear separation of concerns:
-
-### Core Components
-
-- **`main.py`**: Application orchestration and entry point
-- **`src/config.py`**: Centralized configuration management
-- **`src/data_models.py`**: Type-safe data structures with validation
-- **`src/nutrition_calculator.py`**: Mathematical formulas and business logic
-- **`src/food_database.py`**: Data loading, processing, and ranking algorithms
-- **`src/ui_components.py`**: Reusable Streamlit interface components
-
-### Key Benefits
-
-- **Modularity**: Each component has a single responsibility
-- **Type Safety**: Data classes prevent errors and improve IDE support
-- **Maintainability**: Business logic is separated from presentation
-- **Testability**: Components can be tested independently
-- **Configurability**: Settings are centralized and easily modifiable
-
-## Food Database Format
-
-The application expects a CSV file (`nutrition_database_final.csv`) with the following columns:
-
-- `name`: Food item name
-- `calories`: Calories per serving
-- `protein`: Protein in grams per serving
-- `carbs`: Carbohydrates in grams per serving
-- `fat`: Fat in grams per serving
-- `category`: Food category (e.g., "PRIMARY PROTEIN SOURCES")
-- `serving_unit`: Optional serving unit description
-
-## Customization
-
-### Adding New Food Categories
-
-1. Add foods to your CSV with new category names
-2. Update `NUTRIENT_CATEGORY_MAP` in `src/config.py` if needed
-3. The application will automatically create tabs for new categories
-
-### Modifying Calculation Parameters
-
-Edit values in `src/config.py`:
-
-- `DEFAULT_CALORIC_SURPLUS`: Default calorie surplus for weight gain
-- `DEFAULT_PROTEIN_PER_KG`: Default protein per kg of body weight
-- `ACTIVITY_MULTIPLIERS`: TDEE calculation multipliers
-- `TARGET_WEEKLY_GAIN_RATE`: Target weekly weight gain percentage
-
-### Customizing UI Elements
-
-- Modify `src/ui_components.py` to change interface elements
-- Update emoji rankings in `config.py` to change food prioritization
-- Adjust progress bar thresholds in recommendation logic
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes following the existing architecture
-4. Test your changes thoroughly
-5. Submit a pull request with a clear description
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Disclaimer
-
-This tool provides general nutritional guidance based on established formulas and should not replace professional medical advice. Consult with a healthcare provider or registered dietitian for personalized medical guidance, especially if you have specific health conditions or dietary requirements.
+nutrition_tracker/
+├── 📜 usda_food_data_client.ipynb
+├── 📂 core/
+│   ├── __init__.py
+│   ├── calculations.py
+│   ├── data.py
+│   └── models.py
+├── 📂 data/
+│   └── nutrition_results.csv
+├── 📂 ui/
+│   ├── __init__.py
+│   ├── components.py
+│   └── sidebar.py
+├── app.py
+├── config.py
+└── README.md
 ```
 
-## Setup Instructions
+## Component 1: USDA Data Client (Jupyter Notebook)
 
-To set up the project with this advanced directory structure:
+The `usda_food_data_client.ipynb` notebook is the starting point of the project. Its primary purpose is to search, filter, and process food nutrition data from the official USDA database, ultimately generating the `nutrition_results.csv` file that the Streamlit application depends on.
 
-1. **Create the directory structure**:
-   ```bash
-   mkdir nutrition-tracker
-   cd nutrition-tracker
-   mkdir src
-   ```
+### Key Features
 
-2. **Create all the files** as shown above in their respective locations
+*   Interactive Food Search: Query multiple food items against the USDA database with support for both generic (Survey FNDDS) and branded food products.
+*   Advanced Filtering: Apply a chain of filters to refine results, including keyword matching, requiring search terms to be at the start of the description, and a strict filter for exact or comma-separated phrases.
+*   Serving Size Analysis: Automatically finds and selects the most logical household serving size for each food item (e.g., "1 cup" for milk, "1 medium" for an apple) and includes data validation to warn against unrealistic values.
+*   Detailed Nutrition Analysis & Export: Fetches key nutritional data (calories, protein, fat, carbs) for the selected serving size, cleans the food names for readability, and exports the final, processed data to `nutrition_results.csv`.
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Component 2: Personalized Nutrition Tracker (Streamlit App)
 
-4. **Add your food database**:
-   - Place `nutrition_database_final.csv` in the root directory (same level as `main.py`)
+The `app.py` is the interactive web application that users will run. It provides a user-friendly interface for personalized nutrition planning and tracking.
 
-5. **Run the application**:
-   ```bash
-   streamlit run main.py
-   ```
+### Key Improvements (Architectural)
 
-This structure provides better organization while maintaining all the original functionality. The modular design makes it easier to maintain, test, and extend the application in the future! 🚀
+1.  Multi-File Structure: The application's logic is separated into distinct modules for better organization and maintainability.
+    *   `app.py`: The main application entry point.
+    *   `config.py`: Contains all static configuration and constants.
+    *   `core/`: Contains the core "business logic" and data models.
+    *   `ui/`: Contains modules for building the user interface.
+    *   `data/`: Directory for data files.
+
+2.  Formalized Data Structures: Dictionaries have been replaced with Python `dataclasses` (`core/models.py`) for type safety, better IDE support, and more self-documenting code.
+
+## How to Run the Full System
+
+Follow these two steps to get the entire system running.
+
+### Step 1: Generate the Food Database (Jupyter Notebook)
+
+First, you must run the data client to create the food database.
+
+1.  Get a free API Key from the [USDA FoodData Central](https://fdc.nal.usda.gov/api-guide.html).
+2.  Open the Notebook: Launch `usda_food_data_client.ipynb` in a Jupyter Notebook environment.
+3.  Add Your API Key: In Cell 1, replace the placeholder string in the `api_key` variable with your actual key.
+4.  Configure Food List: In Cell 10, update the `EXAMPLE_ANALYSIS_FOOD_LIST` with the exact food descriptions you want in your database. You can use the interactive search tool in the notebook to find these descriptions.
+5.  Run the Analysis: Execute the `main_nutrition_analysis()` function (located in Cell 11). This will process your food list and save the results.
+6.  Move the File: A file named `nutrition_results.csv` will be created in the root `nutrition_tracker/` directory. You must move this file into the `data/` sub-directory.
+
+### Step 2: Run the Nutrition Tracker App (Streamlit)
+
+Once the `nutrition_results.csv` is in the `data/` folder, you can run the main application.
+
+1.  Navigate to the root `nutrition_tracker/` directory in your terminal.
+2.  Run the Streamlit command:
+
+    ```sh
+    streamlit run app.py
+    ```
+
+The application will open in your web browser, pre-loaded with the food data you generated.
