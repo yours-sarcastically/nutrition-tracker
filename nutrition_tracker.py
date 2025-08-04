@@ -26,7 +26,7 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# Cell 3: Default Parameter Values for User Inputs
+# Cell 3: Default Parameter Values and Constants
 # -----------------------------------------------------------------------------
 
 # ------ Default Parameter Values Based on Published Research ------
@@ -38,6 +38,26 @@ DEFAULT_ACTIVITY_LEVEL = "moderately_active"
 DEFAULT_CALORIC_SURPLUS = 400
 DEFAULT_PROTEIN_PER_KG = 2.0
 DEFAULT_FAT_PERCENTAGE = 0.25
+
+# ------ Activity Level Multipliers for TDEE Calculation ------
+ACTIVITY_MULTIPLIERS = {
+    'sedentary': 1.2,
+    'lightly_active': 1.375,
+    'moderately_active': 1.55,
+    'very_active': 1.725,
+    'extremely_active': 1.9
+}
+
+# ------ Emoji Hierarchy for Food Ranking ------
+EMOJI_ORDER = {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4}
+
+# ------ Nutrient Category Mapping ------
+NUTRIENT_MAP = {
+    'PRIMARY PROTEIN SOURCES': 'protein',
+    'PRIMARY CARBOHYDRATE SOURCES': 'carbs',
+    'PRIMARY FAT SOURCES': 'fat',
+    'PRIMARY MICRONUTRIENT SOURCES': 'protein'
+}
 
 # -----------------------------------------------------------------------------
 # Cell 4: Nutritional Calculation Functions
@@ -73,14 +93,7 @@ def calculate_tdee(bmr, activity_level):
     Returns:
         TDEE in kcal per day
     """
-    activity_multipliers = {
-        'sedentary': 1.2,
-        'lightly_active': 1.375,
-        'moderately_active': 1.55,
-        'very_active': 1.725,
-        'extremely_active': 1.9
-    }
-    multiplier = activity_multipliers.get(activity_level, 1.55)
+    multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
     return bmr * multiplier
 
 def calculate_personalized_targets(
@@ -143,55 +156,8 @@ def load_food_database(file_path):
         Dictionary mapping food categories to lists of food items
     """
     df = pd.read_csv(file_path)
-
-    # ------ Map Foods To Categories for Tabbed Selection ------
-    category_mapping = {
-        'Eggs': 'PRIMARY PROTEIN SOURCES',
-        'Greek Yogurt': 'PRIMARY PROTEIN SOURCES',
-        'Protein Powder': 'PRIMARY PROTEIN SOURCES',
-        'Milk': 'PRIMARY PROTEIN SOURCES',
-        'Cottage Cheese': 'PRIMARY PROTEIN SOURCES',
-        'Mozzarella Cheese': 'PRIMARY PROTEIN SOURCES',
-        'Lentils': 'PRIMARY PROTEIN SOURCES',
-        'Chickpeas': 'PRIMARY PROTEIN SOURCES',
-        'Kidney Beans': 'PRIMARY PROTEIN SOURCES',
-        'Hummus': 'PRIMARY PROTEIN SOURCES',
-        'Cheese Tortellinis': 'PRIMARY PROTEIN SOURCES',
-        'Spinach Tortellinis': 'PRIMARY PROTEIN SOURCES',
-        'Olive Oil': 'PRIMARY FAT SOURCES',
-        'Peanut Butter': 'PRIMARY FAT SOURCES',
-        'Almonds': 'PRIMARY FAT SOURCES',
-        'Mixed Nuts': 'PRIMARY FAT SOURCES',
-        'Avocados': 'PRIMARY FAT SOURCES',
-        'Sunflower Seeds': 'PRIMARY FAT SOURCES',
-        'Chia Seeds': 'PRIMARY FAT SOURCES',
-        'Tahini': 'PRIMARY FAT SOURCES',
-        'Heavy Cream': 'PRIMARY FAT SOURCES',
-        'Trail Mix': 'PRIMARY FAT SOURCES',
-        'Oats': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Potatoes': 'PRIMARY CARBOHYDRATE SOURCES',
-        'White Rice': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Multigrain Bread': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Pasta': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Bananas': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Couscous': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Corn': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Green Peas': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Pizza': 'PRIMARY CARBOHYDRATE SOURCES',
-        'Mixed Vegetables': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Spinach': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Broccoli': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Berries': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Carrots': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Tomatoes': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Mushrooms': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Cauliflower': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Green Beans': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Orange Juice': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Apple Juice': 'PRIMARY MICRONUTRIENT SOURCES',
-        'Fruit Juice': 'PRIMARY MICRONUTRIENT SOURCES'
-    }
-
+    
+    # Initialize food categories
     foods = {
         'PRIMARY PROTEIN SOURCES': [],
         'PRIMARY FAT SOURCES': [],
@@ -199,11 +165,11 @@ def load_food_database(file_path):
         'PRIMARY MICRONUTRIENT SOURCES': []
     }
 
+    # Load foods directly from CSV using the category column
     for _, row in df.iterrows():
-        food_name = row['name']
-        category = category_mapping.get(food_name, 'PRIMARY MICRONUTRIENT SOURCES')
+        category = row['category']
         food_item = {
-            'name': f"{food_name} ({row['serving_unit']})",
+            'name': f"{row['name']} ({row['serving_unit']})",
             'calories': row['calories'],
             'protein': row['protein'],
             'carbs': row['carbs'],
@@ -211,6 +177,7 @@ def load_food_database(file_path):
         }
         if category in foods:
             foods[category].append(food_item)
+    
     return foods
 
 def assign_food_emojis(foods):
@@ -224,12 +191,6 @@ def assign_food_emojis(foods):
         dict: Foods dictionary with an 'emoji' key added to each food item
     """
     top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
-    nutrient_map = {
-        'PRIMARY PROTEIN SOURCES': 'protein',
-        'PRIMARY CARBOHYDRATE SOURCES': 'carbs',
-        'PRIMARY FAT SOURCES': 'fat',
-        'PRIMARY MICRONUTRIENT SOURCES': 'protein'
-    }
 
     # Identify top three nutrient and calorie contributors in each category
     for category, items in foods.items():
@@ -238,7 +199,7 @@ def assign_food_emojis(foods):
         sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
         top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
 
-        nutrient = nutrient_map.get(category)
+        nutrient = NUTRIENT_MAP.get(category)
         if nutrient:
             sorted_by_nutrient = sorted(items, key=lambda x: x[nutrient], reverse=True)
             if category == 'PRIMARY PROTEIN SOURCES':
@@ -284,6 +245,49 @@ def assign_food_emojis(foods):
             elif food_name in top_foods['micro']:
                 food['emoji'] = '🥦'
     return foods
+
+def render_food_item(food, category):
+    """
+    Render a single food item with buttons and input controls
+    
+    Args:
+        food: Food item dictionary
+        category: Food category string
+    """
+    st.subheader(f"{food.get('emoji', '')} {food['name']}")
+    key = f"{category}_{food['name']}"
+    current_serving = st.session_state.food_selections.get(food['name'], 0.0)
+    
+    # Serving buttons
+    button_cols = st.columns(5)
+    for k in range(1, 6):
+        with button_cols[k - 1]:
+            button_type = "primary" if current_serving == float(k) else "secondary"
+            if st.button(f"{k} Servings", key=f"{key}_{k}", type=button_type):
+                st.session_state.food_selections[food['name']] = float(k)
+                st.rerun()
+    
+    # Custom serving input
+    custom_serving = st.number_input(
+        "Custom Number of Servings:",
+        min_value=0.0, max_value=10.0,
+        value=float(current_serving), step=0.1,
+        key=f"{key}_custom"
+    )
+    if custom_serving != current_serving:
+        if custom_serving > 0:
+            st.session_state.food_selections[food['name']] = custom_serving
+        elif food['name'] in st.session_state.food_selections:
+            del st.session_state.food_selections[food['name']]
+        st.rerun()
+    
+    # Nutritional info
+    st.caption(
+        f"Per Serving: {food['calories']} kcal | "
+        f"{food['protein']} g protein | "
+        f"{food['carbs']} g carbohydrates | "
+        f"{food['fat']} g fat"
+    )
 
 # ------ Load Food Database and Assign Emojis ------
 foods = load_food_database('nutrition_results.csv')
@@ -535,9 +539,8 @@ tabs = st.tabs(available_categories)
 for i, category in enumerate(available_categories):
     items = foods[category]
 
-    # ------ Define Sort Order and Sort Items by Emoji Hierarchy ------
-    emoji_order = {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4}
-    sorted_items = sorted(items, key=lambda x: (emoji_order.get(x.get('emoji', ''), 4), -x['calories']))
+    # ------ Sort Items by Emoji Hierarchy ------
+    sorted_items = sorted(items, key=lambda x: (EMOJI_ORDER.get(x.get('emoji', ''), 4), -x['calories']))
 
     with tabs[i]:
         # ------ Display Foods In Two-Column Layout ------
@@ -547,68 +550,12 @@ for i, category in enumerate(available_categories):
             # ------ First Food Item In Row ------
             if j < len(sorted_items):
                 with col1:
-                    food = sorted_items[j]
-                    st.subheader(f"{food.get('emoji', '')} {food['name']}")
-                    key = f"{category}_{food['name']}"
-                    current_serving = st.session_state.food_selections.get(food['name'], 0.0)
-                    button_cols = st.columns(5)
-                    for k in range(1, 6):
-                        with button_cols[k - 1]:
-                            button_type = "primary" if current_serving == float(k) else "secondary"
-                            if st.button(f"{k} Servings", key=f"{key}_{k}", type=button_type):
-                                st.session_state.food_selections[food['name']] = float(k)
-                                st.rerun()
-                    custom_serving = st.number_input(
-                        "Custom Number of Servings:",
-                        min_value=0.0, max_value=10.0,
-                        value=float(current_serving), step=0.1,
-                        key=f"{key}_custom"
-                    )
-                    if custom_serving != current_serving:
-                        if custom_serving > 0:
-                            st.session_state.food_selections[food['name']] = custom_serving
-                        elif food['name'] in st.session_state.food_selections:
-                            del st.session_state.food_selections[food['name']]
-                        st.rerun()
-                    st.caption(
-                        f"Per Serving: {food['calories']} kcal | "
-                        f"{food['protein']} g protein | "
-                        f"{food['carbs']} g carbohydrates | "
-                        f"{food['fat']} g fat"
-                    )
+                    render_food_item(sorted_items[j], category)
 
             # ------ Second Food Item In Row ------
             if j + 1 < len(sorted_items):
                 with col2:
-                    food = sorted_items[j + 1]
-                    st.subheader(f"{food.get('emoji', '')} {food['name']}")
-                    key = f"{category}_{food['name']}"
-                    current_serving = st.session_state.food_selections.get(food['name'], 0.0)
-                    button_cols = st.columns(5)
-                    for k in range(1, 6):
-                        with button_cols[k - 1]:
-                            button_type = "primary" if current_serving == float(k) else "secondary"
-                            if st.button(f"{k} Servings", key=f"{key}_{k}", type=button_type):
-                                st.session_state.food_selections[food['name']] = float(k)
-                                st.rerun()
-                    custom_serving = st.number_input(
-                        "Custom Number of Servings:",
-                        min_value=0.0, max_value=10.0,
-                        value=float(current_serving), step=0.1,
-                        key=f"{key}_custom"
-                    )
-                    if custom_serving != current_serving:
-                        if custom_serving > 0:
-                            st.session_state.food_selections[food['name']] = custom_serving
-                        elif food['name'] in st.session_state.food_selections:
-                            del st.session_state.food_selections[food['name']]
-                        st.rerun()
-                    st.caption(
-                        f"Per Serving: {food['calories']} kcal | "
-                        f"{food['protein']} g protein | "
-                        f"{food['carbs']} g carbohydrates | "
-                        f"{food['fat']} g fat"
-                    )
+                    render_food_item(sorted_items[j + 1], category)
 
 st.markdown("---")
 
