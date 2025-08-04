@@ -275,3 +275,129 @@ class UIComponents:
                     nutrition = food.calculate_nutrition_for_servings(servings)
                     total_calories += nutrition['calories']
                     total_protein += nutrition['protein']
+                    total_carbs += nutrition['carbs']
+                    total_fat += nutrition['fat']
+                    selected_foods.append({'food': food, 'servings': servings})
+        
+        st.header("Summary of Your Daily Nutritional Intake 📊")
+        
+        if not selected_foods:
+            st.info("No foods have been selected for today. 🍽️")
+            return
+        
+        # Display selected foods
+        st.subheader("Foods Logged for Today 🥣")
+        for item in selected_foods:
+            food = item['food']
+            servings = item['servings']
+            nutrition = food.calculate_nutrition_for_servings(servings)
+            st.write(f"• **{food.emoji} {food.get_display_name()}** - {servings} serving(s): "
+                    f"{nutrition['calories']:.0f} kcal, {nutrition['protein']:.1f}g protein, "
+                    f"{nutrition['carbs']:.1f}g carbs, {nutrition['fat']:.1f}g fat")
+        
+        # Display totals
+        st.subheader("Daily Totals vs. Targets 🎯")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        # Calculate progress percentages
+        calorie_progress = (total_calories / targets.total_calories) * 100
+        protein_progress = (total_protein / targets.protein_g) * 100
+        carb_progress = (total_carbs / targets.carb_g) * 100
+        fat_progress = (total_fat / targets.fat_g) * 100
+        
+        col1.metric("Calories", f"{total_calories:.0f} / {targets.total_calories}", 
+                   f"{calorie_progress:.1f}%")
+        col2.metric("Protein", f"{total_protein:.1f}g / {targets.protein_g}g", 
+                   f"{protein_progress:.1f}%")
+        col3.metric("Carbs", f"{total_carbs:.1f}g / {targets.carb_g}g", 
+                   f"{carb_progress:.1f}%")
+        col4.metric("Fat", f"{total_fat:.1f}g / {targets.fat_g}g", 
+                   f"{fat_progress:.1f}%")
+        
+        # Progress bars
+        st.subheader("Progress Toward Daily Targets 📈")
+        st.progress(min(calorie_progress / 100, 1.0), text=f"Calories: {calorie_progress:.1f}%")
+        st.progress(min(protein_progress / 100, 1.0), text=f"Protein: {protein_progress:.1f}%")
+        st.progress(min(carb_progress / 100, 1.0), text=f"Carbohydrates: {carb_progress:.1f}%")
+        st.progress(min(fat_progress / 100, 1.0), text=f"Fat: {fat_progress:.1f}%")
+        
+        # Recommendations
+        UIComponents._render_recommendations(calorie_progress, protein_progress, carb_progress, fat_progress)
+    
+    @staticmethod
+    def _render_recommendations(calorie_progress: float, protein_progress: float, 
+                              carb_progress: float, fat_progress: float):
+        """
+        Render personalized recommendations based on current progress.
+        
+        Args:
+            calorie_progress: Percentage of calorie target achieved
+            protein_progress: Percentage of protein target achieved
+            carb_progress: Percentage of carbohydrate target achieved
+            fat_progress: Percentage of fat target achieved
+        """
+        st.subheader("Personalized Recommendations 💡")
+        
+        recommendations = []
+        
+        if calorie_progress < 80:
+            recommendations.append("🔥 You're below your calorie target. Consider adding more calorie-dense foods.")
+        elif calorie_progress > 120:
+            recommendations.append("⚠️ You're significantly over your calorie target. Consider reducing portion sizes.")
+        
+        if protein_progress < 80:
+            recommendations.append("💪 Your protein intake is low. Add more protein-rich foods like lean meats, eggs, or protein powder.")
+        
+        if carb_progress < 70:
+            recommendations.append("🍚 Your carbohydrate intake is low. Add more complex carbs like oats, rice, or fruits.")
+        
+        if fat_progress < 70:
+            recommendations.append("🥑 Your fat intake is low. Include healthy fats like nuts, avocado, or olive oil.")
+        
+        if not recommendations:
+            recommendations.append("🎉 Great job! Your nutrition is well-balanced and on track with your targets!")
+        
+        for rec in recommendations:
+            st.write(rec)
+    
+    @staticmethod
+    def render_activity_guide():
+        """Render the activity level guide in the sidebar."""
+        with st.sidebar.expander("Activity Level Guide 📖"):
+            st.markdown("""
+            **Sedentary:** Little to no exercise, desk job
+            
+            **Lightly Active:** Light exercise 1-3 days/week
+            
+            **Moderately Active:** Moderate exercise 3-5 days/week
+            
+            **Very Active:** Hard exercise 6-7 days/week
+            
+            **Extremely Active:** Very hard exercise, physical job, or training twice a day
+            """)
+    
+    @staticmethod
+    def render_emoji_legend():
+        """Render the emoji legend in the sidebar."""
+        with st.sidebar.expander("Food Ranking Legend 🏆"):
+            st.markdown("""
+            🥇 **Superfood** - High in multiple nutrients
+            
+            💥 **Nutrient & Calorie Dense** - Top in category + high calories
+            
+            🔥 **High-Calorie** - Great for weight gain
+            
+            💪 **Top Protein** - Highest protein in category
+            
+            🍚 **Top Carb** - Highest carbohydrates in category
+            
+            🥑 **Top Fat** - Highest healthy fats in category
+            
+            🥦 **Top Micronutrient** - Rich in vitamins/minerals
+            """)
+    
+    @staticmethod
+    def render_footer():
+        """Render the application footer."""
+        st.markdown("---")
+        st.markdown("**Disclaimer:** This tool provides general nutritional guidance. Consult with a healthcare provider or registered dietitian for personalized medical advice.")
