@@ -425,15 +425,16 @@ else:
 # ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
-        'title': 'Metabolic Information', 'columns': 3,
+        'title': 'Metabolic Information', 'columns': 4, # CHANGED from 3 to 4
         'metrics': [
             ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
             ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
-            ("Est. Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg")
+            ("Est. Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg"),
+            ("", "") # ADDED empty placeholder
         ]
     },
     {
-        'title': 'Daily Nutritional Target Breakdown', 'columns': 4,
+        'title': 'Daily Nutritional Target Breakdown', 'columns': 4, # No change needed
         'metrics': [
             ("Daily Calorie Target", f"{targets['total_calories']} kcal"),
             ("Protein Target", f"{targets['protein_g']} g"),
@@ -442,11 +443,12 @@ metrics_config = [
         ]
     },
     {
-        'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 3,
+        'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 4, # CHANGED from 3 to 4
         'metrics': [
-            ("Protein", f"{(targets['protein_calories'] / targets['total_calories']) * 100:.1f}%", f"{targets['protein_calories']} kcal"),
-            ("Carbohydrates", f"{(targets['carb_calories'] / targets['total_calories']) * 100:.1f}%", f"{targets['carb_calories']} kcal"),
-            ("Fat", f"{(targets['fat_calories'] / targets['total_calories']) * 100:.1f}%", f"{targets['fat_calories']} kcal")
+            ("Protein", f"{(targets['protein_calories'] / targets['total_calories']) * 100:.1f}%", f"↑ {targets['protein_calories']} kcal"),
+            ("Carbohydrates", f"{(targets['carb_calories'] / targets['total_calories']) * 100:.1f}%", f"↑ {targets['carb_calories']} kcal"),
+            ("Fat", f"{(targets['fat_calories'] / targets['total_calories']) * 100:.1f}%", f"↑ {targets['fat_calories']} kcal"),
+            ("", "") # ADDED empty placeholder
         ]
     }
 ]
