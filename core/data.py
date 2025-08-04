@@ -83,5 +83,4 @@ def get_processed_food_data(file_path: str) -> Dict[str, List[FoodItem]]:
             ))
     
     # Assign emojis to the newly loaded food objects before they are cached and returned.
-    processed_foods = _assign_food_emojis(foods)
-    return processed_foods
+    processed_foods = _assign_food_emojis
