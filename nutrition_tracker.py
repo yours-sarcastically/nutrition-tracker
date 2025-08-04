@@ -368,6 +368,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+Of course. Here is the complete and updated code for **Cell 8**, with the redundant loops consolidated into a single, more efficient loop.
+
+***
+
 # -----------------------------------------------------------------------------
 # Cell 8: Application Title and Unified Input Interface
 # -----------------------------------------------------------------------------
@@ -381,20 +385,21 @@ Ready to turbocharge your health game? This awesome tool dishes out daily nutrit
 st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
 all_inputs = {}
-# Create main inputs
-for field_name, field_config in CONFIG['form_fields'].items():
-    if not field_config.get('advanced'):
-        all_inputs[field_name] = create_unified_input(field_name, field_config)
+advanced_container = st.sidebar.expander("Advanced Settings ⚙️")
 
-# Create advanced inputs within an expander
-with st.sidebar.expander("Advanced Settings ⚙️"):
-    for field_name, field_config in CONFIG['form_fields'].items():
-        if field_config.get('advanced'):
-            value = create_unified_input(field_name, field_config, container=st)
-            # Apply conversion at input time
-            if 'convert' in field_config:
-                value = field_config['convert'](value)
-            all_inputs[field_name] = value
+# Single loop for all inputs, dynamically assigning them to the correct container
+for field_name, field_config in CONFIG['form_fields'].items():
+    # Determine the correct container (main sidebar or expander)
+    container = advanced_container if field_config.get('advanced') else st.sidebar
+    
+    # The create_unified_input function already accepts a container argument
+    value = create_unified_input(field_name, field_config, container=container)
+    
+    # Apply conversion if needed (for advanced fields)
+    if field_config.get('advanced') and 'convert' in field_config:
+        value = field_config['convert'](value)
+        
+    all_inputs[field_name] = value
 
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
