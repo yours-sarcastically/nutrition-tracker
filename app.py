@@ -37,7 +37,8 @@ def main():
     initialize_session_state()
 
     # --- Data Loading ---
-    foods = data.get_processed_food_data('data/nutrition_results.csv')
+    foods = data.load_food_database('data/nutrition_results.csv')
+    foods = data.assign_food_emojis(foods)
 
     # --- Sidebar and User Input ---
     user_profile, advanced_settings, user_has_entered_info = sidebar.render_sidebar()
