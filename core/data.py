@@ -46,12 +46,10 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
 
     emoji_mapping = {'superfoods': '🥇', 'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑', 'micro': '🥦'}
     
-    # --- CORRECTED SECTION ---
-    for category, items in foods.items():  # MODIFIED: Changed from .values() to .items() to get the category name
+    for items in foods.values():
         for food in items:
             is_top_nutrient = food.name in all_top_foods
-            # MODIFIED: The check now correctly uses the 'category' variable for the lookup
-            is_high_calorie = food.name in top_foods['calories'].get(category, [])
+            is_high_calorie = food.name in top_foods['calories'].get(food.name.split(' (')[0], [])
 
             if food.name in superfoods: food.emoji = emoji_mapping['superfoods']
             elif is_high_calorie and is_top_nutrient: food.emoji = emoji_mapping['high_cal_nutrient']
@@ -61,5 +59,4 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
             elif food.name in top_foods['fat']: food.emoji = emoji_mapping['fat']
             elif food.name in top_foods['micro']: food.emoji = emoji_mapping['micro']
             else: food.emoji = ''
-            
     return foods
