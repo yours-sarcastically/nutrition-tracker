@@ -377,22 +377,26 @@ st.markdown("""
 Ready to turbocharge your health game? This awesome tool dishes out daily nutrition goals made just for you and makes tracking meals as easy as pie. Let's get those macros on your team! 🚀
 """)
 
-# ------ Refactored: Unified Sidebar Input Processing ------
+# ------ Refactored: Unified Sidebar Input Processing with a Single Loop ------
 st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
 all_inputs = {}
-advanced_container = st.sidebar.expander("Advanced Settings ⚙️")
+# Define containers for standard and advanced inputs to streamline creation.
+# The expander is created once and used as the container for all advanced fields.
+containers = {
+    'standard': st.sidebar,
+    'advanced': st.sidebar.expander("Advanced Settings ⚙️")
+}
 
-# Single loop for all inputs, dynamically assigning them to the correct container
+# Single loop to create all input fields, placing them in the correct container.
 for field_name, field_config in CONFIG['form_fields'].items():
-    # Determine the correct container (main sidebar or expander)
-    container = advanced_container if field_config.get('advanced') else st.sidebar
+    is_advanced = field_config.get('advanced', False)
+    container = containers['advanced'] if is_advanced else containers['standard']
     
-    # The create_unified_input function already accepts a container argument
     value = create_unified_input(field_name, field_config, container=container)
     
-    # Apply conversion if needed (for advanced fields)
-    if field_config.get('advanced') and 'convert' in field_config:
+    # Apply conversion at input time for specific fields
+    if 'convert' in field_config:
         value = field_config['convert'](value)
         
     all_inputs[field_name] = value
