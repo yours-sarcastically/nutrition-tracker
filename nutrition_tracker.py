@@ -61,6 +61,23 @@ NUTRIENT_MAP = {
     'PRIMARY MICRONUTRIENT SOURCES': 'protein'
 }
 
+# ------ Form Field Configurations ------
+FORM_FIELDS = {
+    'age': {'key': 'user_age', 'default_key': 'age'},
+    'height_cm': {'key': 'user_height', 'default_key': 'height_cm'},
+    'weight_kg': {'key': 'user_weight', 'default_key': 'weight_kg'},
+    'sex': {'key': 'user_sex', 'default_key': 'sex'},
+    'activity_level': {'key': 'user_activity', 'default_key': 'activity_level'}
+}
+
+# ------ Nutrient Display Configurations ------
+NUTRIENT_CONFIGS = {
+    'calories': {'unit': 'kcal', 'label': 'Calories', 'target_key': 'total_calories'},
+    'protein': {'unit': 'g', 'label': 'Protein', 'target_key': 'protein_g'},
+    'carbs': {'unit': 'g', 'label': 'Carbohydrates', 'target_key': 'carb_g'},
+    'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
+}
+
 # -----------------------------------------------------------------------------
 # Cell 4: Helper Functions
 # -----------------------------------------------------------------------------
@@ -72,10 +89,9 @@ def initialize_session_state():
         st.session_state.food_selections = {}
     
     # User input variables
-    user_inputs = ['user_age', 'user_height', 'user_weight', 'user_sex', 'user_activity']
-    for input_key in user_inputs:
-        if input_key not in st.session_state:
-            st.session_state[input_key] = None
+    for field_config in FORM_FIELDS.values():
+        if field_config['key'] not in st.session_state:
+            st.session_state[field_config['key']] = None
 
 def get_final_value(user_value, default_key, special_check=None):
     """Get final value using user input or default"""
@@ -83,32 +99,62 @@ def get_final_value(user_value, default_key, special_check=None):
         return user_value if special_check(user_value) else DEFAULTS[default_key]
     return user_value if user_value is not None else DEFAULTS[default_key]
 
-def display_metrics_in_columns(metrics_data):
-    """Display metrics in a 4-column layout"""
-    col1, col2, col3, col4 = st.columns(4)
-    columns = [col1, col2, col3, col4]
+def display_metrics_grid(metrics_data, num_columns=4):
+    """Display metrics in a configurable column layout"""
+    columns = st.columns(num_columns)
     
     for i, metric_info in enumerate(metrics_data):
-        if i < len(columns):
-            with columns[i]:
-                if len(metric_info) == 2:
-                    label, value = metric_info
-                    st.metric(label, value)
-                elif len(metric_info) == 3:
-                    label, value, delta = metric_info
-                    st.metric(label, value, delta)
+        with columns[i % num_columns]:
+            if len(metric_info) == 2:
+                label, value = metric_info
+                st.metric(label, value)
+            elif len(metric_info) == 3:
+                label, value, delta = metric_info
+                st.metric(label, value, delta)
 
-def display_progress_bar(actual, target, nutrient_name, unit):
-    """Display a progress bar for nutrient tracking"""
-    percent = min(actual / target * 100, 100) if target > 0 else 0
-    st.progress(
-        percent / 100,
-        text=f"{nutrient_name}: {percent:.0f} percent of daily target ({target:.0f} {unit})"
-    )
+def create_progress_tracking(totals, targets):
+    """Create unified progress tracking with bars and recommendations"""
+    recommendations = []
+    
+    st.subheader("Progress Toward Daily Nutritional Targets 🎯")
+    
+    for nutrient, config in NUTRIENT_CONFIGS.items():
+        actual = totals[nutrient]
+        target = targets[config['target_key']]
+        
+        # Display progress bar
+        percent = min(actual / target * 100, 100) if target > 0 else 0
+        st.progress(
+            percent / 100,
+            text=f"{config['label']}: {percent:.0f} percent of daily target ({target:.0f} {config['unit']})"
+        )
+        
+        # Generate recommendations
+        if actual < target:
+            deficit = target - actual
+            purpose_map = {
+                'calories': 'to reach your weight gain target',
+                'protein': 'for muscle building',
+                'carbs': 'for energy and performance',
+                'fat': 'for hormone production'
+            }
+            purpose = purpose_map.get(nutrient, 'for optimal nutrition')
+            recommendations.append(f"• You need {deficit:.0f} more {config['unit']} of {config['label'].lower()} {purpose}")
+    
+    return recommendations
+
+def render_food_grid(items, category, columns=2):
+    """Render food items in a grid layout"""
+    for i in range(0, len(items), columns):
+        cols = st.columns(columns)
+        for j in range(columns):
+            if i + j < len(items):
+                with cols[j]:
+                    render_food_item(items[i + j], category)
 
 def calculate_daily_totals(food_selections, foods):
     """Calculate total daily nutrition from food selections"""
-    totals = {'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}
+    totals = {nutrient: 0 for nutrient in NUTRIENT_CONFIGS.keys()}
     selected_foods = []
     
     for category, items in foods.items():
@@ -536,15 +582,14 @@ if not user_has_entered_info:
 else:
     st.header("Your Personalized Daily Nutritional Targets for Healthy Weight Gain 🎯")
 
-# ------ Display Metabolic Information ------
+# ------ Display All Metrics Using Unified Function ------
 metabolic_metrics = [
     ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
     ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
     ("Estimated Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg per week")
 ]
-display_metrics_in_columns(metabolic_metrics)
+display_metrics_grid(metabolic_metrics, 3)
 
-# ------ Display Daily Nutritional Targets ------
 st.subheader("Daily Nutritional Target Breakdown")
 target_metrics = [
     ("Daily Calorie Target", f"{targets['total_calories']} kcal"),
@@ -552,9 +597,8 @@ target_metrics = [
     ("Carbohydrate Target", f"{targets['carb_g']} g"),
     ("Fat Target", f"{targets['fat_g']} g")
 ]
-display_metrics_in_columns(target_metrics)
+display_metrics_grid(target_metrics, 4)
 
-# ------ Display Macronutrient Percentages ------
 st.subheader("Macronutrient Distribution as Percent of Daily Calories")
 protein_percent = (targets['protein_calories'] / targets['total_calories']) * 100
 carb_percent = (targets['carb_calories'] / targets['total_calories']) * 100
@@ -565,7 +609,7 @@ percentage_metrics = [
     ("Carbohydrate Contribution", f"{carb_percent:.1f} percent", f"+ {targets['carb_calories']} kcal"),
     ("Fat Contribution", f"{fat_percent_display:.1f} percent", f"+ {targets['fat_calories']} kcal")
 ]
-display_metrics_in_columns(percentage_metrics)
+display_metrics_grid(percentage_metrics, 3)
 
 st.markdown("---")
 
@@ -582,24 +626,11 @@ tabs = st.tabs(available_categories)
 
 for i, category in enumerate(available_categories):
     items = foods[category]
-
     # ------ Sort Items by Emoji Hierarchy ------
     sorted_items = sorted(items, key=lambda x: (EMOJI_ORDER.get(x.get('emoji', ''), 4), -x['calories']))
 
     with tabs[i]:
-        # ------ Display Foods In Two-Column Layout ------
-        for j in range(0, len(sorted_items), 2):
-            col1, col2 = st.columns(2)
-
-            # ------ First Food Item In Row ------
-            if j < len(sorted_items):
-                with col1:
-                    render_food_item(sorted_items[j], category)
-
-            # ------ Second Food Item In Row ------
-            if j + 1 < len(sorted_items):
-                with col2:
-                    render_food_item(sorted_items[j + 1], category)
+        render_food_grid(sorted_items, category, 2)
 
 st.markdown("---")
 
@@ -628,36 +659,12 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
         ("Total Carbohydrates Consumed", f"{totals['carbs']:.1f} g"),
         ("Total Fat Consumed", f"{totals['fat']:.1f} g")
     ]
-    display_metrics_in_columns(intake_metrics)
+    display_metrics_grid(intake_metrics, 4)
 
-    st.subheader("Progress Toward Daily Nutritional Targets 🎯")
-
-    # ------ Display Progress Bars ------
-    progress_data = [
-        (totals['calories'], targets['total_calories'], "Calories", "kcal"),
-        (totals['protein'], targets['protein_g'], "Protein", "g"),
-        (totals['carbs'], targets['carb_g'], "Carbohydrates", "g"),
-        (totals['fat'], targets['fat_g'], "Fat", "g")
-    ]
-    
-    for actual, target, name, unit in progress_data:
-        display_progress_bar(actual, target, name, unit)
+    # ------ Unified Progress Tracking ------
+    recommendations = create_progress_tracking(totals, targets)
 
     st.subheader("Personalized Recommendations for Today's Nutrition 💡")
-    recommendations = []
-    
-    recommendation_checks = [
-        (totals['calories'], targets['total_calories'], "kcal", "to reach your weight gain target"),
-        (totals['protein'], targets['protein_g'], "g of protein", "for muscle building"),
-        (totals['carbs'], targets['carb_g'], "g of carbohydrates", "for energy and performance"),
-        (totals['fat'], targets['fat_g'], "g of healthy fats", "for hormone production")
-    ]
-    
-    for actual, target, unit, purpose in recommendation_checks:
-        if actual < target:
-            deficit = target - actual
-            recommendations.append(f"• You need {deficit:.0f} more {unit} {purpose}")
-    
     if recommendations:
         for rec in recommendations:
             st.write(rec)
