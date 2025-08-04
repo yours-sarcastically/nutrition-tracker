@@ -149,17 +149,12 @@ def get_final_values(user_inputs):
     return final_values
 
 def display_metrics_grid(metrics_data, num_columns=4):
-    """Display metrics in a configurable column layout with empty placeholder support"""
+    """Display metrics in a configurable column layout"""
     columns = st.columns(num_columns)
     
     for i, metric_info in enumerate(metrics_data):
         with columns[i % num_columns]:
-            # Handle empty placeholders
-            if len(metric_info) == 2 and metric_info[0] == "" and metric_info[1] == "":
-                st.empty()  # Creates empty space
-            elif len(metric_info) == 3 and metric_info[0] == "" and metric_info[1] == "" and metric_info[2] == "":
-                st.empty()  # Creates empty space
-            elif len(metric_info) == 2:
+            if len(metric_info) == 2:
                 label, value = metric_info
                 st.metric(label, value)
             elif len(metric_info) == 3:
@@ -417,7 +412,7 @@ user_has_entered_info = (
 targets = calculate_personalized_targets(**final_values)
 
 # -----------------------------------------------------------------------------
-# Cell 9: Unified Target Display System with 4-Column Alignment
+# Cell 9: Unified Target Display System
 # -----------------------------------------------------------------------------
 
 if not user_has_entered_info:
@@ -427,15 +422,14 @@ if not user_has_entered_info:
 else:
     st.header("Your Personalized Daily Nutritional Targets for Healthy Weight Gain 🎯")
 
-# ------ Updated Metrics Display Configuration for 4-Column Alignment ------
+# ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
-        'title': '', 'columns': 4,  # Top row - no title needed
+        'title': 'Metabolic Information', 'columns': 3,
         'metrics': [
             ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
             ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
-            ("Est. Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg"),
-            ("", "")  # Empty placeholder for 4th column
+            ("Est. Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg")
         ]
     },
     {
@@ -448,15 +442,22 @@ metrics_config = [
         ]
     },
     {
-        'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 4,
+        'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 3,
         'metrics': [
-            ("Protein", f"{(targets['protein_calories'] / targets['total_calories']) * 100:.1f}%", f"+ {targets['protein_calories']} kcal"),
-            ("Carbohydrates", f"{(targets['carb_calories'] / targets['total_calories']) * 100:.1f}%", f"+ {targets['carb_calories']} kcal"),
-            ("Fat", f"{(targets['fat_calories'] / targets['total_calories']) * 100:.1f}%", f"+ {targets['fat_calories']} kcal"),
-            ("", "", "")  # Empty placeholder for 4th column
+            ("Protein", f"{(targets['protein_calories'] / targets['total_calories']) * 100:.1f}%", f"{targets['protein_calories']} kcal"),
+            ("Carbohydrates", f"{(targets['carb_calories'] / targets['total_calories']) * 100:.1f}%", f"{targets['carb_calories']} kcal"),
+            ("Fat", f"{(targets['fat_calories'] / targets['total_calories']) * 100:.1f}%", f"{targets['fat_calories']} kcal")
         ]
     }
 ]
+
+# Display all metrics using unified system
+for config in metrics_config:
+    if config['title'] != 'Metabolic Information':
+        st.subheader(config['title'])
+    display_metrics_grid(config['metrics'], config['columns'])
+
+st.markdown("---")
 
 # -----------------------------------------------------------------------------
 # Cell 10: Interactive Food Selection Interface
