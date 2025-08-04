@@ -64,9 +64,17 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
             sorted_by_nutrient = sorted(
                 items, key=lambda x: getattr(x, sort_attr), reverse=True
             )
-            top_foods[nutrient_key] = [
+
+            # ------------ PATCH START ------------
+            # Accumulate (extend) instead of overwrite
+            top_foods[nutrient_key].extend(
                 food.name for food in sorted_by_nutrient[:3]
-            ]
+            )
+            # ------------ PATCH END --------------
+
+    # Deduplicate each nutrient leaderboard while preserving order
+    for key in ["protein", "carbs", "fat", "micro"]:
+        top_foods[key] = list(dict.fromkeys(top_foods[key]))
 
     # ------------------------------------------------------------------
     # 2. Identify superfoods (appear in ≥2 nutrient leaderboards)
