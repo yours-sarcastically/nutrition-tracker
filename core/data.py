@@ -1,5 +1,5 @@
 # core/data.py
-# Description: Load the database and attach nutrient / calorie emojis to every food.
+# Description: Functions for loading and processing the food database.
 
 import pandas as pd
 import streamlit as st
@@ -8,144 +8,127 @@ from .models import FoodItem
 from config import CONFIG
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 1. Load the CSV into FoodItem objects
-# ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_food_database(file_path: str) -> Dict[str, List[FoodItem]]:
-    """Return {category: [FoodItem, …]} from the CSV file."""
+    """Load the Vegetarian Food Database from a CSV file into FoodItem objects."""
     df = pd.read_csv(file_path)
-    foods: Dict[str, List[FoodItem]] = {cat: [] for cat in CONFIG["nutrient_map"].keys()}
+    foods = {cat: [] for cat in CONFIG['nutrient_map'].keys()}
 
     for _, row in df.iterrows():
-        cat = row["category"]
-        if cat not in foods:
-            continue
-        foods[cat].append(
-            FoodItem(
-                name=f"{row['name']} ({row['serving_unit']})",
-                calories=row["calories"],
-                protein=row["protein"],
-                carbs=row["carbs"],
-                fat=row["fat"],
+        category = row['category']
+        if category in foods:
+            foods[category].append(
+                FoodItem(
+                    name=f"{row['name']} ({row['serving_unit']})",
+                    calories=row['calories'],
+                    protein=row['protein'],
+                    carbs=row['carbs'],
+                    fat=row['fat'],
+                )
             )
-        )
     return foods
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2. Emoji assignment
-# ─────────────────────────────────────────────────────────────────────────────
 def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodItem]]:
     """
-    Attach an emoji to every FoodItem.
-
-    Priority:
-      🥇  Superfood              – appears in ≥ 2 of the four nutrient leaderboards
-      💥  High-calorie nutrient  – 🔥 AND in any nutrient leaderboard
-      🔥  High-calorie           – top-3 calories *within its own category*
-      💪  Protein top-3 (global)
-      🍚  Carbs   top-3 (global)
-      🥑  Fat     top-3 (global)
-      🥦  Micro   top-3 (global)
+    Assign an emoji to every food item based on its rank in:
+        • Protein, Carbs, Fat, Micronutrients  (💪 / 🍚 / 🥑 / 🥦)
+        • Calories (🔥)
+        • Both nutrient-top & high-calorie (💥)
+        • Appearing in ≥ 2 nutrient leaderboards (🥇)
     """
     # ------------------------------------------------------------------
-    # 2-A. Collect a flat list of every FoodItem for global sorting
+    # 1. Build leaderboards
     # ------------------------------------------------------------------
-    all_items: List[FoodItem] = [f for lst in foods.values() for f in lst]
-
-    # Mapping nutrient key → FoodItem attribute
-    nutrient_attr = {
-        "protein": "protein",
-        "carbs":   "carbs",
-        "fat":     "fat",
-        "micro":   "micro_score",   # depends on your model—adjust if needed
-    }
-
-    # ------------------------------------------------------------------
-    # 2-B. Build GLOBAL top-3 leaderboards for protein / carbs / fat / micro
-    # ------------------------------------------------------------------
-    TOP_N = 3
     top_foods = {
-        "protein": [
-            itm.name
-            for itm in sorted(all_items, key=lambda x: x.protein, reverse=True)[:TOP_N]
-        ],
-        "carbs": [
-            itm.name
-            for itm in sorted(all_items, key=lambda x: x.carbs, reverse=True)[:TOP_N]
-        ],
-        "fat": [
-            itm.name
-            for itm in sorted(all_items, key=lambda x: x.fat, reverse=True)[:TOP_N]
-        ],
-        "micro": [
-            itm.name
-            for itm in sorted(all_items, key=lambda x: getattr(x, "micro", 0), reverse=True)[:TOP_N]
-        ],
-        "calories": {},   # per-category high-cal lists filled next
+        "protein": [],
+        "carbs": [],
+        "fat": [],
+        "micro": [],
+        "calories": {},  # per-category top-3 lists
     }
 
-    # ------------------------------------------------------------------
-    # 2-C. Top-3 by calories *per category*
-    # ------------------------------------------------------------------
-    for cat, items in foods.items():
+    for category, items in foods.items():
+        if not items:
+            continue
+
+        # Top-3 by calories (store per category – later collapsed)
         sorted_by_cal = sorted(items, key=lambda x: x.calories, reverse=True)
-        top_foods["calories"][cat] = [f.name for f in sorted_by_cal[:TOP_N]]
+        top_foods["calories"][category] = [food.name for food in sorted_by_cal[:3]]
+
+        # Top-3 by the category’s key nutrient
+        map_info = CONFIG["nutrient_map"].get(category)
+        if map_info:
+            nutrient_key = map_info["key"]          # protein / carbs / fat / micro
+            sort_attr = map_info["sort_by"]         # attribute on FoodItem
+            sorted_by_nutrient = sorted(
+                items, key=lambda x: getattr(x, sort_attr), reverse=True
+            )
+            top_foods[nutrient_key] = [
+                food.name for food in sorted_by_nutrient[:3]
+            ]
 
     # ------------------------------------------------------------------
-    # 2-D. Derive helper sets
+    # 2. Identify superfoods (appear in ≥2 nutrient leaderboards)
     # ------------------------------------------------------------------
-    all_nutrient_leaders = {
-        name for k in ("protein", "carbs", "fat", "micro") for name in top_foods[k]
+    all_top_nutrient_foods = {
+        food
+        for key in ["protein", "carbs", "fat", "micro"]
+        for food in top_foods[key]
     }
-
-    # food → how many nutrient leaderboards it is in
-    leaderboard_count = {
-        name: sum(name in top_foods[k] for k in ("protein", "carbs", "fat", "micro"))
-        for name in all_nutrient_leaders
+    nutrient_rank_count = {
+        name: sum(
+            1
+            for key in ["protein", "carbs", "fat", "micro"]
+            if name in top_foods[key]
+        )
+        for name in all_top_nutrient_foods
     }
-    superfoods = {n for n, cnt in leaderboard_count.items() if cnt >= 2}
-
-    high_calorie_set = {
-        n for lst in top_foods["calories"].values() for n in lst
-    }
+    superfoods = {name for name, count in nutrient_rank_count.items() if count > 1}
 
     # ------------------------------------------------------------------
-    # 2-E. Emoji lookup table
+    # 3. Emoji mapping
     # ------------------------------------------------------------------
-    EMOJI = {
-        "super": "🥇",
+    emoji_mapping = {
+        "superfoods": "🥇",
         "high_cal_nutrient": "💥",
-        "high_cal": "🔥",
+        "high_calorie": "🔥",
         "protein": "💪",
         "carbs": "🍚",
         "fat": "🥑",
         "micro": "🥦",
     }
 
-    # ------------------------------------------------------------------
-    # 2-F. Walk through every FoodItem and assign its emoji
-    # ------------------------------------------------------------------
-    for item in all_items:
-        in_nutrient = item.name in all_nutrient_leaders
-        high_cal    = item.name in high_calorie_set
+    # Helper: flatten all high-calorie lists into one set
+    high_calorie_set = {
+        food_name
+        for cal_list in top_foods["calories"].values()
+        for food_name in cal_list
+    }
 
-        if item.name in superfoods:
-            item.emoji = EMOJI["super"]
-        elif high_cal and in_nutrient:
-            item.emoji = EMOJI["high_cal_nutrient"]
-        elif high_cal:
-            item.emoji = EMOJI["high_cal"]
-        elif item.name in top_foods["protein"]:
-            item.emoji = EMOJI["protein"]
-        elif item.name in top_foods["carbs"]:
-            item.emoji = EMOJI["carbs"]
-        elif item.name in top_foods["fat"]:
-            item.emoji = EMOJI["fat"]
-        elif item.name in top_foods["micro"]:
-            item.emoji = EMOJI["micro"]
-        else:
-            item.emoji = ""
+    # ------------------------------------------------------------------
+    # 4. Walk through every food and assign its emoji
+    # ------------------------------------------------------------------
+    for items in foods.values():
+        for food in items:
+            is_top_nutrient = food.name in all_top_nutrient_foods
+            is_high_calorie = food.name in high_calorie_set
+
+            if food.name in superfoods:
+                food.emoji = emoji_mapping["superfoods"]        # 🥇
+            elif is_high_calorie and is_top_nutrient:
+                food.emoji = emoji_mapping["high_cal_nutrient"] # 💥
+            elif is_high_calorie:
+                food.emoji = emoji_mapping["high_calorie"]      # 🔥
+            elif food.name in top_foods["protein"]:
+                food.emoji = emoji_mapping["protein"]           # 💪
+            elif food.name in top_foods["carbs"]:
+                food.emoji = emoji_mapping["carbs"]             # 🍚
+            elif food.name in top_foods["fat"]:
+                food.emoji = emoji_mapping["fat"]               # 🥑
+            elif food.name in top_foods["micro"]:
+                food.emoji = emoji_mapping["micro"]             # 🥦
+            else:
+                food.emoji = ""  # fallback – no emoji
 
     return foods
