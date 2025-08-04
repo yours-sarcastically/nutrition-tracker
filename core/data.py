@@ -46,17 +46,27 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
 
     emoji_mapping = {'superfoods': '🥇', 'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑', 'micro': '🥦'}
     
-    for items in foods.values():
+    # --- Corrected Section ---
+    for category, items in foods.items():
         for food in items:
             is_top_nutrient = food.name in all_top_foods
-            is_high_calorie = food.name in top_foods['calories'].get(food.name.split(' (')[0], [])
+            is_high_calorie = food.name in top_foods['calories'].get(category, [])
 
-            if food.name in superfoods: food.emoji = emoji_mapping['superfoods']
-            elif is_high_calorie and is_top_nutrient: food.emoji = emoji_mapping['high_cal_nutrient']
-            elif is_high_calorie: food.emoji = emoji_mapping['high_calorie']
-            elif food.name in top_foods['protein']: food.emoji = emoji_mapping['protein']
-            elif food.name in top_foods['carbs']: food.emoji = emoji_mapping['carbs']
-            elif food.name in top_foods['fat']: food.emoji = emoji_mapping['fat']
-            elif food.name in top_foods['micro']: food.emoji = emoji_mapping['micro']
-            else: food.emoji = ''
+            if food.name in superfoods:
+                food.emoji = emoji_mapping['superfoods']
+            elif is_high_calorie and is_top_nutrient:
+                food.emoji = emoji_mapping['high_cal_nutrient']
+            elif is_high_calorie:
+                food.emoji = emoji_mapping['high_calorie']
+            elif food.name in top_foods['protein']:
+                food.emoji = emoji_mapping['protein']
+            elif food.name in top_foods['carbs']:
+                food.emoji = emoji_mapping['carbs']
+            elif food.name in top_foods['fat']:
+                food.emoji = emoji_mapping['fat']
+            elif food.name in top_foods['micro']:
+                food.emoji = emoji_mapping['micro']
+            else:
+                food.emoji = ''
+                
     return foods
