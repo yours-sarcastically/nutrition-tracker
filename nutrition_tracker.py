@@ -53,21 +53,50 @@ ACTIVITY_MULTIPLIERS = {
 # ------ Emoji Hierarchy for Food Ranking ------
 EMOJI_ORDER = {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4}
 
-# ------ Nutrient Category Mapping ------
-NUTRIENT_MAP = {
+# ------ Nutrient Category Mapping (REFACTORED) ------
+# Maps category to the nutrient column to sort by
+NUTRIENT_SORT_KEY_MAP = {
     'PRIMARY PROTEIN SOURCES': 'protein',
     'PRIMARY CARBOHYDRATE SOURCES': 'carbs',
     'PRIMARY FAT SOURCES': 'fat',
-    'PRIMARY MICRONUTRIENT SOURCES': 'protein'
+    'PRIMARY MICRONUTRIENT SOURCES': 'protein'  # Sorted by protein as a proxy for nutrient density
+}
+# Maps category to its key in the top_foods dictionary for ranking
+CATEGORY_TO_TOP_FOODS_KEY_MAP = {
+    'PRIMARY PROTEIN SOURCES': 'protein',
+    'PRIMARY CARBOHYDRATE SOURCES': 'carbs',
+    'PRIMARY FAT SOURCES': 'fat',
+    'PRIMARY MICRONUTRIENT SOURCES': 'micro'
 }
 
-# ------ Form Field Configurations ------
-FORM_FIELDS = {
-    'age': {'key': 'user_age', 'default_key': 'age'},
-    'height_cm': {'key': 'user_height', 'default_key': 'height_cm'},
-    'weight_kg': {'key': 'user_weight', 'default_key': 'weight_kg'},
-    'sex': {'key': 'user_sex', 'default_key': 'sex'},
-    'activity_level': {'key': 'user_activity', 'default_key': 'activity_level'}
+# ------ Form Field Configurations (REFACTORED) ------
+FORM_FIELD_CONFIGS = {
+    'age': {
+        'widget': st.sidebar.number_input, 'label': 'Age (Years)', 'session_key': 'user_age',
+        'params': {'min_value': 16, 'max_value': 80, 'placeholder': "Enter your age"}
+    },
+    'height_cm': {
+        'widget': st.sidebar.number_input, 'label': 'Height (Centimeters)', 'session_key': 'user_height',
+        'params': {'min_value': 140, 'max_value': 220, 'placeholder': "Enter your height"}
+    },
+    'weight_kg': {
+        'widget': st.sidebar.number_input, 'label': 'Weight (kg)', 'session_key': 'user_weight',
+        'params': {'min_value': 40.0, 'max_value': 150.0, 'step': 0.5, 'placeholder': "Enter your weight"}
+    },
+    'sex': {
+        'widget': st.sidebar.selectbox, 'label': 'Sex', 'session_key': 'user_sex',
+        'params': {'options': ["Select Sex", "Male", "Female"]}
+    },
+    'activity_level': {
+        'widget': st.sidebar.selectbox, 'label': 'Activity Level', 'session_key': 'user_activity',
+        'params': {
+            'options': [
+                ("Select Activity Level", None), ("Sedentary", "sedentary"), ("Lightly Active", "lightly_active"),
+                ("Moderately Active", "moderately_active"), ("Very Active", "very_active"), ("Extremely Active", "extremely_active")
+            ],
+            'format_func': lambda x: x[0]
+        }
+    }
 }
 
 # ------ Nutrient Display Configurations ------
@@ -84,14 +113,12 @@ NUTRIENT_CONFIGS = {
 
 def initialize_session_state():
     """Initialize all session state variables"""
-    # Food selections
     if 'food_selections' not in st.session_state:
         st.session_state.food_selections = {}
     
-    # User input variables
-    for field_config in FORM_FIELDS.values():
-        if field_config['key'] not in st.session_state:
-            st.session_state[field_config['key']] = None
+    for field_config in FORM_FIELD_CONFIGS.values():
+        if field_config['session_key'] not in st.session_state:
+            st.session_state[field_config['session_key']] = None
 
 def get_final_value(user_value, default_key, special_check=None):
     """Get final value using user input or default"""
@@ -122,14 +149,12 @@ def create_progress_tracking(totals, targets):
         actual = totals[nutrient]
         target = targets[config['target_key']]
         
-        # Display progress bar
         percent = min(actual / target * 100, 100) if target > 0 else 0
         st.progress(
             percent / 100,
             text=f"{config['label']}: {percent:.0f} percent of daily target ({target:.0f} {config['unit']})"
         )
         
-        # Generate recommendations
         if actual < target:
             deficit = target - actual
             purpose_map = {
@@ -172,18 +197,7 @@ def calculate_daily_totals(food_selections, foods):
 # -----------------------------------------------------------------------------
 
 def calculate_bmr(age, height_cm, weight_kg, sex='male'):
-    """
-    Calculate Basal Metabolic Rate Using the Mifflin-St Jeor Equation
-
-    Args:
-        age: Age in years
-        height_cm: Height in centimeters
-        weight_kg: Weight in kg
-        sex: 'male' or 'female'
-
-    Returns:
-        BMR in kcal per day
-    """
+    """Calculate Basal Metabolic Rate Using the Mifflin-St Jeor Equation"""
     if sex.lower() == 'male':
         bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
     else:
@@ -191,16 +205,7 @@ def calculate_bmr(age, height_cm, weight_kg, sex='male'):
     return bmr
 
 def calculate_tdee(bmr, activity_level):
-    """
-    Calculate Total Daily Energy Expenditure Based on Activity Level
-
-    Args:
-        bmr: Basal Metabolic Rate
-        activity_level: Activity level as a string
-
-    Returns:
-        TDEE in kcal per day
-    """
+    """Calculate Total Daily Energy Expenditure Based on Activity Level"""
     multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
     return bmr * multiplier
 
@@ -209,22 +214,7 @@ def calculate_personalized_targets(
     activity_level='moderately_active',
     caloric_surplus=400, protein_per_kg=2.0, fat_percentage=0.25
 ):
-    """
-    Calculate Personalized Daily Nutritional Targets
-
-    Args:
-        age: Age in years
-        height_cm: Height in centimeters
-        weight_kg: Weight in kg
-        sex: 'male' or 'female'
-        activity_level: Activity level as a string
-        caloric_surplus: Additional calories per day
-        protein_per_kg: Protein g per kilogram body weight
-        fat_percentage: Fraction of calories from fat
-
-    Returns:
-        Dictionary containing daily targets for calories, protein, fat, and carbohydrates
-    """
+    """Calculate Personalized Daily Nutritional Targets"""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
     total_calories = tdee + caloric_surplus
@@ -236,15 +226,10 @@ def calculate_personalized_targets(
     carb_g = carb_calories / 4
 
     return {
-        'bmr': round(bmr),
-        'tdee': round(tdee),
-        'total_calories': round(total_calories),
-        'protein_g': round(protein_g),
-        'protein_calories': round(protein_calories),
-        'fat_g': round(fat_g),
-        'fat_calories': round(fat_calories),
-        'carb_g': round(carb_g),
-        'carb_calories': round(carb_calories),
+        'bmr': round(bmr), 'tdee': round(tdee), 'total_calories': round(total_calories),
+        'protein_g': round(protein_g), 'protein_calories': round(protein_calories),
+        'fat_g': round(fat_g), 'fat_calories': round(fat_calories),
+        'carb_g': round(carb_g), 'carb_calories': round(carb_calories),
         'target_weight_gain_per_week': round(weight_kg * 0.0025, 2)
     }
 
@@ -254,79 +239,44 @@ def calculate_personalized_targets(
 
 @st.cache_data
 def load_food_database(file_path):
-    """
-    Load the Vegetarian Food Database From a CSV File
-
-    Args:
-        file_path: Path to the CSV file
-
-    Returns:
-        Dictionary mapping food categories to lists of food items
-    """
+    """Load the Vegetarian Food Database From a CSV File"""
     df = pd.read_csv(file_path)
-    
-    # Initialize food categories
-    foods = {
-        'PRIMARY PROTEIN SOURCES': [],
-        'PRIMARY FAT SOURCES': [],
-        'PRIMARY CARBOHYDRATE SOURCES': [],
-        'PRIMARY MICRONUTRIENT SOURCES': []
-    }
-
-    # Load foods directly from CSV using the category column
+    foods = {cat: [] for cat in NUTRIENT_SORT_KEY_MAP.keys()}
     for _, row in df.iterrows():
         category = row['category']
-        food_item = {
-            'name': f"{row['name']} ({row['serving_unit']})",
-            'calories': row['calories'],
-            'protein': row['protein'],
-            'carbs': row['carbs'],
-            'fat': row['fat']
-        }
         if category in foods:
-            foods[category].append(food_item)
-    
+            foods[category].append({
+                'name': f"{row['name']} ({row['serving_unit']})",
+                'calories': row['calories'], 'protein': row['protein'],
+                'carbs': row['carbs'], 'fat': row['fat']
+            })
     return foods
 
 def assign_food_emojis(foods):
-    """
-    Assign an Emoji to Each Food Item Based on Nutritional Hierarchy
-
-    Args:
-        foods (dict): Dictionary of categorized food items
-
-    Returns:
-        dict: Foods dictionary with an 'emoji' key added to each food item
-    """
+    """Assign an Emoji to Each Food Item Based on Nutritional Hierarchy (REFACTORED)"""
     top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
 
-    # Identify top three nutrient and calorie contributors in each category
+    # Identify top nutrient and calorie contributors in each category
     for category, items in foods.items():
         if not items:
             continue
+        
+        # Rank by calories
         sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
         top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
 
-        nutrient = NUTRIENT_MAP.get(category)
-        if nutrient:
-            sorted_by_nutrient = sorted(items, key=lambda x: x[nutrient], reverse=True)
-            if category == 'PRIMARY PROTEIN SOURCES':
-                top_foods['protein'] = [food['name'] for food in sorted_by_nutrient[:3]]
-            elif category == 'PRIMARY CARBOHYDRATE SOURCES':
-                top_foods['carbs'] = [food['name'] for food in sorted_by_nutrient[:3]]
-            elif category == 'PRIMARY FAT SOURCES':
-                top_foods['fat'] = [food['name'] for food in sorted_by_nutrient[:3]]
-            elif category == 'PRIMARY MICRONUTRIENT SOURCES':
-                top_foods['micro'] = [food['name'] for food in sorted_by_nutrient[:3]]
+        # Rank by primary nutrient using the configuration maps
+        sort_key = NUTRIENT_SORT_KEY_MAP.get(category)
+        top_foods_key = CATEGORY_TO_TOP_FOODS_KEY_MAP.get(category)
+        if sort_key and top_foods_key:
+            sorted_by_nutrient = sorted(items, key=lambda x: x.get(sort_key, 0), reverse=True)
+            top_foods[top_foods_key] = [food['name'] for food in sorted_by_nutrient[:3]]
 
     # Identify superfoods (high rank in multiple nutrient categories)
     food_rank_counts = {}
     all_top_nutrient_foods = set(top_foods['protein'] + top_foods['carbs'] + top_foods['fat'] + top_foods['micro'])
     for food_name in all_top_nutrient_foods:
-        count = sum([
-            1 for nutrient_list in ['protein', 'carbs', 'fat', 'micro']
-            if food_name in top_foods[nutrient_list]
-        ])
+        count = sum(1 for key in ['protein', 'carbs', 'fat', 'micro'] if food_name in top_foods[key])
         food_rank_counts[food_name] = count
     superfoods = {name for name, count in food_rank_counts.items() if count > 1}
 
@@ -338,35 +288,21 @@ def assign_food_emojis(foods):
             is_top_nutrient = food_name in all_top_nutrient_foods
             is_high_calorie = food_name in top_foods['calories'].get(category, [])
 
-            if food_name in superfoods:
-                food['emoji'] = '🥇'
-            elif is_high_calorie and is_top_nutrient:
-                food['emoji'] = '💥'
-            elif is_high_calorie:
-                food['emoji'] = '🔥'
-            elif food_name in top_foods['protein']:
-                food['emoji'] = '💪'
-            elif food_name in top_foods['carbs']:
-                food['emoji'] = '🍚'
-            elif food_name in top_foods['fat']:
-                food['emoji'] = '🥑'
-            elif food_name in top_foods['micro']:
-                food['emoji'] = '🥦'
+            if food_name in superfoods: food['emoji'] = '🥇'
+            elif is_high_calorie and is_top_nutrient: food['emoji'] = '💥'
+            elif is_high_calorie: food['emoji'] = '🔥'
+            elif food_name in top_foods['protein']: food['emoji'] = '💪'
+            elif food_name in top_foods['carbs']: food['emoji'] = '🍚'
+            elif food_name in top_foods['fat']: food['emoji'] = '🥑'
+            elif food_name in top_foods['micro']: food['emoji'] = '🥦'
     return foods
 
 def render_food_item(food, category):
-    """
-    Render a single food item with buttons and input controls
-    
-    Args:
-        food: Food item dictionary
-        category: Food category string
-    """
+    """Render a single food item with buttons and input controls"""
     st.subheader(f"{food.get('emoji', '')} {food['name']}")
     key = f"{category}_{food['name']}"
     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
     
-    # Serving buttons
     button_cols = st.columns(5)
     for k in range(1, 6):
         with button_cols[k - 1]:
@@ -375,12 +311,9 @@ def render_food_item(food, category):
                 st.session_state.food_selections[food['name']] = float(k)
                 st.rerun()
     
-    # Custom serving input
     custom_serving = st.number_input(
-        "Custom Number of Servings:",
-        min_value=0.0, max_value=10.0,
-        value=float(current_serving), step=0.1,
-        key=f"{key}_custom"
+        "Custom Number of Servings:", min_value=0.0, max_value=10.0,
+        value=float(current_serving), step=0.1, key=f"{key}_custom"
     )
     if custom_serving != current_serving:
         if custom_serving > 0:
@@ -389,153 +322,72 @@ def render_food_item(food, category):
             del st.session_state.food_selections[food['name']]
         st.rerun()
     
-    # Nutritional info
-    st.caption(
-        f"Per Serving: {food['calories']} kcal | "
-        f"{food['protein']} g protein | "
-        f"{food['carbs']} g carbohydrates | "
-        f"{food['fat']} g fat"
-    )
+    st.caption(f"Per Serving: {food['calories']} kcal | {food['protein']} g protein | {food['carbs']} g carbs | {food['fat']} g fat")
 
 # -----------------------------------------------------------------------------
 # Cell 7: Initialize Application
 # -----------------------------------------------------------------------------
 
-# Initialize session state
 initialize_session_state()
-
-# Load food database and assign emojis
 foods = load_food_database('nutrition_results.csv')
 foods = assign_food_emojis(foods)
 
-# Custom CSS for enhanced styling
-st.markdown("""
-<style>
-[data-testid="InputInstructions"] {
-    display: none;
-}
-.active-button {
-    background-color: #ff6b6b !important;
-    color: white !important;
-    border: 2px solid #ff6b6b !important;
-}
-.button-container {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 10px;
-}
-.sidebar .sidebar-content {
-    background-color: #f0f2f6;
-}
-.stNumberInput > div > div > input[value] {
-    color: #666;
-}
-</style>
-""", unsafe_allow_html=True)
+st.markdown("""<style>[data-testid="InputInstructions"] {display: none;}</style>""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# Cell 8: Application Title and Sidebar Parameters
+# Cell 8: Application Title and Sidebar Parameters (REFACTORED)
 # -----------------------------------------------------------------------------
 
 st.title("Personalized Evidence-Based Nutrition Tracker 🍽️")
-st.markdown("""
-Ready to turbocharge your health game? This awesome tool dishes out daily nutrition goals made just for you and makes tracking meals as easy as pie. Let's get those macros on your team! 🚀
-""")
+st.markdown("Ready to turbocharge your health game? This awesome tool dishes out daily nutrition goals made just for you and makes tracking meals as easy as pie. Let's get those macros on your team! 🚀")
 
-# ------ Sidebar for Personal Parameters ------
 st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
-# ------ Personal Information Inputs With Placeholder Text ------
-age = st.sidebar.number_input(
-    "Age (Years)",
-    min_value=16,
-    max_value=80,
-    value=st.session_state.user_age,
-    placeholder="Enter your age"
+# ------ Dynamically generate sidebar inputs and manage state ------
+user_inputs = {}
+for key, config in FORM_FIELD_CONFIGS.items():
+    current_value = st.session_state.get(config['session_key'])
+    widget_params = config['params'].copy()
+    
+    # Handle selectbox index logic
+    if config['widget'] == st.sidebar.selectbox and current_value:
+        try:
+            options = widget_params['options']
+            # Handle options that are (label, value) tuples
+            values = [opt[1] for opt in options] if isinstance(options[0], tuple) else options
+            widget_params['index'] = values.index(current_value)
+        except (ValueError, IndexError):
+            widget_params['index'] = 0
+
+    # Create the widget
+    input_value = config['widget'](config['label'], value=current_value, **widget_params)
+    
+    # For selectboxes with (label, value) tuples, get the actual value
+    final_value = input_value[1] if isinstance(input_value, tuple) else input_value
+    
+    # Update session state and store the value
+    st.session_state[config['session_key']] = final_value
+    user_inputs[key] = final_value
+
+# Unpack values for use in the script
+age, height_cm, weight_kg, sex, activity_level = (
+    user_inputs['age'], user_inputs['height_cm'], user_inputs['weight_kg'],
+    user_inputs['sex'], user_inputs['activity_level']
 )
-
-height_cm = st.sidebar.number_input(
-    "Height (Centimeters)",
-    min_value=140,
-    max_value=220,
-    value=st.session_state.user_height,
-    placeholder="Enter your height"
-)
-
-weight_kg = st.sidebar.number_input(
-    "Weight (kg)",
-    min_value=40.0,
-    max_value=150.0,
-    value=st.session_state.user_weight,
-    step=0.5,
-    placeholder="Enter your weight"
-)
-
-sex_options = ["Select Sex", "Male", "Female"]
-sex_index = 0
-if st.session_state.user_sex:
-    try:
-        sex_index = sex_options.index(st.session_state.user_sex)
-    except ValueError:
-        sex_index = 0
-
-sex = st.sidebar.selectbox("Sex", sex_options, index=sex_index)
-
-activity_options = [
-    ("Select Activity Level", None),
-    ("Sedentary", "sedentary"),
-    ("Lightly Active", "lightly_active"),
-    ("Moderately Active", "moderately_active"),
-    ("Very Active", "very_active"),
-    ("Extremely Active", "extremely_active")
-]
-activity_index = 0
-if st.session_state.user_activity:
-    for i, (label, value) in enumerate(activity_options):
-        if value == st.session_state.user_activity:
-            activity_index = i
-            break
-
-activity_selection = st.sidebar.selectbox(
-    "Activity Level",
-    activity_options,
-    index=activity_index,
-    format_func=lambda x: x[0]
-)
-activity_level = activity_selection[1]
-
-# ------ Update Session State With User Inputs ------
-st.session_state.user_age = age
-st.session_state.user_height = height_cm
-st.session_state.user_weight = weight_kg
-st.session_state.user_sex = sex
-st.session_state.user_activity = activity_level
 
 # ------ Advanced Parameters Collapsible Section ------
 with st.sidebar.expander("Advanced Settings ⚙️"):
     caloric_surplus = st.number_input(
-        "Caloric Surplus (kcal Per Day)",
-        min_value=200, max_value=800,
-        value=None,
-        placeholder=f"Default: {DEFAULTS['caloric_surplus']}",
-        step=50,
-        help="Additional calories above maintenance for weight gain"
+        "Caloric Surplus (kcal Per Day)", min_value=200, max_value=800, value=None,
+        placeholder=f"Default: {DEFAULTS['caloric_surplus']}", step=50, help="Additional calories above maintenance for weight gain"
     )
     protein_per_kg = st.number_input(
-        "Protein (g Per Kilogram Body Weight)",
-        min_value=1.2, max_value=3.0,
-        value=None,
-        placeholder=f"Default: {DEFAULTS['protein_per_kg']}",
-        step=0.1,
-        help="Protein intake per kilogram of body weight"
+        "Protein (g Per Kilogram Body Weight)", min_value=1.2, max_value=3.0, value=None,
+        placeholder=f"Default: {DEFAULTS['protein_per_kg']}", step=0.1, help="Protein intake per kilogram of body weight"
     )
     fat_percentage_input = st.number_input(
-        "Fat (Percent of Total Calories)",
-        min_value=15, max_value=40,
-        value=None,
-        placeholder=f"Default: {int(DEFAULTS['fat_percentage'] * 100)}",
-        step=1,
-        help="Percentage of total calories from fat"
+        "Fat (Percent of Total Calories)", min_value=15, max_value=40, value=None,
+        placeholder=f"Default: {int(DEFAULTS['fat_percentage'] * 100)}", step=1, help="Percentage of total calories from fat"
     )
 
 # ------ Use Default Values If User Has Not Entered Custom Values ------
@@ -550,24 +402,12 @@ final_values = {
     'fat_percentage': get_final_value(fat_percentage_input / 100 if fat_percentage_input else None, 'fat_percentage')
 }
 
-# ------ Check If User Has Entered All Required Information ------
-user_has_entered_info = (
-    age is not None and
-    height_cm is not None and
-    weight_kg is not None and
-    sex != "Select Sex" and
-    activity_level is not None
-)
+user_has_entered_info = all([age, height_cm, weight_kg, sex != "Select Sex", activity_level])
 
-# ------ Calculate Personalized Targets for the User ------
 targets = calculate_personalized_targets(
-    age=final_values['age'],
-    height_cm=final_values['height_cm'],
-    weight_kg=final_values['weight_kg'],
-    sex=final_values['sex'].lower(),
-    activity_level=final_values['activity_level'],
-    caloric_surplus=final_values['caloric_surplus'],
-    protein_per_kg=final_values['protein_per_kg'],
+    age=final_values['age'], height_cm=final_values['height_cm'], weight_kg=final_values['weight_kg'],
+    sex=final_values['sex'].lower(), activity_level=final_values['activity_level'],
+    caloric_surplus=final_values['caloric_surplus'], protein_per_kg=final_values['protein_per_kg'],
     fat_percentage=final_values['fat_percentage']
 )
 
@@ -582,7 +422,6 @@ if not user_has_entered_info:
 else:
     st.header("Your Personalized Daily Nutritional Targets for Healthy Weight Gain 🎯")
 
-# ------ Display All Metrics Using Unified Function ------
 metabolic_metrics = [
     ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
     ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
@@ -620,15 +459,12 @@ st.markdown("---")
 st.header("Select Foods and Log Servings for Today 📝")
 st.markdown("Choose foods using the buttons for preset servings or enter a custom serving amount for each item")
 
-# ------ Create Category Tabs for Food Organization ------
 available_categories = [cat for cat, items in foods.items() if items]
 tabs = st.tabs(available_categories)
 
 for i, category in enumerate(available_categories):
     items = foods[category]
-    # ------ Sort Items by Emoji Hierarchy ------
     sorted_items = sorted(items, key=lambda x: (EMOJI_ORDER.get(x.get('emoji', ''), 4), -x['calories']))
-
     with tabs[i]:
         render_food_grid(sorted_items, category, 2)
 
@@ -661,7 +497,6 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     ]
     display_metrics_grid(intake_metrics, 4)
 
-    # ------ Unified Progress Tracking ------
     recommendations = create_progress_tracking(totals, targets)
 
     st.subheader("Personalized Recommendations for Today's Nutrition 💡")
