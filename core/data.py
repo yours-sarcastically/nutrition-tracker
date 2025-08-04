@@ -34,80 +34,46 @@ def load_food_database(file_path: str) -> Dict[str, List[FoodItem]]:
     return foods
 
 def assign_food_emojis(foods: Dict[str, List[FoodItem]], n_top: int = 3) -> Dict[str, List[FoodItem]]:
-    """
-    Rank foods for each macronutrient (and calories) across the ENTIRE database,
-    determine overlaps, then attach the proper emoji to every FoodItem.
-
-    Legend
-    -------
-    🥇  Superfood                – ranks in the global top-N of ≥ 2 categories
-    💥  Nutrient + Calorie Dense – high-calorie AND top-N of a nutrient
-    🔥  High-Calorie             – high-calorie only
-    💪  Top-protein source
-    🍚  Top-carb source
-    🥑  Top-fat source
-    🥦  Top-micronutrient source (same rule as before, if you use it)
-    """
-    # -------- Flatten all FoodItems into a single list -----------------------
-    all_items: List[FoodItem] = [food for sub in foods.values() for food in sub]
-
-    # -------- Build global top-N lists for each property ---------------------
-    def _top_n(items, attr, n=n_top):
-        return sorted(items, key=lambda x: getattr(x, attr), reverse=True)[:n]
-
+    ...
+    # -------- Build global top-N lists --------------------------------------
     top_protein = [f.name for f in _top_n(all_items, "protein")]
     top_carbs   = [f.name for f in _top_n(all_items, "carbs")]
     top_fat     = [f.name for f in _top_n(all_items, "fat")]
+    top_micro   = []                              # optional / left empty
     top_cals    = [f.name for f in _top_n(all_items, "calories")]
 
-    # (Optional) top list for micronutrients can be kept if you calculate it
-    top_micro: List[str] = []   # placeholder – keep empty if you don’t track it
-
-    # -------- Derive Superfood list -----------------------------------------
+    # -------- Superfoods: ≥ 2 nutrient lists (calories NOT counted) ---------
     appearance_counter = Counter(
         name
-        for lst in [top_protein, top_carbs, top_fat, top_micro, top_cals]
+        for lst in [top_protein, top_carbs, top_fat, top_micro]  # ← calories removed
         for name in lst
     )
     superfoods = {name for name, cnt in appearance_counter.items() if cnt >= 2}
 
-    # -------- Emoji mapping & priority order --------------------------------
-    emoji_map = {
-        "superfood": "🥇",
-        "high_nutrient_cal": "💥",
-        "high_calorie": "🔥",
-        "protein": "💪",
-        "carbs": "🍚",
-        "fat": "🥑",
-        "micro": "🥦",
-        "": "",
-    }
-
-    # -------- Attach emojis to every FoodItem -------------------------------
+    # -------- Attach emojis --------------------------------------------------
     for food in all_items:
-        is_high_calorie   = food.name in top_cals
-        is_top_nutrient   = (
+        is_high_calorie = food.name in top_cals
+        is_top_nutrient = (
             food.name in top_protein
             or food.name in top_carbs
             or food.name in top_fat
             or food.name in top_micro
         )
 
-        if food.name in superfoods:
-            food.emoji = emoji_map["superfood"]
-        elif is_high_calorie and is_top_nutrient:
-            food.emoji = emoji_map["high_nutrient_cal"]
-        elif is_high_calorie:
-            food.emoji = emoji_map["high_calorie"]
-        elif food.name in top_protein:
-            food.emoji = emoji_map["protein"]
-        elif food.name in top_carbs:
-            food.emoji = emoji_map["carbs"]
-        elif food.name in top_fat:
-            food.emoji = emoji_map["fat"]
-        elif food.name in top_micro:
-            food.emoji = emoji_map["micro"]
+        if food.name in superfoods:                    # 🥇
+            food.emoji = "🥇"
+        elif is_high_calorie and is_top_nutrient:      # 💥
+            food.emoji = "💥"
+        elif is_high_calorie:                          # 🔥
+            food.emoji = "🔥"
+        elif food.name in top_protein:                 # 💪
+            food.emoji = "💪"
+        elif food.name in top_carbs:                   # 🍚
+            food.emoji = "🍚"
+        elif food.name in top_fat:                     # 🥑
+            food.emoji = "🥑"
+        elif food.name in top_micro:                   # 🥦
+            food.emoji = "🥦"
         else:
             food.emoji = ""
-
     return foods
