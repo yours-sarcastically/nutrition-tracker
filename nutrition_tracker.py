@@ -368,10 +368,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-Of course. Here is the complete and updated code for **Cell 8**, with the redundant loops consolidated into a single, more efficient loop.
-
-***
-
 # -----------------------------------------------------------------------------
 # Cell 8: Application Title and Unified Input Interface
 # -----------------------------------------------------------------------------
