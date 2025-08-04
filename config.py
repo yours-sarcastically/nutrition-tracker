@@ -101,7 +101,7 @@ class UIConfiguration:
 class FoodConfiguration:
     """Configuration for food database and categorization."""
     # Database file path
-    database_file: str = "nutrition_database_final.csv"
+    database_file: str = "nutrition_results.csv"
     
     # Food ranking configuration
     top_foods_count: int = 3  # Number of top foods to highlight per category
