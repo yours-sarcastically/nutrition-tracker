@@ -526,9 +526,9 @@ for field_name, field_config in standard_fields.items():
     all_inputs[field_name] = value
 
 # ------ Activity Level Guide in Sidebar ------
-with st.sidebar.expander("📋 **Activity Level Guide**"):
+with st.sidebar.container(border=True):
     st.markdown("""
-    **Choose the level that best describes your weekly activity:**
+    **Activity Level Guide:**
     
     • **Sedentary:** Little to no exercise, desk job
     • **Lightly Active:** Light exercise 1-3 days per week  
@@ -540,15 +540,15 @@ with st.sidebar.expander("📋 **Activity Level Guide**"):
     """)
 
 # ------ Emoji-Based Food Ranking System Explanation in Sidebar ------
-with st.sidebar.expander("🏆 **Food Emoji Guide**"):
+with st.sidebar.container(border=True):
     st.markdown("""
-    **Our foods are ranked by nutritional density:**
+    **Food Emoji Guide:**
     
-    🥇 **Gold Medal:** Top performer in both calories AND primary nutrient
-    🔥 **High Calorie:** Among the most calorie-dense in its category
-    💪 **High Protein:** Top protein source
-    🍚 **High Carb:** Top carbohydrate source  
-    🥑 **High Fat:** Top healthy fat source
+    • 🥇 **Gold Medal:** Top performer in both calories AND primary nutrient
+    • 🔥 **High Calorie:** Among the most calorie-dense in its category
+    • 💪 **High Protein:** Top protein source
+    • 🍚 **High Carb:** Top carbohydrate source  
+    • 🥑 **High Fat:** Top healthy fat source
     
     *Foods are ranked within each category to help you make efficient choices for your goals.*
     """)
@@ -594,6 +594,9 @@ else:
     goal_label = goal_labels.get(targets['goal'], 'Weight Gain')
     st.header(f"Your Personalized Daily Nutritional Targets for {goal_label} 🎯")
 
+# ------ 80/20 Principle Info Box ------
+st.info("🎯 80/20 Principle: Aim for 80% adherence to your targets rather than perfection. This allows for social flexibility and prevents the all-or-nothing mentality that leads to diet cycling.")
+
 # ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
@@ -609,18 +612,20 @@ metrics_config = [
         'title': 'Daily Macronutrient Targets', 'columns': 4,
         'metrics': [
             ("Total Calories", f"{targets['total_calories']} kcal"),
-            ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}%)"),
-            ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}%)"),
-            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)")
+            ("Protein", f"{targets['protein_g']} g", f"{targets['protein_percent']:.0f}% of calories"),
+            ("Carbohydrates", f"{targets['carb_g']} g", f"{targets['carb_percent']:.0f}% of calories"),
+            ("Fat", f"{targets['fat_g']} g", f"{targets['fat_percent']:.0f}% of calories")
         ]
     }
 ]
+
 
 # ------ Display All Metric Sections ------
 for config in metrics_config:
     st.subheader(config['title'])
     display_metrics_grid(config['metrics'], config['columns'])
     st.markdown("---")
+
 
 # -----------------------------------------------------------------------------
 # Cell 10: Enhanced Evidence-Based Tips & Context
@@ -803,20 +808,20 @@ if st.button("🔄 Reset All Food Selections", type="secondary"):
     st.session_state.food_selections = {}
     st.rerun()
 
-# ------ Sort and Display Food Categories ------
-sorted_items = sorted(foods.items())
+# ------ Food Selection with Tabs ------
+available_categories = [cat for cat, items in sorted(foods.items()) if items]
+tabs = st.tabs(available_categories)
 
-for category, items in sorted_items:
-    if not items:
-        continue
-        
-    with st.expander(f"🍽️ **{category}** ({len(items)} options)", expanded=True):
-        # Sort items within each category by emoji priority first, then by calories
-        sorted_items_in_category = sorted(
-            items, 
-            key=lambda x: (CONFIG['emoji_order'].get(x.get('emoji', ''), 4), -x['calories'])
-        )
+for i, category in enumerate(available_categories):
+    items = foods[category]
+    # Sort items within each category by emoji priority first, then by calories
+    sorted_items_in_category = sorted(
+        items, 
+        key=lambda x: (CONFIG['emoji_order'].get(x.get('emoji', ''), 4), -x['calories'])
+    )
+    with tabs[i]:
         render_food_grid(sorted_items_in_category, category, columns=2)
+
 
 # -----------------------------------------------------------------------------
 # Cell 13: Daily Summary and Progress Tracking
