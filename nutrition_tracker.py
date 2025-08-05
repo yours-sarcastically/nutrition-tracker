@@ -526,6 +526,15 @@ for field_name, field_config in standard_fields.items():
     all_inputs[field_name] = value
 
 # ------ Activity Level Guide in Sidebar ------
+
+# 2. Render the advanced fields inside an expander placed at the bottom
+advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
+for field_name, field_config in advanced_fields.items():
+    value = create_unified_input(field_name, field_config, container=advanced_expander)
+    if 'convert' in field_config:
+        value = field_config['convert'](value)
+    all_inputs[field_name] = value
+
 with st.sidebar.container(border=True):
     st.markdown("""
     **Activity Level Guide:**
@@ -552,14 +561,6 @@ with st.sidebar.container(border=True):
     
     *Foods are ranked within each category to help you make efficient choices for your goals.*
     """)
-
-# 2. Render the advanced fields inside an expander placed at the bottom
-advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
-for field_name, field_config in advanced_fields.items():
-    value = create_unified_input(field_name, field_config, container=advanced_expander)
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
 
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
