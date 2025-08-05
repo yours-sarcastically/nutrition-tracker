@@ -1,11 +1,15 @@
 # -----------------------------------------------------------------------------
-# Personalized Evidence-Based Fitness & Nutrition Tracker (v3)
+# Personalized Evidence-Based Fitness & Nutrition Tracker (v4)
 # -----------------------------------------------------------------------------
 
 """
 This script implements a comprehensive, interactive nutrition and fitness tracking 
 application. It is designed to guide users through weight loss, maintenance, or 
 gain phases based on the most current, high-validity scientific evidence.
+
+This version adds multi-goal functionality and extensive in-app documentation
+to explain the scientific rationale behind the recommendations, without removing
+any of the original script's capabilities.
 
 ---------------------------------
 CORE SCIENTIFIC PRINCIPLES APPLIED
@@ -69,6 +73,20 @@ st.set_page_config(
 # Cell 3: Unified Configuration & Scientific Constants
 # -----------------------------------------------------------------------------
 
+# ------ Default Parameter Values for Initial Load ------
+DEFAULTS = {
+    'age': 26,
+    'height_cm': 180,
+    'weight_kg': 57.5,
+    'sex': "Male",
+    'activity_level': "moderately_active",
+    'goal': "Weight Gain",
+    # Note: The following are now primarily for the 'Advanced' override section
+    'caloric_adjustment': 400,
+    'protein_per_kg': 2.0,
+    'fat_percentage': 0.25
+}
+
 # ------ Activity Level Multipliers for TDEE Calculation ------
 ACTIVITY_MULTIPLIERS = {
     'sedentary': 1.2,
@@ -78,8 +96,8 @@ ACTIVITY_MULTIPLIERS = {
     'extremely_active': 1.9
 }
 
-# ------ Goal-Specific Scientific Presets (Highest & High Validity) ------
-# These presets define the evidence-based starting points for calories and protein.
+# ------ [NEW] Goal-Specific Scientific Presets (Highest & High Validity) ------
+# This new dictionary drives the automatic, evidence-based recommendations.
 GOAL_PRESETS = {
     "Weight Loss": {
         "caloric_adjustment_percent": -0.20,  # A 20% deficit is effective and sustainable.
@@ -106,6 +124,12 @@ GOAL_PRESETS = {
 
 # ------ General Application Configuration ------
 CONFIG = {
+    'emoji_order': {'🥇': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '': 4},
+    'nutrient_map': {
+        'PRIMARY PROTEIN SOURCES': {'sort_by': 'protein', 'key': 'protein'},
+        'PRIMARY CARBOHYDRATE SOURCES': {'sort_by': 'carbs', 'key': 'carbs'},
+        'PRIMARY FAT SOURCES': {'sort_by': 'fat', 'key': 'fat'},
+    },
     'nutrient_configs': {
         'calories': {'unit': 'kcal', 'label': 'Calories', 'target_key': 'total_calories'},
         'protein': {'unit': 'g', 'label': 'Protein', 'target_key': 'protein_g'},
@@ -113,70 +137,97 @@ CONFIG = {
         'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
     },
     'form_fields': {
-        'goal': {'type': 'selectbox', 'label': 'Primary Goal', 'options': ["Weight Loss", "Weight Maintenance", "Weight Gain"], 'required': True},
-        'age': {'type': 'number', 'label': 'Age (Years)', 'min': 16, 'max': 80, 'step': 1, 'required': True},
-        'height_cm': {'type': 'number', 'label': 'Height (cm)', 'min': 140, 'max': 220, 'step': 1, 'required': True},
-        'weight_kg': {'type': 'number', 'label': 'Weight (kg)', 'min': 40.0, 'max': 150.0, 'step': 0.5, 'required': True},
-        'sex': {'type': 'selectbox', 'label': 'Sex', 'options': ["Male", "Female"], 'required': True},
+        # [NEW] Goal selector is now the primary driver of the calculations
+        'goal': {'type': 'selectbox', 'label': 'Primary Goal', 'options': ["Weight Gain", "Weight Maintenance", "Weight Loss"], 'required': True},
+        'age': {'type': 'number', 'label': 'Age (Years)', 'min': 16, 'max': 80, 'step': 1, 'placeholder': 'Enter your age', 'required': True},
+        'height_cm': {'type': 'number', 'label': 'Height (cm)', 'min': 140, 'max': 220, 'step': 1, 'placeholder': 'Enter your height', 'required': True},
+        'weight_kg': {'type': 'number', 'label': 'Weight (kg)', 'min': 40.0, 'max': 150.0, 'step': 0.5, 'placeholder': 'Enter your weight', 'required': True},
+        'sex': {'type': 'selectbox', 'label': 'Sex', 'options': ["Male", "Female"], 'required': True, 'placeholder': "Select Sex"},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level', 'options': [
             ("Sedentary", "sedentary"), ("Lightly Active", "lightly_active"),
-            ("Moderately Active", "moderately_active"), ("Very Active", "very_active"), 
+            ("Moderately Active", "moderately_active"), ("Very Active", "very_active"),
             ("Extremely Active", "extremely_active")
-        ], 'required': True},
+        ], 'required': True, 'placeholder': None},
+        # [MODIFIED] These fields are now "Advanced Overrides" to preserve functionality
+        'caloric_adjustment': {'type': 'number', 'label': 'Caloric Adjustment (kcal)', 'min': -1000, 'max': 1000, 'step': 50, 'help': 'Manual override for caloric surplus/deficit. Leave at 0 to use the recommended percentage.', 'advanced': True, 'required': False},
+        'protein_per_kg': {'type': 'number', 'label': 'Protein (g/kg)', 'min': 1.2, 'max': 3.0, 'step': 0.1, 'help': 'Manual override for protein target. Leave at 0 to use the recommended value.', 'advanced': True, 'required': False},
+        'fat_percentage': {'type': 'number', 'label': 'Fat (% of Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Manual override for fat percentage. Leave at 0 to use the recommended value.', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True, 'required': False}
     }
 }
 
 # -----------------------------------------------------------------------------
-# Cell 4: Core Nutritional Calculation Functions
+# Cell 4: Helper and Calculation Functions
 # -----------------------------------------------------------------------------
 
+def initialize_session_state():
+    """Initialize all session state variables."""
+    if 'food_selections' not in st.session_state:
+        st.session_state.food_selections = {}
+
+def get_final_values(user_inputs):
+    """
+    Process all user inputs, applying evidence-based defaults first,
+    but allowing for advanced user overrides to preserve functionality.
+    """
+    final_values = {}
+    
+    # Use user inputs for base calculations
+    for key in ['age', 'height_cm', 'weight_kg', 'sex', 'activity_level', 'goal']:
+        final_values[key] = user_inputs.get(key, DEFAULTS[key])
+
+    # Get the scientific preset for the selected goal
+    preset = GOAL_PRESETS.get(final_values['goal'], GOAL_PRESETS["Weight Maintenance"])
+
+    # Apply presets as defaults, but check for advanced overrides
+    final_values['caloric_adjustment_percent'] = preset['caloric_adjustment_percent']
+    final_values['protein_per_kg'] = user_inputs.get('protein_per_kg') or preset['protein_per_kg']
+    final_values['fat_percentage'] = user_inputs.get('fat_percentage') or preset['fat_percent']
+    
+    # Allow manual caloric adjustment override
+    if user_inputs.get('caloric_adjustment'):
+        final_values['manual_caloric_adjustment'] = user_inputs['caloric_adjustment']
+    else:
+        final_values['manual_caloric_adjustment'] = None
+
+    return final_values
+
 def calculate_bmr(age, height_cm, weight_kg, sex):
-    """
-    (Highest Validity) Calculates Basal Metabolic Rate using the Mifflin-St Jeor Equation.
-    This is the most accurate predictive equation for healthy adults.
-    """
+    """(Highest Validity) Calculates BMR using the Mifflin-St Jeor Equation."""
     base_calc = (10 * weight_kg) + (6.25 * height_cm) - (5 * age)
     return base_calc + (5 if sex.lower() == 'male' else -161)
 
 def calculate_tdee(bmr, activity_level):
-    """
-    (Highest Validity) Calculates Total Daily Energy Expenditure (TDEE).
-    TDEE = BMR * Activity Multiplier. This estimates your daily maintenance calories.
-    """
+    """(Highest Validity) Calculates TDEE by applying an activity multiplier."""
     multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
     return bmr * multiplier
 
-def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_level, goal):
+def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_level, goal, 
+                                   caloric_adjustment_percent, protein_per_kg, fat_percentage, 
+                                   manual_caloric_adjustment=None, **kwargs):
     """
-    (Highest & High Validity) Calculates all nutritional targets based on goal.
-    This function integrates multiple high-validity principles:
-    - Uses Mifflin-St Jeor for BMR.
-    - Applies a percentage-based caloric adjustment for the selected goal.
-    - Sets protein and fat based on evidence-based presets for that goal.
-    - Calculates carbohydrates as the remaining caloric balance.
+    [UPGRADED] (Highest & High Validity) Calculates all nutritional targets.
+    This function now uses percentage-based adjustments and allows for manual overrides.
     """
-    presets = GOAL_PRESETS.get(goal, GOAL_PRESETS["Weight Maintenance"])
-
-    # 1. Calculate BMR and TDEE (Core Energy Balance)
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
 
-    # 2. Apply Percentage-Based Caloric Adjustment
-    caloric_adjustment = tdee * presets["caloric_adjustment_percent"]
+    # Determine caloric adjustment: use manual override if provided, otherwise use percentage
+    if manual_caloric_adjustment is not None and manual_caloric_adjustment != 0:
+        caloric_adjustment = manual_caloric_adjustment
+    else:
+        caloric_adjustment = tdee * caloric_adjustment_percent
+    
     total_calories = tdee + caloric_adjustment
 
-    # 3. Set Macronutrients based on Goal-Specific Presets
-    protein_g = presets["protein_per_kg"] * weight_kg
+    # Set Macronutrients
+    protein_g = protein_per_kg * weight_kg
     protein_calories = protein_g * 4
-
-    fat_calories = total_calories * presets["fat_percent"]
+    fat_calories = total_calories * fat_percentage
     fat_g = fat_calories / 9
-
     carb_calories = total_calories - protein_calories - fat_calories
     carb_g = carb_calories / 4
 
-    # 4. Estimate Weekly Weight Change (1 kg body fat ≈ 7700 kcal)
-    # This encourages dynamic monitoring and adjustment.
+    # Estimate weekly weight change (1 kg body fat ≈ 7700 kcal)
     weekly_cal_change = caloric_adjustment * 7
     target_weight_change_kg = weekly_cal_change / 7700
 
@@ -187,7 +238,6 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_leve
         'target_weight_change_per_week': round(target_weight_change_kg, 2)
     }
     
-    # Calculate macronutrient percentages for display
     if targets['total_calories'] > 0:
         targets['protein_percent'] = (targets['protein_calories'] / targets['total_calories']) * 100
         targets['carb_percent'] = (targets['carb_calories'] / targets['total_calories']) * 100
@@ -197,26 +247,25 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_leve
         
     return targets
 
-# -----------------------------------------------------------------------------
-# Cell 5: Food Database and UI Helper Functions
-# -----------------------------------------------------------------------------
-
 @st.cache_data
 def load_food_database(file_path):
-    """Loads the food database from a CSV file."""
+    """Loads and processes the food database from a CSV file."""
     df = pd.read_csv(file_path)
-    # Convert to a dictionary of lists for easier processing
-    foods = {cat: group.to_dict('records') for cat, group in df.groupby('category')}
-    for category in foods:
-        for food in foods[category]:
-            food['name'] = f"{food['name']} ({food['serving_unit']})"
+    foods = {cat: [] for cat in df['category'].unique()}
+    for _, row in df.iterrows():
+        category = row['category']
+        if category in foods:
+            foods[category].append({
+                'name': f"{row['name']} ({row['serving_unit']})",
+                'calories': row['calories'], 'protein': row['protein'],
+                'carbs': row['carbs'], 'fat': row['fat']
+            })
     return foods
 
 def calculate_daily_totals(food_selections, foods):
     """Calculates total nutrition from selected foods."""
     totals = {nutrient: 0 for nutrient in CONFIG['nutrient_configs'].keys()}
     selected_foods = []
-    
     for category, items in foods.items():
         for food in items:
             servings = food_selections.get(food['name'], 0)
@@ -224,22 +273,15 @@ def calculate_daily_totals(food_selections, foods):
                 for nutrient in totals:
                     totals[nutrient] += food[nutrient] * servings
                 selected_foods.append({'food': food, 'servings': servings})
-    
     return totals, selected_foods
 
-def display_metrics_grid(metrics_data, num_columns=4):
-    """Displays metrics in a clean, configurable grid layout."""
-    columns = st.columns(num_columns)
-    for i, metric_info in enumerate(metrics_data):
-        with columns[i % num_columns]:
-            if len(metric_info) == 2:
-                st.metric(label=metric_info[0], value=metric_info[1])
-            elif len(metric_info) == 3:
-                st.metric(label=metric_info[0], value=metric_info[1], delta=metric_info[2])
+# -----------------------------------------------------------------------------
+# Cell 5: Main Application UI and Logic
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Cell 6: Main Application UI and Logic
-# -----------------------------------------------------------------------------
+# --- Initialize State and Load Data ---
+initialize_session_state()
+foods = load_food_database('nutrition_results.csv')
 
 # --- Page Title and Introduction ---
 st.title("🔬 Evidence-Based Fitness & Nutrition Tracker")
@@ -251,59 +293,78 @@ all calculated using scientifically-validated methods to help you achieve your f
 
 # --- Sidebar for User Inputs ---
 st.sidebar.header("Step 1: Your Personal Parameters")
-
 user_inputs = {}
-for field_name, field_config in CONFIG['form_fields'].items():
+
+# Primary (non-advanced) fields
+standard_fields = {k: v for k, v in CONFIG['form_fields'].items() if not v.get('advanced')}
+for field_name, field_config in standard_fields.items():
     if field_config['type'] == 'selectbox':
         if field_name == 'activity_level':
-            # Handle tuple format for activity level options
             options = field_config['options']
             user_inputs[field_name] = st.sidebar.selectbox(field_config['label'], options, format_func=lambda x: x[0])[1]
         else:
             options = field_config['options']
-            user_inputs[field_name] = st.sidebar.selectbox(field_config['label'], options)
+            # Set default goal based on DEFAULTS
+            default_index = options.index(DEFAULTS['goal']) if DEFAULTS['goal'] in options else 0
+            user_inputs[field_name] = st.sidebar.selectbox(field_config['label'], options, index=default_index)
     elif field_config['type'] == 'number':
         user_inputs[field_name] = st.sidebar.number_input(
             field_config['label'], min_value=field_config['min'], 
-            max_value=field_config['max'], step=field_config['step']
+            max_value=field_config['max'], step=field_config['step'], value=DEFAULTS[field_name]
         )
 
-# --- Calculate Targets Based on Input ---
-targets = calculate_personalized_targets(**user_inputs)
+# [NEW] Advanced override section
+with st.sidebar.expander("Advanced Settings (Overrides) ⚙️"):
+    st.markdown("Use these fields to manually override the evidence-based defaults. **Set to 0 to use the recommended values.**")
+    advanced_fields = {k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')}
+    for field_name, field_config in advanced_fields.items():
+        value = st.number_input(
+            field_config['label'], min_value=float(field_config['min']), 
+            max_value=float(field_config['max']), step=float(field_config['step']), 
+            value=0.0, help=field_config['help']
+        )
+        if 'convert' in field_config:
+            value = field_config['convert'](value)
+        user_inputs[field_name] = value if value != 0 else None
+
+
+# --- Calculate Targets Based on Final Values ---
+final_values = get_final_values(user_inputs)
+targets = calculate_personalized_targets(**final_values)
 
 # --- Main Content Area: Display Targets and Documentation ---
-st.header(f"Step 2: Your Personalized Daily Targets for {user_inputs['goal']}")
+st.header(f"Step 2: Your Personalized Daily Targets for {final_values['goal']}")
 
-# --- Section 1: Core Metabolic & Caloric Targets with Documentation ---
+# --- [NEW] Section 1: Core Metabolic & Caloric Targets with Documentation ---
 with st.expander("Your Metabolic & Caloric Targets Explained", expanded=True):
     st.markdown("""
-    Your body's energy needs are the foundation of your nutrition plan. We start by calculating your **Basal Metabolic Rate (BMR)**—the energy you burn at complete rest—using the highly accurate **Mifflin-St Jeor equation**. We then multiply this by an activity factor to find your **Total Daily Energy Expenditure (TDEE)**, which is your estimated daily maintenance calorie level.
+    Your body's energy needs are the foundation of your nutrition plan. We start by calculating your **Basal Metabolic Rate (BMR)**—the energy you burn at complete rest—using the highly accurate **Mifflin-St Jeor equation (Highest Validity)**. We then multiply this by an activity factor to find your **Total Daily Energy Expenditure (TDEE)**, which is your estimated daily maintenance calorie level.
 
-    Your final **Daily Calorie Target** is adjusted from your TDEE based on your goal:
+    Your final **Daily Calorie Target** is adjusted from your TDEE based on your goal **(High Validity)**:
     - **Weight Loss:** A **20% caloric deficit** is applied. This is a sustainable rate that promotes fat loss while minimizing muscle loss and metabolic slowdown.
     - **Weight Gain:** A conservative **10% caloric surplus** is applied. This provides enough energy to build muscle while minimizing unnecessary fat gain.
     - **Maintenance:** Your target is set equal to your TDEE.
     """)
     
-    weight_change_label = GOAL_PRESETS[user_inputs['goal']]['rate_of_change_label']
-    weight_change_val = f"{targets['target_weight_change_per_week']:+.2f} kg" if user_inputs['goal'] != 'Weight Maintenance' else f"~0.00 kg"
+    rate_of_change_label = GOAL_PRESETS[final_values['goal']]['rate_of_change_label']
+    weight_change_val = f"{targets['target_weight_change_per_week']:+.2f} kg" if final_values['goal'] != 'Weight Maintenance' else f"~0.00 kg"
 
     metrics_data_calories = [
         ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal/day"),
         ("Maintenance Calories (TDEE)", f"{targets['tdee']} kcal/day"),
         ("Daily Calorie Target", f"{targets['total_calories']} kcal"),
-        (weight_change_label, weight_change_val)
+        (rate_of_change_label, weight_change_val)
     ]
     display_metrics_grid(metrics_data_calories, 4)
 
-# --- Section 2: Macronutrient Targets with Documentation ---
+# --- [NEW] Section 2: Macronutrient Targets with Documentation ---
 with st.expander("Your Macronutrient Targets Explained", expanded=True):
     st.markdown(f"""
-    While calories determine the *quantity* of weight change, macronutrients determine the *quality* (muscle vs. fat). Your targets are set based on the most robust scientific evidence for your goal of **{user_inputs['goal']}**.
+    While calories determine the *quantity* of weight change, macronutrients determine the *quality* (muscle vs. fat). Your targets are set based on the most robust scientific evidence for your goal of **{final_values['goal']}**.
 
-    - **Protein (The Builder):** Your target of **{targets['protein_g']}g** is based on **{GOAL_PRESETS[user_inputs['goal']]['protein_per_kg']}g per kg** of body weight. This elevated intake is crucial for preserving muscle during a deficit or building new muscle in a surplus. It is the most important macronutrient for body composition.
+    - **Protein (The Builder) (Highest Validity):** Your target of **{targets['protein_g']}g** is based on **{final_values['protein_per_kg']:.1f}g per kg** of body weight. This elevated intake is crucial for preserving muscle during a deficit or building new muscle in a surplus. It is the most important macronutrient for body composition.
     
-    - **Fat (The Regulator):** Your target of **{targets['fat_g']}g** ensures you consume at least **{GOAL_PRESETS[user_inputs['goal']]['fat_percent']:.0%}** of your calories from fat. This is vital for supporting hormone production and overall health.
+    - **Fat (The Regulator) (High Validity):** Your target of **{targets['fat_g']}g** ensures you consume at least **{final_values['fat_percentage']:.0%}** of your calories from fat. This is vital for supporting hormone production and overall health.
     
     - **Carbohydrates (The Fuel):** Your target of **{targets['carb_g']}g** is calculated from the calories remaining after protein and fat are accounted for. Carbohydrates are your body's primary energy source, fueling your workouts and replenishing glycogen stores.
     """)
@@ -317,7 +378,7 @@ with st.expander("Your Macronutrient Targets Explained", expanded=True):
 
 st.markdown("---")
 
-# --- Section 3: The Indispensable Role of Resistance Training ---
+# --- [NEW] Section 3: The Indispensable Role of Resistance Training ---
 with st.expander("CRITICAL: The Role of Physical Fitness 🏋️‍♀️", expanded=False):
     st.markdown("""
     **(Highest Validity)** A nutrition plan provides the building materials, but **resistance training provides the architectural blueprint.** It is the single most important stimulus that tells your body how to use the nutrients you consume.
@@ -336,11 +397,6 @@ st.markdown("---")
 # --- Section 4: Interactive Food Logging ---
 st.header("Step 3: Log Your Daily Food Intake")
 
-# Load food database
-foods = load_food_database('nutrition_results.csv')
-if 'food_selections' not in st.session_state:
-    st.session_state.food_selections = {}
-
 # Create tabs for each food category
 available_categories = list(foods.keys())
 tabs = st.tabs(available_categories)
@@ -356,44 +412,36 @@ for i, category in enumerate(available_categories):
                 st.caption(f"Per Serving: {food['calories']} kcal | {food['protein']}g P | {food['carbs']}g C | {food['fat']}g F")
                 
                 # Input for number of servings
-                servings = st.number_input(f"Servings:", min_value=0.0, max_value=10.0, step=0.5, key=f"{category}_{food['name']}")
-                if servings > 0:
-                    st.session_state.food_selections[food['name']] = servings
-                elif food['name'] in st.session_state.food_selections:
-                    # Remove from selections if servings are set to 0
-                    del st.session_state.food_selections[food['name']]
+                current_servings = st.session_state.food_selections.get(food['name'], 0.0)
+                servings = st.number_input(f"Servings:", min_value=0.0, max_value=10.0, step=0.5, value=current_servings, key=f"{category}_{food['name']}")
+                if servings != current_servings:
+                    if servings > 0:
+                        st.session_state.food_selections[food['name']] = servings
+                    elif food['name'] in st.session_state.food_selections:
+                        del st.session_state.food_selections[food['name']]
+                    st.rerun()
 
 st.markdown("---")
 
 # --- Section 5: Results and Analysis ---
 if st.button("Calculate & Analyze My Intake", type="primary", use_container_width=True):
     totals, selected_foods = calculate_daily_totals(st.session_state.food_selections, foods)
-    
     st.header("Your Daily Intake Analysis")
 
     if not selected_foods:
         st.warning("You haven't logged any foods yet. Please select your servings above and click the button again.")
     else:
-        # Display total intake
         st.subheader("Total Nutritional Intake")
-        intake_metrics = [
-            (f"Total {config['label']}", f"{totals[nutrient]:.0f} {config['unit']}")
-            for nutrient, config in CONFIG['nutrient_configs'].items()
-        ]
+        intake_metrics = [(f"Total {config['label']}", f"{totals[nutrient]:.0f} {config['unit']}") for nutrient, config in CONFIG['nutrient_configs'].items()]
         display_metrics_grid(intake_metrics, 4)
 
-        # Display progress towards targets
         st.subheader("Progress Toward Daily Targets")
         for nutrient, config in CONFIG['nutrient_configs'].items():
             actual = totals[nutrient]
             target = targets[config['target_key']]
             percent = min(actual / target * 100, 100) if target > 0 else 0
-            st.progress(
-                percent / 100,
-                text=f"{config['label']}: {actual:.0f} / {target:.0f} {config['unit']} ({percent:.0f}%)"
-            )
+            st.progress(percent / 100, text=f"{config['label']}: {actual:.0f} / {target:.0f} {config['unit']} ({percent:.0f}%)")
 
-        # Display caloric balance analysis
         st.subheader("Caloric Balance Summary")
         cal_balance = totals['calories'] - targets['tdee']
         if cal_balance > 0:
@@ -402,7 +450,7 @@ if st.button("Calculate & Analyze My Intake", type="primary", use_container_widt
             st.warning(f"📉 You consumed **{abs(cal_balance):.0f} kcal below** your maintenance level (TDEE).")
         else:
             st.success("✅ You consumed at your exact maintenance level (TDEE).")
-        st.caption(f"This intake aligns with your goal of **{user_inputs['goal']}**.")
+        st.caption(f"This intake aligns with your goal of **{final_values['goal']}**.")
 
 # --- Footer and Clear Button ---
 if st.button("Clear All Food Selections", use_container_width=True):
