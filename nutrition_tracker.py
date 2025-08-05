@@ -1,3 +1,9 @@
+Where is the best location to consolidate all entries like st.expander("📚 Scientific Foundation & Evidence-Based Approach", expanded=False) and st.expander("🏆 Essential Tips for Success", expanded=True) if I want to group them together in one place?
+
+Do not make any changes to the code except those that are strictly and explicitly necessary to complete the specified task. This includes, but is not limited to, removing comments, modifying functionality, changing formatting, or making aesthetic adjustments. Do not add, remove, or alter any part of the code unless it is required to accomplish the core task. All other aspects of the script must remain exactly as they are.
+
+Please provide the complete, updated script. Ensure that its functionality and modularity remain intact, and that its intended use and behavior are not compromised. Take care to preserve any subtle differences that may be essential for maintaining accurate behavior.
+
 # -----------------------------------------------------------------------------
 # Personalized Evidence-Based Nutrition Tracker - Enhanced Version
 # -----------------------------------------------------------------------------
@@ -69,7 +75,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,    # 0% from TDEE
+        'caloric_adjustment': 0.0,   # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -323,7 +329,7 @@ def calculate_estimated_weekly_change(daily_caloric_adjustment):
     return (daily_caloric_adjustment * 7) / 7700
 
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activity_level='moderately_active', 
-                                     goal='weight_gain', protein_per_kg=None, fat_percentage=None):
+                                   goal='weight_gain', protein_per_kg=None, fat_percentage=None):
     """Calculate Personalized Daily Nutritional Targets Based on Evidence-Based Guidelines"""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
@@ -349,9 +355,6 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
     # Calculate estimated weekly weight change
     estimated_weekly_change = calculate_estimated_weekly_change(caloric_adjustment)
 
-    # Calculate hydration needs
-    hydration_ml = calculate_hydration_needs(weight_kg, activity_level)
-
     targets = {
         'bmr': round(bmr), 'tdee': round(tdee), 'total_calories': round(total_calories),
         'caloric_adjustment': round(caloric_adjustment),
@@ -359,8 +362,7 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
         'fat_g': round(fat_g), 'fat_calories': round(fat_calories),
         'carb_g': round(carb_g), 'carb_calories': round(carb_calories),
         'estimated_weekly_change': round(estimated_weekly_change, 3),
-        'goal': goal,
-        'hydration_ml': hydration_ml
+        'goal': goal
     }
 
     if targets['total_calories'] > 0:
@@ -627,23 +629,21 @@ else:
 # ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
-        'title': 'Metabolic Information', 'columns': 5,
+        'title': 'Metabolic Information', 'columns': 4,
         'metrics': [
             ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
             ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
             ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal per day"),
-            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg per week"),
-            ("Daily Hydration Target", f"💧 {targets['hydration_ml']} ml per day")
+            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg per week")
         ]
     },
     {
-        'title': 'Daily Macronutrient Targets', 'columns': 5,
+        'title': 'Daily Macronutrient Targets', 'columns': 4,
         'metrics': [
             ("Total Calories", f"{targets['total_calories']} kcal"),
             ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}%)"),
             ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}%)"),
-            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)"),
-            ("Hydration Target", f"💧 {targets['hydration_ml']} ml")
+            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)")
         ]
     }
 ]
