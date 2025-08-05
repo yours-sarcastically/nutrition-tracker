@@ -572,6 +572,20 @@ for field_name, field_config in advanced_fields.items():
         value = field_config['convert'](value)
     all_inputs[field_name] = value
 
+# ------ Activity Level Guide in Sidebar ------
+with st.sidebar.container(border=True):
+    st.markdown("""
+    **Activity Level Guide:**
+    
+    • **Sedentary:** Little to no exercise, desk job
+    • **Lightly Active:** Light exercise 1-3 days per week  
+    • **Moderately Active:** Moderate exercise 3-5 days per week
+    • **Very Active:** Heavy exercise 6-7 days per week
+    • **Extremely Active:** Very heavy exercise, physical job, or 2x/day training
+    
+    *💡 When in doubt, choose a lower activity level to avoid overestimating your calorie needs.*
+    """)
+
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
 
