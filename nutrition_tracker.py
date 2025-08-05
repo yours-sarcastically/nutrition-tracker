@@ -393,24 +393,28 @@ st.markdown("""
 Ready to turbocharge your health game? This awesome tool dishes out daily nutrition goals made just for you and makes tracking meals as easy as pie. Let's get those macros on your team! 🚀
 """)
 
-# ------ Refactored: Unified Sidebar Input Processing with a Single Loop ------
+# ------ MODIFIED: Reordered Sidebar for Improved User Experience ------
 st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
 all_inputs = {}
-containers = {
-    'standard': st.sidebar,
-    'advanced': st.sidebar.expander("Advanced Settings ⚙️")
-}
 
-for field_name, field_config in CONFIG['form_fields'].items():
-    is_advanced = field_config.get('advanced', False)
-    container = containers['advanced'] if is_advanced else containers['standard']
-    
-    value = create_unified_input(field_name, field_config, container=container)
-    
+# Separate standard and advanced fields to control their display order
+standard_fields = {k: v for k, v in CONFIG['form_fields'].items() if not v.get('advanced')}
+advanced_fields = {k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')}
+
+# 1. Render the standard (primary) input fields first
+for field_name, field_config in standard_fields.items():
+    value = create_unified_input(field_name, field_config, container=st.sidebar)
     if 'convert' in field_config:
         value = field_config['convert'](value)
-        
+    all_inputs[field_name] = value
+
+# 2. Render the advanced fields inside an expander placed at the bottom
+advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
+for field_name, field_config in advanced_fields.items():
+    value = create_unified_input(field_name, field_config, container=advanced_expander)
+    if 'convert' in field_config:
+        value = field_config['convert'](value)
     all_inputs[field_name] = value
 
 # ------ Process Final Values Using Unified Approach ------
@@ -421,7 +425,7 @@ required_fields = [
     field for field, config in CONFIG['form_fields'].items() if config.get('required')
 ]
 user_has_entered_info = all(
-    (all_inputs[field] is not None and all_inputs[field] != CONFIG['form_fields'][field].get('placeholder'))
+    (all_inputs.get(field) is not None and all_inputs.get(field) != CONFIG['form_fields'][field].get('placeholder'))
     for field in required_fields
 )
 
