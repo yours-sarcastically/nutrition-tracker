@@ -28,7 +28,8 @@ CONFIG = {
     'nutrient_map': {
         'PRIMARY PROTEIN SOURCES': {'sort_by': 'protein', 'key': 'protein'},
         'PRIMARY CARBOHYDRATE SOURCES': {'sort_by': 'carbs', 'key': 'carbs'},
-        'PRIMARY FAT SOURCES': {'sort_by': 'fat', 'key': 'fat'}
+        'PRIMARY FAT SOURCES': {'sort_by': 'fat', 'key': 'fat'},
+        'PRIMARY MICRONUTRIENT SOURCES': {'sort_by': 'protein', 'key': 'micro'}
     },
     'nutrient_configs': {
         'calories': {'unit': 'kcal', 'label': 'Calories', 'target_key': 'total_calories'},
