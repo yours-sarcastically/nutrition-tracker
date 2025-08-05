@@ -22,7 +22,7 @@ import math
 
 st.set_page_config(
     page_title="Personalized Nutrition Tracker",
-    page_icon="🍽️",
+    page_icon="💧",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -69,7 +69,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,   # 0% from TDEE
+        'caloric_adjustment': 0.0,    # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -273,8 +273,8 @@ def generate_personalized_recommendations(totals, targets, final_values):
     recommendations = []
     goal = final_values['goal']
     
-    # Hydration recommendation
-    hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
+    # Hydration recommendation using the value from the main targets dictionary
+    hydration_ml = targets['hydration_ml']
     recommendations.append(f"💧 **Daily Hydration Target:** {hydration_ml} ml ({hydration_ml/250:.1f} cups) - drink 500ml before meals to boost satiety")
     
     # Goal-specific recommendations
@@ -323,7 +323,7 @@ def calculate_estimated_weekly_change(daily_caloric_adjustment):
     return (daily_caloric_adjustment * 7) / 7700
 
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activity_level='moderately_active', 
-                                   goal='weight_gain', protein_per_kg=None, fat_percentage=None):
+                                     goal='weight_gain', protein_per_kg=None, fat_percentage=None):
     """Calculate Personalized Daily Nutritional Targets Based on Evidence-Based Guidelines"""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
@@ -349,6 +349,9 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
     # Calculate estimated weekly weight change
     estimated_weekly_change = calculate_estimated_weekly_change(caloric_adjustment)
 
+    # **NEW**: Calculate hydration needs and add to the targets dictionary
+    hydration_ml = calculate_hydration_needs(weight_kg, activity_level)
+
     targets = {
         'bmr': round(bmr), 'tdee': round(tdee), 'total_calories': round(total_calories),
         'caloric_adjustment': round(caloric_adjustment),
@@ -356,6 +359,7 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
         'fat_g': round(fat_g), 'fat_calories': round(fat_calories),
         'carb_g': round(carb_g), 'carb_calories': round(carb_calories),
         'estimated_weekly_change': round(estimated_weekly_change, 3),
+        'hydration_ml': hydration_ml,  # Add hydration to the dictionary
         'goal': goal
     }
 
@@ -590,9 +594,12 @@ for field_name, field_config in advanced_fields.items():
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
 
+# ------ Calculate Personalized Targets ------
+targets = calculate_personalized_targets(**final_values)
+
 # Display hydration recommendation in sidebar
 if all_inputs.get('weight_kg') and all_inputs.get('activity_level'):
-    hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
+    hydration_ml = targets['hydration_ml'] # Use value from central calculation
     st.sidebar.info(f"💧 **Daily Hydration Target:** {hydration_ml} ml ({hydration_ml/250:.1f} cups)")
 
 # ------ Check User Input Completeness Dynamically ------
@@ -603,9 +610,6 @@ user_has_entered_info = all(
     (all_inputs.get(field) is not None and all_inputs.get(field) != CONFIG['form_fields'][field].get('placeholder'))
     for field in required_fields
 )
-
-# ------ Calculate Personalized Targets ------
-targets = calculate_personalized_targets(**final_values)
 
 # -----------------------------------------------------------------------------
 # Cell 9: Unified Target Display System
@@ -620,24 +624,26 @@ else:
     goal_label = goal_labels.get(targets['goal'], 'Weight Gain')
     st.header(f"Your Personalized Daily Nutritional Targets for {goal_label} 🎯")
 
-# ------ Unified Metrics Display Configuration ------
+# ------ Unified Metrics Display Configuration -- **MODIFIED** ------
 metrics_config = [
     {
-        'title': 'Metabolic Information', 'columns': 4,
+        'title': 'Metabolic Information', 'columns': 5, # Changed to 5 columns
         'metrics': [
-            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
-            ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
-            ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal per day"),
-            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg per week")
+            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal"),
+            ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal"),
+            ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal"),
+            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg"),
+            ("Daily Hydration Target", f"{targets['hydration_ml']} ml") # Added Hydration
         ]
     },
     {
-        'title': 'Daily Macronutrient Targets', 'columns': 4,
+        'title': 'Daily Macronutrient Targets', 'columns': 5, # Changed to 5 columns
         'metrics': [
             ("Total Calories", f"{targets['total_calories']} kcal"),
             ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}%)"),
             ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}%)"),
-            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)")
+            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)"),
+            ("Hydration (Cups)", f"{targets['hydration_ml']/250:.1f} cups") # Added Hydration
         ]
     }
 ]
