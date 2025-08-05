@@ -15,6 +15,8 @@ Enhanced with comprehensive evidence-based tips for long-term success.
 import streamlit as st
 import pandas as pd
 import math
+import plotly.graph_objects as go
+
 
 # -----------------------------------------------------------------------------
 # Cell 2: Page Configuration and Initial Setup
@@ -223,7 +225,30 @@ def display_metrics_grid(metrics_data, num_columns=4):
                 label, value, delta = metric_info
                 st.metric(label, value, delta)
 
-def create_progress_tracking(totals, targets):
+def find_best_food_for_nutrient(nutrient, deficit, foods):
+    """Find a food that is a good source for the needed nutrient."""
+    best_food = None
+    highest_nutrient_val = 0
+    
+    # Flatten the food list
+    all_foods = [item for sublist in foods.values() for item in sublist]
+    
+    for food in all_foods:
+        # Prioritize foods rich in the specific nutrient
+        if food[nutrient] > highest_nutrient_val:
+            highest_nutrient_val = food[nutrient]
+            best_food = food
+            
+    if best_food and highest_nutrient_val > 0:
+        # Calculate how many servings are needed
+        servings_needed = deficit / highest_nutrient_val
+        # Suggest 1 serving for simplicity, or a rounded number
+        suggestion_servings = 1
+        return f"Try adding **{suggestion_servings} serving of {best_food['name']}** (~{best_food[nutrient] * suggestion_servings:.0f}g {nutrient})."
+    return None
+
+
+def create_progress_tracking(totals, targets, foods):
     """Create unified progress tracking with bars and recommendations"""
     recommendations = []
     
@@ -249,7 +274,15 @@ def create_progress_tracking(totals, targets):
         if actual < target:
             deficit = target - actual
             purpose = purpose_map.get(nutrient, 'for optimal nutrition')
-            recommendations.append(f"• You need {deficit:.0f} more {config['unit']} of {config['label'].lower()} {purpose}.")
+            base_rec = f"• You need **{deficit:.0f} more {config['unit']}** of {config['label'].lower()} {purpose}."
+            
+            # Add an actionable food suggestion for macronutrients
+            if nutrient in ['protein', 'carbs', 'fat']:
+                food_suggestion = find_best_food_for_nutrient(nutrient, deficit, foods)
+                if food_suggestion:
+                    base_rec += f" {food_suggestion}"
+            
+            recommendations.append(base_rec)
     
     return recommendations
 
@@ -435,40 +468,45 @@ def assign_food_emojis(foods):
 
 def render_food_item(food, category):
     """Render a single food item with unified interaction controls"""
-    st.subheader(f"{food.get('emoji', '')} {food['name']}")
-    key = f"{category}_{food['name']}"
-    current_serving = st.session_state.food_selections.get(food['name'], 0.0)
-    
-    button_cols = st.columns(5)
-    for k in range(1, 6):
-        with button_cols[k - 1]:
-            button_type = "primary" if current_serving == float(k) else "secondary"
-            if st.button(f"{k}", key=f"{key}_{k}", type=button_type, help=f"Set to {k} servings"):
-                st.session_state.food_selections[food['name']] = float(k)
-                st.rerun()
-    
-    # Custom serving input
-    custom_serving = st.number_input(
-        "Custom Number of Servings:",
-        min_value=0.0, max_value=10.0,
-        value=float(current_serving), step=0.1,
-        key=f"{key}_custom"
-    )
-    
-    if custom_serving != current_serving:
-        if custom_serving > 0:
-            st.session_state.food_selections[food['name']] = custom_serving
-        elif food['name'] in st.session_state.food_selections:
-            del st.session_state.food_selections[food['name']]
-        st.rerun()
-    
-    # Nutritional info
-    st.caption(
-        f"Per Serving: {food['calories']} kcal | "
-        f"{food['protein']} g protein | "
-        f"{food['carbs']} g carbohydrates | "
-        f"{food['fat']} g fat"
-    )
+    with st.container(border=True):
+        st.subheader(f"{food.get('emoji', '')} {food['name']}")
+        key = f"{category}_{food['name']}"
+        current_serving = st.session_state.food_selections.get(food['name'], 0.0)
+        
+        col1, col2 = st.columns([2, 1.2])
+
+        with col1:
+            button_cols = st.columns(5)
+            for k in range(1, 6):
+                with button_cols[k - 1]:
+                    button_type = "primary" if current_serving == float(k) else "secondary"
+                    if st.button(f"{k}", key=f"{key}_{k}", type=button_type, help=f"Set to {k} servings", use_container_width=True):
+                        st.session_state.food_selections[food['name']] = float(k)
+                        st.rerun()
+        
+        with col2:
+            custom_serving = st.number_input(
+                "Custom",
+                min_value=0.0, max_value=10.0,
+                value=float(current_serving), step=0.1,
+                key=f"{key}_custom",
+                label_visibility="collapsed"
+            )
+        
+        if custom_serving != current_serving:
+            if custom_serving > 0:
+                st.session_state.food_selections[food['name']] = custom_serving
+            elif food['name'] in st.session_state.food_selections:
+                del st.session_state.food_selections[food['name']]
+            st.rerun()
+        
+        # Nutritional info
+        caption_text = (
+            f"Per Serving: {food['calories']} kcal | {food['protein']}g protein | "
+            f"{food['carbs']}g carbs | {food['fat']}g fat"
+        )
+        st.caption(caption_text)
+
 
 def render_food_grid(items, category, columns=2):
     """Render food items in a grid layout"""
@@ -525,7 +563,6 @@ for field_name, field_config in standard_fields.items():
         value = field_config['convert'](value)
     all_inputs[field_name] = value
 
-# ------ Activity Level Guide in Sidebar ------
 
 # 2. Render the advanced fields inside an expander placed at the bottom
 advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
@@ -534,33 +571,6 @@ for field_name, field_config in advanced_fields.items():
     if 'convert' in field_config:
         value = field_config['convert'](value)
     all_inputs[field_name] = value
-
-with st.sidebar.container(border=True):
-    st.markdown("""
-    **Activity Level Guide:**
-    
-    • **Sedentary:** Little to no exercise, desk job
-    • **Lightly Active:** Light exercise 1-3 days per week  
-    • **Moderately Active:** Moderate exercise 3-5 days per week
-    • **Very Active:** Heavy exercise 6-7 days per week
-    • **Extremely Active:** Very heavy exercise, physical job, or 2x/day training
-    
-    *💡 When in doubt, choose a lower activity level to avoid overestimating your calorie needs.*
-    """)
-
-# ------ Emoji-Based Food Ranking System Explanation in Sidebar ------
-with st.sidebar.container(border=True):
-    st.markdown("""
-    **Food Emoji Guide:**
-    
-    • 🥇 **Gold Medal:** Top performer in both calories AND primary nutrient
-    • 🔥 **High Calorie:** Among the most calorie-dense in its category
-    • 💪 **High Protein:** Top protein source
-    • 🍚 **High Carb:** Top carbohydrate source  
-    • 🥑 **High Fat:** Top healthy fat source
-    
-    *Foods are ranked within each category to help you make efficient choices for your goals.*
-    """)
 
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
@@ -625,40 +635,18 @@ metrics_config = [
 for config in metrics_config:
     st.subheader(config['title'])
     display_metrics_grid(config['metrics'], config['columns'])
-    st.markdown("---")
+    st.divider()
 
 
 # -----------------------------------------------------------------------------
 # Cell 10: Enhanced Evidence-Based Tips & Context
 # -----------------------------------------------------------------------------
 
-with st.expander("📚 **Scientific Foundation & Evidence-Based Approach**", expanded=False):
-    st.markdown("""
-    ### **Energy Foundation: BMR & TDEE**
-    
-    **Basal Metabolic Rate (BMR):** Your body's energy needs at complete rest, calculated using the **Mifflin-St Jeor equation** - the most accurate formula recognized by the Academy of Nutrition and Dietetics.
-    
-    **Total Daily Energy Expenditure (TDEE):** Your maintenance calories including daily activities, calculated by multiplying BMR by scientifically validated activity factors.
-    
-    ### **Goal-Specific Approach**
-    
-    Rather than using arbitrary caloric adjustments, this tracker uses **percentage-based adjustments** that scale appropriately to your individual metabolism:
-    
-    - **Weight Loss:** -20% from TDEE (sustainable fat loss while preserving muscle)
-    - **Weight Maintenance:** 0% from TDEE (energy balance)  
-    - **Weight Gain:** +10% over TDEE (lean muscle growth with minimal fat gain)
-    
-    ### **Protein-First Macronutrient Strategy**
-    
-    This evidence-based approach prioritizes protein needs first, then allocates fat for hormonal health (minimum 20% of calories), with carbohydrates filling remaining energy needs:
-    
-    - **Weight Loss:** 1.8g protein/kg body weight, 25% fat
-    - **Weight Maintenance:** 1.6g protein/kg body weight, 30% fat
-    - **Weight Gain:** 2.0g protein/kg body weight, 25% fat
-    """)
+st.header("📚 Evidence-Based Playbook")
+tab1, tab2, tab3, tab4 = st.tabs(["Foundations", "Advanced Strategies", "Troubleshooting", "Nutrition Science"])
 
-# ------ Foundation Tips (Always Visible) ------
-with st.expander("🏆 **Essential Tips for Success**", expanded=True):
+with tab1:
+    st.subheader("🏆 **Essential Tips for Success**")
     st.markdown("""
     ### **The Foundation Trio for Success**
     
@@ -678,8 +666,8 @@ with st.expander("🏆 **Essential Tips for Success**", expanded=True):
     - **Adjust:** Only after 2+ weeks of stalled progress
     """)
 
-# ------ Advanced Monitoring & Psychology ------
-with st.expander("📊 **Advanced Monitoring & Psychology**"):
+with tab2:
+    st.subheader("📊 **Advanced Monitoring & Psychology**")
     st.markdown("""
     ### **Beyond the Scale: Better Progress Indicators**
     - **Progress photos:** Same lighting, poses, time of day
@@ -697,8 +685,8 @@ with st.expander("📊 **Advanced Monitoring & Psychology**"):
     **Biofeedback Awareness:** Monitor energy levels, sleep quality, gym performance, and hunger patterns—not just the scale.
     """)
 
-# ------ Plateau Prevention & Meal Timing ------
-with st.expander("🔄 **Plateau Prevention & Meal Timing**"):
+with tab3:
+    st.subheader("🔄 **Plateau Prevention & Meal Timing**")
     st.markdown("""
     ### **Plateau Troubleshooting Flow**
     **Weight Loss Plateaus:**
@@ -724,9 +712,15 @@ with st.expander("🔄 **Plateau Prevention & Meal Timing**"):
     - **Post-workout:** Protein + carbs within 2 hours
     """)
 
-# ------ Food Quality & Micronutrients ------
-with st.expander("🌱 **Food Quality & Micronutrient Optimization**"):
+with tab4:
+    st.subheader("🔬 **Scientific Foundation & Nutrition Deep Dive**")
     st.markdown("""
+    ### **Energy Foundation: BMR & TDEE**
+    
+    **Basal Metabolic Rate (BMR):** Your body's energy needs at complete rest, calculated using the **Mifflin-St Jeor equation** - the most accurate formula recognized by the Academy of Nutrition and Dietetics.
+    
+    **Total Daily Energy Expenditure (TDEE):** Your maintenance calories including daily activities, calculated by multiplying BMR by scientifically validated activity factors.
+    
     ### **Satiety Hierarchy (for Better Adherence)**
     1. **Protein** (highest satiety per calorie)
     2. **Fiber-rich carbs** (vegetables, fruits, whole grains)
@@ -741,46 +735,6 @@ with st.expander("🌱 **Food Quality & Micronutrient Optimization**"):
     **Common Shortfalls in Plant-Forward Diets:**
     - **B₁₂, iron, calcium, zinc, iodine, omega-3 (EPA/DHA)**
     - **Strategy:** Include fortified foods or consider targeted supplementation based on lab work
-    """)
-
-# ------ Long-Term Success Framework ------
-with st.expander("🎯 **Long-Term Success Framework**"):
-    st.markdown("""
-    ### **Maintenance Practice Concept**
-    - Spend time at maintenance calories between diet phases
-    - Practice maintaining goal weight for several months before further changes
-    - **Reverse dieting:** Gradually increase calories post-weight loss (50-100 kcal/week)
-    
-    ### **Metabolic Adaptation Awareness**
-    - BMR decreases 10-25% during prolonged restriction
-    - Recalculate targets every 4-6 weeks as weight changes
-    - TDEE naturally adjusts with body weight changes
-    
-    ### **Red Flag Adjustments**
-    - **Too fast weight loss (>1% body weight/week):** Increase calories to prevent muscle loss
-    - **Extreme fatigue/irritability:** Consider maintenance break
-    - **No change for 3+ weeks:** Adjust by 5-10%
-    """)
-
-# ------ Dynamic Monitoring Tips ------
-with st.expander("📈 **Dynamic Monitoring Tips**"):
-    st.markdown("""
-    ### **Important:** Your targets will change as you progress!
-    
-    **Why targets change:**
-    - As you lose weight, your BMR and TDEE naturally decrease (smaller body = less energy needed)
-    - As you gain weight, your TDEE increases (larger body = more energy needed)
-    - This is normal metabolic adaptation, not a sign of failure
-    
-    **When to recalculate:**
-    - **Every 4-6 weeks** or after **2-3 kg weight change**
-    - Update your weight in the sidebar and generate new targets
-    - Compare your actual vs. predicted weight change weekly
-    
-    **Patience is key:**
-    - Weight can fluctuate 1-3 kg daily (water, glycogen, digestion)
-    - Focus on weekly trends, not daily changes
-    - True body composition changes take 2-4 weeks to become apparent
     """)
 
 # -----------------------------------------------------------------------------
@@ -803,6 +757,21 @@ if user_has_entered_info:
 
 st.header("Daily Food Selection & Tracking 🥗")
 st.markdown("Select the number of servings for each food item to track your daily nutrition intake.")
+
+
+with st.expander("💡 **View Food Emoji Guide**"):
+    st.markdown("""
+    **Food Emoji Guide:**
+    
+    • 🥇 **Gold Medal:** Top performer in both calories AND primary nutrient
+    • 🔥 **High Calorie:** Among the most calorie-dense in its category
+    • 💪 **High Protein:** Top protein source
+    • 🍚 **High Carb:** Top carbohydrate source  
+    • 🥑 **High Fat:** Top healthy fat source
+    
+    *Foods are ranked within each category to help you make efficient choices for your goals.*
+    """)
+
 
 # ------ Reset Selection Button ------
 if st.button("🔄 Reset All Food Selections", type="secondary"):
@@ -835,18 +804,43 @@ totals, selected_foods = calculate_daily_totals(st.session_state.food_selections
 
 if selected_foods:
     # Progress tracking with recommendations
-    recommendations = create_progress_tracking(totals, targets)
+    recommendations = create_progress_tracking(totals, targets, foods)
     
     # Daily summary metrics
-    st.subheader("Today's Nutrition Intake")
-    summary_metrics = [
-        ("Calories Consumed", f"{totals['calories']:.0f} kcal"),
-        ("Protein Intake", f"{totals['protein']:.0f} g"),
-        ("Carbohydrates", f"{totals['carbs']:.0f} g"),
-        ("Fat Intake", f"{totals['fat']:.0f} g")
-    ]
-    display_metrics_grid(summary_metrics, 4)
+    col1, col2 = st.columns([1,1])
+
+    with col1:
+        st.subheader("Today's Nutrition Intake")
+        summary_metrics = [
+            ("Calories Consumed", f"{totals['calories']:.0f} kcal"),
+            ("Protein Intake", f"{totals['protein']:.0f} g"),
+            ("Carbohydrates", f"{totals['carbs']:.0f} g"),
+            ("Fat Intake", f"{totals['fat']:.0f} g")
+        ]
+        display_metrics_grid(summary_metrics, 2)
     
+    with col2:
+        st.subheader("Macronutrient Split (grams)")
+        # Donut chart for macronutrient split
+        macro_values = [totals['protein'], totals['carbs'], totals['fat']]
+        if sum(macro_values) > 0:
+            fig = go.Figure(go.Pie(
+                labels=['Protein', 'Carbs', 'Fat'],
+                values=macro_values,
+                hole=.4,
+                marker_colors=['#ff6b6b', '#feca57', '#48dbfb'],
+                textinfo='label+percent',
+                insidetextorientation='radial'
+            ))
+            fig.update_layout(
+                showlegend=False, 
+                margin=dict(l=10, r=10, t=10, b=10),
+                height=250
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.caption("Select foods to see the macronutrient split.")
+
     # Recommendations based on current intake
     if recommendations:
         st.subheader("Personalized Recommendations for Today")
@@ -882,7 +876,7 @@ else:
 # Cell 14: Footer and Additional Resources
 # -----------------------------------------------------------------------------
 
-st.markdown("---")
+st.divider()
 st.markdown("""
 ### **📚 Evidence-Based References & Methodology**
 
