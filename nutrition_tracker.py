@@ -52,12 +52,13 @@ ACTIVITY_MULTIPLIERS = {
 
 # ------ Unified Configuration for All App Components ------
 CONFIG = {
-    'emoji_order': {'🥇': 0, '💥': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '🥦': 3, '': 4},
+    # MODIFIED: Removed '🥇' and '🥦' from emoji ranking order
+    'emoji_order': {'🥇': 1, '🔥': 2, '💪': 3, '🍚': 3, '🥑': 3, '': 4},
     'nutrient_map': {
         'PRIMARY PROTEIN SOURCES': {'sort_by': 'protein', 'key': 'protein'},
         'PRIMARY CARBOHYDRATE SOURCES': {'sort_by': 'carbs', 'key': 'carbs'},
         'PRIMARY FAT SOURCES': {'sort_by': 'fat', 'key': 'fat'},
-        'PRIMARY MICRONUTRIENT SOURCES': {'sort_by': 'protein', 'key': 'micro'}
+        # REMOVED: 'PRIMARY MICRONUTRIENT SOURCES' no longer needs a special mapping for ranking
     },
     'nutrient_configs': {
         'calories': {'unit': 'kcal', 'label': 'Calories', 'target_key': 'total_calories'},
@@ -65,7 +66,6 @@ CONFIG = {
         'carbs': {'unit': 'g', 'label': 'Carbohydrates', 'target_key': 'carb_g'},
         'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
     },
-    # REFACTORED: Added 'required' and 'placeholder' keys for dynamic validation.
     'form_fields': {
         'age': {'type': 'number', 'label': 'Age (Years)', 'min': 16, 'max': 80, 'step': 1, 'placeholder': 'Enter your age', 'required': True},
         'height_cm': {'type': 'number', 'label': 'Height (Centimeters)', 'min': 140, 'max': 220, 'step': 1, 'placeholder': 'Enter your height', 'required': True},
@@ -138,7 +138,6 @@ def get_final_values(user_inputs):
     final_values = {}
     
     for field, value in user_inputs.items():
-        # Refactored: Removed redundant fat_percentage conversion. It's now handled at input time.
         if field == 'sex':
             final_values[field] = value if value != "Select Sex" else DEFAULTS[field]
         else:
@@ -219,7 +218,7 @@ def calculate_tdee(bmr, activity_level):
     return bmr * multiplier
 
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activity_level='moderately_active', 
-                                 caloric_surplus=400, protein_per_kg=2.0, fat_percentage=0.25):
+                                   caloric_surplus=400, protein_per_kg=2.0, fat_percentage=0.25):
     """Calculate Personalized Daily Nutritional Targets"""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
@@ -240,7 +239,6 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
         'target_weight_gain_per_week': round(weight_kg * 0.0025, 2)
     }
 
-    # REFACTORED: Centralize percentage calculations here to avoid doing it in the display layer.
     if targets['total_calories'] > 0:
         targets['protein_percent'] = (targets['protein_calories'] / targets['total_calories']) * 100
         targets['carb_percent'] = (targets['carb_calories'] / targets['total_calories']) * 100
@@ -258,7 +256,7 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activi
 def load_food_database(file_path):
     """Load the Vegetarian Food Database From a CSV File"""
     df = pd.read_csv(file_path)
-    foods = {cat: [] for cat in CONFIG['nutrient_map'].keys()}
+    foods = {cat: [] for cat in df['category'].unique()} # Use unique categories from CSV
 
     for _, row in df.iterrows():
         category = row['category']
@@ -270,44 +268,54 @@ def load_food_database(file_path):
             })
     return foods
 
+# MODIFIED: assign_food_emojis function updated to remove flawed logic
 def assign_food_emojis(foods):
-    """Assign emojis to foods using unified ranking system"""
-    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
+    """Assign emojis to foods using a unified ranking system."""
+    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'calories': {}}
     
     # Identify top performers in each category
     for category, items in foods.items():
         if not items: continue
             
+        # Rank top 3 most calorie-dense foods within each category
         sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
         top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
         
-        # Refactored: Use the improved CONFIG['nutrient_map'] to avoid local dictionaries
+        # Rank top 3 foods by their primary macronutrient (if applicable)
         map_info = CONFIG['nutrient_map'].get(category)
         if map_info:
             sorted_by_nutrient = sorted(items, key=lambda x: x[map_info['sort_by']], reverse=True)
             top_foods[map_info['key']] = [food['name'] for food in sorted_by_nutrient[:3]]
 
-    all_top_foods = {food for key in ['protein', 'carbs', 'fat', 'micro'] for food in top_foods[key]}
-    food_rank_counts = {name: sum(1 for key in ['protein', 'carbs', 'fat', 'micro'] if name in top_foods[key]) for name in all_top_foods}
-    superfoods = {name for name, count in food_rank_counts.items() if count > 1}
+    # Create a set of all foods that are top nutrient performers
+    all_top_nutrient_foods = {food for key in ['protein', 'carbs', 'fat'] for food in top_foods[key]}
 
-    emoji_mapping = {'superfoods': '🥇', 'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑', 'micro': '🥦'}
+    # Define the emoji mapping
+    emoji_mapping = {'high_cal_nutrient': '🥇', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑'}
     
+    # Assign emojis based on the rankings
     for category, items in foods.items():
         for food in items:
             food_name = food['name']
-            is_top_nutrient = food_name in all_top_foods
+            is_top_nutrient = food_name in all_top_nutrient_foods
             is_high_calorie = food_name in top_foods['calories'].get(category, [])
             
-            if food_name in superfoods: food['emoji'] = emoji_mapping['superfoods']
-            elif is_high_calorie and is_top_nutrient: food['emoji'] = emoji_mapping['high_cal_nutrient']
-            elif is_high_calorie: food['emoji'] = emoji_mapping['high_calorie']
-            elif food_name in top_foods['protein']: food['emoji'] = emoji_mapping['protein']
-            elif food_name in top_foods['carbs']: food['emoji'] = emoji_mapping['carbs']
-            elif food_name in top_foods['fat']: food['emoji'] = emoji_mapping['fat']
-            elif food_name in top_foods['micro']: food['emoji'] = emoji_mapping['micro']
-            else: food['emoji'] = ''
+            # REMOVED: Superfood logic ('🥇') as it was non-functional
+            if is_high_calorie and is_top_nutrient:
+                food['emoji'] = emoji_mapping['high_cal_nutrient']
+            elif is_high_calorie:
+                food['emoji'] = emoji_mapping['high_calorie']
+            elif food_name in top_foods['protein']:
+                food['emoji'] = emoji_mapping['protein']
+            elif food_name in top_foods['carbs']:
+                food['emoji'] = emoji_mapping['carbs']
+            elif food_name in top_foods['fat']:
+                food['emoji'] = emoji_mapping['fat']
+            # REMOVED: Micronutrient ranking ('🥦') as it was misleading
+            else:
+                food['emoji'] = ''
     return foods
+
 
 def render_food_item(food, category):
     """Render a single food item with unified interaction controls"""
@@ -434,16 +442,16 @@ else:
 # ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
-        'title': 'Metabolic Information', 'columns': 4, # CHANGED from 3 to 4
+        'title': 'Metabolic Information', 'columns': 4,
         'metrics': [
             ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
             ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
             ("Est. Weekly Weight Gain", f"{targets['target_weight_gain_per_week']} kg"),
-            ("", "") # ADDED empty placeholder
+            ("", "") # Empty placeholder for layout
         ]
     },
     {
-        'title': 'Daily Nutritional Target Breakdown', 'columns': 4, # No change needed
+        'title': 'Daily Nutritional Target Breakdown', 'columns': 4,
         'metrics': [
             ("Daily Calorie Target", f"{targets['total_calories']} kcal"),
             ("Protein Target", f"{targets['protein_g']} g"),
@@ -452,12 +460,12 @@ metrics_config = [
         ]
     },
     {
-        'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 4, # CHANGED from 3 to 4
+        'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 4,
         'metrics': [
-            ("Protein", f"{(targets['protein_calories'] / targets['total_calories']) * 100:.1f}%", f"↑ {targets['protein_calories']} kcal"),
-            ("Carbohydrates", f"{(targets['carb_calories'] / targets['total_calories']) * 100:.1f}%", f"↑ {targets['carb_calories']} kcal"),
-            ("Fat", f"{(targets['fat_calories'] / targets['total_calories']) * 100:.1f}%", f"↑ {targets['fat_calories']} kcal"),
-            ("", "") # ADDED empty placeholder
+            ("Protein", f"{targets['protein_percent']:.1f}%", f"↑ {targets['protein_calories']} kcal"),
+            ("Carbohydrates", f"{targets['carb_percent']:.1f}%", f"↑ {targets['carb_calories']} kcal"),
+            ("Fat", f"{targets['fat_percent']:.1f}%", f"↑ {targets['fat_calories']} kcal"),
+            ("", "") # Empty placeholder for layout
         ]
     }
 ]
@@ -566,7 +574,7 @@ if st.button("Clear All Selections", use_container_width=True):
     st.session_state.food_selections.clear()
     st.rerun()
 
-# ------ Unified Information Sidebar ------
+# MODIFIED: Info sections updated to remove flawed/misleading emoji descriptions
 info_sections = [
     {
         'title': "Activity Level Guide for Accurate TDEE 🏃‍♂️",
@@ -581,13 +589,11 @@ info_sections = [
     {
         'title': "Emoji Guide for Food Ranking 💡",
         'content': """
-- 🥇 **Superfood**: Excels across multiple nutrient categories.
-- 💥 **Nutrient & Calorie Dense**: High in both calories and its primary nutrient.
+- 🥇 **Nutrient & Calorie Dense**: High in both calories and its primary nutrient.
 - 🔥 **High-Calorie**: Among the most energy-dense options in its group.
 - 💪 **Top Protein Source**: A leading contributor of protein.
 - 🍚 **Top Carb Source**: A leading contributor of carbohydrates.
 - 🥑 **Top Fat Source**: A leading contributor of healthy fats.
-- 🥦 **Top Micronutrient Source**: Rich in vitamins and minerals.
 """
     },
     {
