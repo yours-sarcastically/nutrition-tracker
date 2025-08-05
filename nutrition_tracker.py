@@ -536,7 +536,7 @@ with st.sidebar.expander("📋 **Activity Level Guide**"):
     • **Very Active:** Heavy exercise 6-7 days per week
     • **Extremely Active:** Very heavy exercise, physical job, or 2x/day training
     
-    *💡 Tip: When in doubt, choose a lower activity level to avoid overestimating your calorie needs.*
+    *💡 When in doubt, choose a lower activity level to avoid overestimating your calorie needs.*
     """)
 
 # ------ Emoji-Based Food Ranking System Explanation in Sidebar ------
@@ -550,7 +550,7 @@ with st.sidebar.expander("🏆 **Food Emoji Guide**"):
     🍚 **High Carb:** Top carbohydrate source  
     🥑 **High Fat:** Top healthy fat source
     
-    *Focus on emoji-marked foods to efficiently meet your macro targets!*
+    *Foods are ranked within each category to help you make efficient choices for your goals.*
     """)
 
 # 2. Render the advanced fields inside an expander placed at the bottom
