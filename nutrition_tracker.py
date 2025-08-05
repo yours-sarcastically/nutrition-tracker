@@ -628,12 +628,13 @@ hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values
 # ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
-        'title': 'Metabolic Information', 'columns': 4,
+        'title': 'Metabolic Information', 'columns': 5,
         'metrics': [
             ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
             ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
             ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal per day"),
-            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg per week")
+            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg per week"),
+            ("", "") # Blank entry for alignment
         ]
     },
     {
