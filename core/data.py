@@ -36,18 +36,18 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
         top_foods['calories'][category] = [food.name for food in sorted_by_calories[:3]]
         
         map_info = CONFIG['nutrient_map'].get(category)
-        if map_info:
+        if map_info and map_info['key'] != 'micro':
             sorted_by_nutrient = sorted(items, key=lambda x: getattr(x, map_info['sort_by']), reverse=True)
             top_foods[map_info['key']] = [food.name for food in sorted_by_nutrient[:3]]
 
     all_top_foods = {food for key in ['protein', 'carbs', 'fat'] for food in top_foods[key]}
-    
+
     emoji_mapping = {'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑'}
     
-    for items in foods.values():
+    for category, items in foods.items():
         for food in items:
             is_top_nutrient = food.name in all_top_foods
-            is_high_calorie = food.name in top_foods['calories'].get(food.name.split(' (')[0], [])
+            is_high_calorie = food.name in top_foods['calories'].get(category, [])
 
             if is_high_calorie and is_top_nutrient: food.emoji = emoji_mapping['high_cal_nutrient']
             elif is_high_calorie: food.emoji = emoji_mapping['high_calorie']
