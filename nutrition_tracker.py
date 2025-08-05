@@ -754,7 +754,7 @@ def main():
     
     # Load food database
     try:
-        foods = load_food_database('vegetarian_foods.csv')
+        foods = load_food_database('nutrition_results.csv')
         foods = assign_food_emojis(foods)
     except FileNotFoundError:
         st.error("❌ Food database not found. Please ensure 'vegetarian_foods.csv' is in the same directory.")
