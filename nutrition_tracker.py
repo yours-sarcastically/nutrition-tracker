@@ -832,7 +832,6 @@ st.caption(
     "carbs fill remaining energy needs"
 )
 
-```python
 macro_metrics = [
     ("Protein Target", f"{targets['protein_g']} g"),
     ("Carbohydrate Target", f"{targets['carb_g']} g"),
