@@ -622,6 +622,9 @@ else:
 # ------ 80/20 Principle Info Box ------
 st.info("🎯 80/20 Principle: Aim for 80% adherence to your targets rather than perfection. This allows for social flexibility and prevents the all-or-nothing mentality that leads to diet cycling.")
 
+# Calculate hydration for the metrics grid
+hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
+
 # ------ Unified Metrics Display Configuration ------
 metrics_config = [
     {
@@ -634,12 +637,13 @@ metrics_config = [
         ]
     },
     {
-        'title': 'Daily Macronutrient Targets', 'columns': 4,
+        'title': 'Daily Macronutrient & Hydration Targets', 'columns': 5,
         'metrics': [
             ("Total Calories", f"{targets['total_calories']} kcal"),
-            ("Protein", f"{targets['protein_g']} g", f"{targets['protein_percent']:.0f}% of calories"),
-            ("Carbohydrates", f"{targets['carb_g']} g", f"{targets['carb_percent']:.0f}% of calories"),
-            ("Fat", f"{targets['fat_g']} g", f"{targets['fat_percent']:.0f}% of calories")
+            ("Protein", f"{targets['protein_g']} g", f"{targets['protein_percent']:.0f}%"),
+            ("Carbohydrates", f"{targets['carb_g']} g", f"{targets['carb_percent']:.0f}%"),
+            ("Fat", f"{targets['fat_g']} g", f"{targets['fat_percent']:.0f}%"),
+            ("💧 Hydration", f"{hydration_ml} ml", f"~{hydration_ml/250:.1f} cups")
         ]
     }
 ]
