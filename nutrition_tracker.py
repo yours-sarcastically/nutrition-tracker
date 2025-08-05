@@ -932,9 +932,9 @@ if len(st.session_state.food_selections) > 100:  # Arbitrary limit
     }
 
 # Add debugging info for development (can be removed in production)
-if st.sidebar.checkbox("Show Debug Info", value=False):
-    with st.expander("Debug Information"):
-        st.write("**Final Values:**", final_values)
-        st.write("**Current Selections:**", st.session_state.food_selections)
-        st.write("**Calculated Targets:**", targets)
-        st.write("**Current Totals:**", totals)
+# if st.sidebar.checkbox("Show Debug Info", value=False):
+#     with st.expander("Debug Information"):
+#         st.write("**Final Values:**", final_values)
+#         st.write("**Current Selections:**", st.session_state.food_selections)
+#         st.write("**Calculated Targets:**", targets)
+#         st.write("**Current Totals:**", totals)
