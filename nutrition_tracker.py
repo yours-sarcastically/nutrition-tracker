@@ -19,7 +19,7 @@ import math
 # -----------------------------------------------------------------------------
 
 st.set_page_config(
-	page_title="Personalized Nutrition Tracker",
+    page_title="Personalized Nutrition Tracker",
     page_icon="🍽️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -54,7 +54,7 @@ ACTIVITY_MULTIPLIERS = {
 # ------ Goal-Specific Targets Based on Evidence-Based Guide ------
 GOAL_TARGETS = {
     'weight_loss': {
-        'caloric_adjustment': -0.20,  # -20% from TDEE
+        'caloric_adjustment': -0.20,  # -20% from TDEE
         'protein_per_kg': 1.8,
         'fat_percentage': 0.25
     },
@@ -64,7 +64,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.30
     },
     'weight_gain': {
-        'caloric_adjustment': 0.10,  # +10% over TDEE
+        'caloric_adjustment': 0.10,  # +10% over TDEE
         'protein_per_kg': 2.0,
         'fat_percentage': 0.25
     }
@@ -115,7 +115,7 @@ CONFIG = {
 def initialize_session_state():
     """Initialize all session state variables using unified approach"""
     session_vars = ['food_selections'] + [f'user_{field}' for field in CONFIG['form_fields'].keys()]
-    
+    
     for var in session_vars:
         if var not in st.session_state:
             st.session_state[var] = {} if var == 'food_selections' else None
@@ -123,7 +123,7 @@ def initialize_session_state():
 def create_unified_input(field_name, field_config, container=st.sidebar):
     """Create input widgets using unified configuration, now handling advanced fields."""
     session_key = f'user_{field_name}'
-    
+    
     if field_config['type'] == 'number':
         # MODIFIED: Placeholder for advanced fields now shows the goal-specific default
         if field_config.get('advanced'):
@@ -153,14 +153,14 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
         else:
             index = field_config['options'].index(current_value) if current_value in field_config['options'] else 0
             value = container.selectbox(field_config['label'], field_config['options'], index=index)
-    
+    
     st.session_state[session_key] = value
     return value
 
 def get_final_values(user_inputs):
     """Process all user inputs and apply defaults using a hybrid approach."""
     final_values = {}
-    
+    
     # Process primary fields first
     for field, value in user_inputs.items():
         if field == 'sex':
@@ -169,7 +169,7 @@ def get_final_values(user_inputs):
             final_values[field] = value if value is not None else DEFAULTS[field]
         else:
             final_values[field] = value if value is not None else DEFAULTS[field]
-    
+    
     # Apply goal-specific defaults ONLY if advanced settings are not manually entered
     selected_goal = final_values.get('goal')
     if selected_goal in GOAL_TARGETS:
@@ -178,13 +178,13 @@ def get_final_values(user_inputs):
             final_values['protein_per_kg'] = goal_config['protein_per_kg']
         if user_inputs.get('fat_percentage') is None:
             final_values['fat_percentage'] = goal_config['fat_percentage']
-            
+            
     return final_values
 
 def display_metrics_grid(metrics_data, num_columns=4):
     """Display metrics in a configurable column layout"""
     columns = st.columns(num_columns)
-    
+    
     for i, metric_info in enumerate(metrics_data):
         with columns[i % num_columns]:
             if not metric_info or not metric_info[0]: continue
@@ -198,38 +198,38 @@ def display_metrics_grid(metrics_data, num_columns=4):
 def create_progress_tracking(totals, targets):
     """Create unified progress tracking with bars and recommendations"""
     recommendations = []
-    
+    
     st.subheader("Progress Toward Daily Nutritional Targets 🎯")
-    
+    
     purpose_map = {
         'calories': 'to reach your target',
         'protein': 'for muscle preservation/building',
         'carbs': 'for energy and performance',
         'fat': 'for hormone production'
     }
-    
+    
     for nutrient, config in CONFIG['nutrient_configs'].items():
         actual = totals[nutrient]
         target = targets[config['target_key']]
-        
+        
         percent = min(actual / target * 100, 100) if target > 0 else 0
         st.progress(
             percent / 100,
             text=f"{config['label']}: {percent:.0f}% of daily target ({target:.0f} {config['unit']})"
         )
-        
+        
         if actual < target:
             deficit = target - actual
             purpose = purpose_map.get(nutrient, 'for optimal nutrition')
             recommendations.append(f"• You need {deficit:.0f} more {config['unit']} of {config['label'].lower()} {purpose}.")
-    
+    
     return recommendations
 
 def calculate_daily_totals(food_selections, foods):
     """Calculate total daily nutrition from food selections"""
     totals = {nutrient: 0 for nutrient in CONFIG['nutrient_configs'].keys()}
     selected_foods = []
-    
+    
     for category, items in foods.items():
         for food in items:
             servings = food_selections.get(food['name'], 0)
@@ -237,7 +237,7 @@ def calculate_daily_totals(food_selections, foods):
                 for nutrient in totals:
                     totals[nutrient] += food[nutrient] * servings
                 selected_foods.append({'food': food, 'servings': servings})
-    
+    
     return totals, selected_foods
 
 # -----------------------------------------------------------------------------
@@ -254,23 +254,23 @@ def calculate_tdee(bmr, activity_level):
     multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
     return bmr * multiplier
 
-def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_level, 
-                                     goal, protein_per_kg, fat_percentage):
+def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_level, 
+                                     goal, protein_per_kg, fat_percentage):
     """Calculate Personalized Daily Nutritional Targets Based on Final Inputs"""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
-    
+    
     goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['weight_maintenance'])
-    
+    
     caloric_adjustment = tdee * goal_config['caloric_adjustment']
     total_calories = tdee + caloric_adjustment
-    
+    
     protein_g = protein_per_kg * weight_kg
     protein_calories = protein_g * 4
-    
+    
     fat_calories = total_calories * fat_percentage
     fat_g = fat_calories / 9
-    
+    
     carb_calories = total_calories - protein_calories - fat_calories
     carb_g = carb_calories / 4
 
@@ -292,7 +292,7 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex, activity_leve
         targets['fat_percent'] = (targets['fat_calories'] / targets['total_calories']) * 100
     else:
         targets['protein_percent'] = targets['carb_percent'] = targets['fat_percent'] = 0
-        
+        
     return targets
 
 # -----------------------------------------------------------------------------
@@ -318,13 +318,13 @@ def load_food_database(file_path):
 def assign_food_emojis(foods):
     """Assign emojis to foods using a unified ranking system."""
     top_foods = {'protein': [], 'carbs': [], 'fat': [], 'calories': {}}
-    
+    
     for category, items in foods.items():
         if not items: continue
-            
+            
         sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
         top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
-        
+        
         map_info = CONFIG['nutrient_map'].get(category)
         if map_info:
             sorted_by_nutrient = sorted(items, key=lambda x: x[map_info['sort_by']], reverse=True)
@@ -332,13 +332,13 @@ def assign_food_emojis(foods):
 
     all_top_nutrient_foods = {food for key in ['protein', 'carbs', 'fat'] for food in top_foods[key]}
     emoji_mapping = {'high_cal_nutrient': '🥇', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑'}
-    
+    
     for category, items in foods.items():
         for food in items:
             food_name = food['name']
             is_top_nutrient = food_name in all_top_nutrient_foods
             is_high_calorie = food_name in top_foods['calories'].get(category, [])
-            
+            
             if is_high_calorie and is_top_nutrient:
                 food['emoji'] = emoji_mapping['high_cal_nutrient']
             elif is_high_calorie:
@@ -358,7 +358,7 @@ def render_food_item(food, category):
     st.subheader(f"{food.get('emoji', '')} {food['name']}")
     key = f"{category}_{food['name']}"
     current_serving = st.session_state.food_selections.get(food['name'], 0.0)
-    
+    
     button_cols = st.columns(5)
     for k in range(1, 6):
         with button_cols[k - 1]:
@@ -366,19 +366,19 @@ def render_food_item(food, category):
             if st.button(f"{k}", key=f"{key}_{k}", type=button_type, help=f"Set to {k} servings"):
                 st.session_state.food_selections[food['name']] = float(k)
                 st.rerun()
-    
+    
     custom_serving = st.number_input(
         "Custom Number of Servings:", min_value=0.0, max_value=10.0,
         value=float(current_serving), step=0.1, key=f"{key}_custom"
     )
-    
+    
     if custom_serving != current_serving:
         if custom_serving > 0:
             st.session_state.food_selections[food['name']] = custom_serving
         elif food['name'] in st.session_state.food_selections:
             del st.session_state.food_selections[food['name']]
         st.rerun()
-    
+    
     st.caption(
         f"Per Serving: {food['calories']} kcal | {food['protein']} g protein | "
         f"{food['carbs']} g carbohydrates | {food['fat']} g fat"
@@ -532,7 +532,7 @@ st.markdown("---")
 
 if st.button("Calculate Daily Intake", type="primary", use_container_width=True):
     totals, selected_foods = calculate_daily_totals(st.session_state.food_selections, foods)
-    
+    
     st.header("Summary of Daily Nutritional Intake 📊")
 
     if selected_foods:
@@ -573,8 +573,8 @@ if st.button("Calculate Daily Intake", type="primary", use_container_width=True)
     if selected_foods:
         st.subheader("Detailed Food Log 📋")
         food_log_data = [{'Food': f"{item['food'].get('emoji', '')} {item['food']['name']}", 'Servings': item['servings'],
-                          'Calories': item['food']['calories'] * item['servings'], 'Protein (g)': item['food']['protein'] * item['servings'],
-                          'Carbs (g)': item['food']['carbs'] * item['servings'], 'Fat (g)': item['food']['fat'] * item['servings']} for item in selected_foods]
+                          'Calories': item['food']['calories'] * item['servings'], 'Protein (g)': item['food']['protein'] * item['servings'],
+                          'Carbs (g)': item['food']['carbs'] * item['servings'], 'Fat (g)': item['food']['fat'] * item['servings']} for item in selected_foods]
         df_log = pd.DataFrame(food_log_data)
         st.dataframe(df_log.style.format({'Servings': '{:.1f}', 'Calories': '{:.0f}', 'Protein (g)': '{:.1f}', 'Carbs (g)': '{:.1f}', 'Fat (g)': '{:.1f}'}), use_container_width=True)
     st.markdown("---")
@@ -602,13 +602,13 @@ with st.expander("🧠 The Psychology of Sustainable Nutrition"):
 with st.expander("🔄 Plateau-Breaking Strategies"):
     st.markdown("""
     A plateau is 2-3+ weeks of no progress despite adherence. Here’s a troubleshooting flow:
-    1.  **Confirm Logging Accuracy:** Are you weighing your food and tracking oils, sauces, and drinks? These often contain hidden calories.
-    2.  **Re-validate Activity Level:** Has your daily activity (NEAT) or exercise frequency decreased? Be honest.
-    3.  **For Weight Loss:**
+    1.  **Confirm Logging Accuracy:** Are you weighing your food and tracking oils, sauces, and drinks? These often contain hidden calories.
+    2.  **Re-validate Activity Level:** Has your daily activity (NEAT) or exercise frequency decreased? Be honest.
+    3.  **For Weight Loss:**
         * Increase daily activity (e.g., add a 15-minute walk).
         * If still stalled after 1-2 weeks, decrease daily calories by 100-150 kcal.
         * Consider a 1-2 week "diet break" at your new maintenance (TDEE) calories to reduce diet fatigue and restore hormonal balance.
-    4.  **For Weight Gain:**
+    4.  **For Weight Gain:**
         * Ensure you are applying progressive overload in your training.
         * Increase daily calories by 150-200 kcal.
         * Prioritize sleep, as it's a major limiting factor in muscle growth.
