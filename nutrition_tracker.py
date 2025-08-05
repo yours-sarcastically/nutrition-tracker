@@ -272,7 +272,7 @@ def calculate_estimated_weekly_change(daily_caloric_adjustment):
     return (daily_caloric_adjustment * 7) / 7700
 
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male', activity_level='moderately_active', 
-                                   goal='weight_gain', protein_per_kg=None, fat_percentage=None):
+                                     goal='weight_gain', protein_per_kg=None, fat_percentage=None):
     """Calculate Personalized Daily Nutritional Targets Based on Evidence-Based Guidelines"""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
@@ -461,67 +461,6 @@ st.title("Personalized Evidence-Based Nutrition Tracker 🍽️")
 st.markdown("""
 This advanced nutrition tracker uses evidence-based calculations to provide personalized daily nutrition goals for **weight loss**, **weight maintenance**, or **weight gain**. The calculator employs the **Mifflin-St Jeor equation** for BMR and follows a **protein-first macronutrient strategy** recommended by nutrition science. 🚀
 """)
-
-# Enhanced Educational Context Box
-with st.expander("📚 **Scientific Foundation & Evidence-Based Approach**", expanded=False):
-    st.markdown("""
-    ### **Energy Foundation: BMR & TDEE**
-    
-    **Basal Metabolic Rate (BMR):** Your body's energy needs at complete rest, calculated using the **Mifflin-St Jeor equation** - the most accurate formula recognized by the Academy of Nutrition and Dietetics.
-    
-    **Total Daily Energy Expenditure (TDEE):** Your maintenance calories including daily activities, calculated by multiplying BMR by scientifically validated activity factors.
-    
-    ### **Goal-Specific Approach**
-    
-    Rather than using arbitrary caloric adjustments, this tracker uses **percentage-based adjustments** that scale appropriately to your individual metabolism:
-    
-    - **Weight Loss:** -20% from TDEE (sustainable fat loss while preserving muscle)
-    - **Weight Maintenance:** 0% from TDEE (energy balance)  
-    - **Weight Gain:** +10% over TDEE (lean muscle growth with minimal fat gain)
-    
-    ### **Protein-First Macronutrient Strategy**
-    
-    This evidence-based approach prioritizes protein needs first, then allocates fat for hormonal health (minimum 20% of calories), with carbohydrates filling remaining energy needs:
-    
-    - **Weight Loss:** 1.8g protein/kg body weight, 25% fat
-    - **Weight Maintenance:** 1.6g protein/kg body weight, 30% fat
-    - **Weight Gain:** 2.0g protein/kg body weight, 25% fat
-    """)
-
-# Enhanced Sleep & Stress Impact Section
-with st.expander("😴 **Sleep & Stress: The Hidden Variables**", expanded=False):
-    st.markdown("""
-    ### **Sleep's Critical Impact on Body Composition**
-    
-    **Poor sleep (<7 hours) can reduce fat loss effectiveness by up to 55%** even with identical caloric deficits. Here's why:
-    
-    - **Hormonal disruption:** Increases hunger hormone (ghrelin), decreases satiety hormone (leptin)
-    - **Muscle protein synthesis:** Drops 18-20% with poor sleep quality
-    - **Cortisol elevation:** Promotes fat storage, especially abdominal
-    - **Recovery impairment:** Reduces workout performance and muscle building
-    
-    ### **Stress Management for Better Results**
-    
-    **Chronic stress elevates cortisol, which:**
-    - Promotes abdominal fat storage
-    - Impairs muscle building even with adequate protein
-    - Increases appetite and cravings for high-calorie foods
-    - Reduces insulin sensitivity
-    
-    ### **Optimization Strategies**
-    
-    **Sleep Optimization:**
-    - 7-9 hours nightly with consistent sleep/wake times
-    - Dark, cool room (18-20°C)
-    - Morning sunlight exposure
-    - Limit screens 1-2 hours before bed
-    
-    **Stress Reduction:**
-    - Regular meditation or deep breathing
-    - Nature walks or light cardio
-    - Hobby time and social connection
-    - Professional help if chronic stress persists
-    """)
 
 # Complete Enhanced sidebar with ALL components restored
 st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
@@ -840,6 +779,69 @@ else:
 # -----------------------------------------------------------------------------
 # Cell 12: Enhanced Educational Resources
 # -----------------------------------------------------------------------------
+
+st.header("🏆 Essential Tips for Success")
+
+# Enhanced Educational Context Box
+with st.expander("📚 **Scientific Foundation & Evidence-Based Approach**", expanded=False):
+    st.markdown("""
+    ### **Energy Foundation: BMR & TDEE**
+    
+    **Basal Metabolic Rate (BMR):** Your body's energy needs at complete rest, calculated using the **Mifflin-St Jeor equation** - the most accurate formula recognized by the Academy of Nutrition and Dietetics.
+    
+    **Total Daily Energy Expenditure (TDEE):** Your maintenance calories including daily activities, calculated by multiplying BMR by scientifically validated activity factors.
+    
+    ### **Goal-Specific Approach**
+    
+    Rather than using arbitrary caloric adjustments, this tracker uses **percentage-based adjustments** that scale appropriately to your individual metabolism:
+    
+    - **Weight Loss:** -20% from TDEE (sustainable fat loss while preserving muscle)
+    - **Weight Maintenance:** 0% from TDEE (energy balance)  
+    - **Weight Gain:** +10% over TDEE (lean muscle growth with minimal fat gain)
+    
+    ### **Protein-First Macronutrient Strategy**
+    
+    This evidence-based approach prioritizes protein needs first, then allocates fat for hormonal health (minimum 20% of calories), with carbohydrates filling remaining energy needs:
+    
+    - **Weight Loss:** 1.8g protein/kg body weight, 25% fat
+    - **Weight Maintenance:** 1.6g protein/kg body weight, 30% fat
+    - **Weight Gain:** 2.0g protein/kg body weight, 25% fat
+    """)
+
+# Enhanced Sleep & Stress Impact Section
+with st.expander("😴 **Sleep & Stress: The Hidden Variables**", expanded=False):
+    st.markdown("""
+    ### **Sleep's Critical Impact on Body Composition**
+    
+    **Poor sleep (<7 hours) can reduce fat loss effectiveness by up to 55%** even with identical caloric deficits. Here's why:
+    
+    - **Hormonal disruption:** Increases hunger hormone (ghrelin), decreases satiety hormone (leptin)
+    - **Muscle protein synthesis:** Drops 18-20% with poor sleep quality
+    - **Cortisol elevation:** Promotes fat storage, especially abdominal
+    - **Recovery impairment:** Reduces workout performance and muscle building
+    
+    ### **Stress Management for Better Results**
+    
+    **Chronic stress elevates cortisol, which:**
+    - Promotes abdominal fat storage
+    - Impairs muscle building even with adequate protein
+    - Increases appetite and cravings for high-calorie foods
+    - Reduces insulin sensitivity
+    
+    ### **Optimization Strategies**
+    
+    **Sleep Optimization:**
+    - 7-9 hours nightly with consistent sleep/wake times
+    - Dark, cool room (18-20°C)
+    - Morning sunlight exposure
+    - Limit screens 1-2 hours before bed
+    
+    **Stress Reduction:**
+    - Regular meditation or deep breathing
+    - Nature walks or light cardio
+    - Hobby time and social connection
+    - Professional help if chronic stress persists
+    """)
 
 # Sustainability and Long-term Success Section
 with st.expander("🎯 **Sustainable Approach & Long-term Success**", expanded=False):
