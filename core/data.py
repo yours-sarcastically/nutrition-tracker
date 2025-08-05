@@ -59,5 +59,4 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
             elif food.name in top_foods['fat']: food.emoji = emoji_mapping['fat']
             elif food.name in top_foods['micro']: food.emoji = emoji_mapping['micro']
             else: food.emoji = ''
-                
     return foods
