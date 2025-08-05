@@ -5,7 +5,7 @@
 """
 This script implements an interactive nutrition tracking application for personalized nutrition goals (weight loss, maintenance, and gain) using vegetarian food sources. It calculates personalized daily targets for calories, protein, fat, and carbohydrates based on user-specific attributes and activity levels, using the Mifflin-St Jeor equation for Basal Metabolic Rate (BMR) and multiplies by an activity factor to estimate Total Daily Energy Expenditure (TDEE). Goal-specific caloric adjustments are applied to support the selected objective. Macronutrient targets follow evidence-based nutritional guidelines with a protein-first approach.
 
-Enhanced with comprehensive educational content, hydration tracking, and evidence-based guidance for long-term success.
+Enhanced with comprehensive evidence-based tips for long-term success.
 """
 
 # -----------------------------------------------------------------------------
@@ -110,7 +110,7 @@ CONFIG = {
 }
 
 # -----------------------------------------------------------------------------
-# Cell 4: Enhanced Helper Functions
+# Cell 4: Unified Helper Functions
 # -----------------------------------------------------------------------------
 
 def initialize_session_state():
@@ -120,19 +120,6 @@ def initialize_session_state():
     for var in session_vars:
         if var not in st.session_state:
             st.session_state[var] = {} if var == 'food_selections' else None
-
-def calculate_hydration_needs(weight_kg, activity_level):
-    """Calculate daily fluid needs based on body weight and activity"""
-    base_needs = weight_kg * 35  # 35ml per kg baseline
-    activity_bonus = {
-        'sedentary': 0,
-        'lightly_active': 300,
-        'moderately_active': 500,
-        'very_active': 700,
-        'extremely_active': 1000
-    }
-    total_ml = base_needs + activity_bonus.get(activity_level, 500)
-    return round(total_ml)
 
 def create_unified_input(field_name, field_config, container=st.sidebar):
     """Create input widgets using unified configuration, now handling advanced fields."""
@@ -192,6 +179,28 @@ def get_final_values(user_inputs):
     
     return final_values
 
+def calculate_hydration_needs(weight_kg, activity_level, climate='temperate'):
+    """Calculate daily fluid needs based on body weight and activity"""
+    base_needs = weight_kg * 35  # 35ml per kg baseline
+    
+    activity_bonus = {
+        'sedentary': 0,
+        'lightly_active': 300,
+        'moderately_active': 500,
+        'very_active': 700,
+        'extremely_active': 1000
+    }
+    
+    climate_multiplier = {
+        'cold': 0.9,
+        'temperate': 1.0,
+        'hot': 1.2,
+        'very_hot': 1.4
+    }
+    
+    total_ml = (base_needs + activity_bonus.get(activity_level, 500)) * climate_multiplier.get(climate, 1.0)
+    return round(total_ml)
+
 def display_metrics_grid(metrics_data, num_columns=4):
     """Display metrics in a configurable column layout"""
     columns = st.columns(num_columns)
@@ -249,6 +258,41 @@ def calculate_daily_totals(food_selections, foods):
                 selected_foods.append({'food': food, 'servings': servings})
     
     return totals, selected_foods
+
+def generate_personalized_recommendations(totals, targets, final_values):
+    """Generate personalized recommendations based on current intake and goals"""
+    recommendations = []
+    goal = final_values['goal']
+    
+    # Hydration recommendation
+    hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
+    recommendations.append(f"💧 **Daily Hydration Target:** {hydration_ml} ml ({hydration_ml/250:.1f} cups) - drink 500ml before meals to boost satiety")
+    
+    # Goal-specific recommendations
+    if goal == 'weight_loss':
+        recommendations.extend([
+            "🛏️ **Sleep Priority:** Aim for 7-9 hours nightly - poor sleep reduces fat loss effectiveness by up to 55%",
+            "📊 **Weigh-in Strategy:** Daily morning weigh-ins, track weekly averages instead of daily fluctuations",
+            "🥗 **Volume Eating:** Prioritize high-volume, low-calorie foods (leafy greens, cucumbers, berries) for meal satisfaction"
+        ])
+    elif goal == 'weight_gain':
+        recommendations.extend([
+            "🥤 **Liquid Calories:** Include smoothies, milk, and juices to increase calorie density",
+            "🥑 **Healthy Fats:** Add nuts, oils, and avocados - calorie-dense options for easier surplus",
+            "💪 **Progressive Overload:** Ensure you're getting stronger in the gym - surplus without training = mostly fat gain"
+        ])
+    else:  # maintenance
+        recommendations.extend([
+            "⚖️ **Flexible Tracking:** Monitor intake 5 days/week instead of 7 for sustainable maintenance",
+            "📅 **Regular Check-ins:** Weigh weekly, measure monthly to catch changes early",
+            "🎯 **80/20 Balance:** 80% nutrient-dense foods, 20% flexibility for social situations"
+        ])
+    
+    # Protein timing recommendations
+    protein_per_meal = targets['protein_g'] / 4
+    recommendations.append(f"⏰ **Protein Timing:** Distribute protein across meals (~{protein_per_meal:.0f}g per meal) for optimal muscle protein synthesis")
+    
+    return recommendations
 
 # -----------------------------------------------------------------------------
 # Cell 5: Nutritional Calculation Functions
@@ -427,174 +471,7 @@ def render_food_grid(items, category, columns=2):
                     render_food_item(items[i + j], category)
 
 # -----------------------------------------------------------------------------
-# Cell 7: Educational Content Definitions
-# -----------------------------------------------------------------------------
-
-EDUCATIONAL_CONTENT = {
-    'monitoring_tips': """
-### 📊 **Smart Progress Tracking**
-
-**Weigh-in best practices:**
-- Daily morning weigh-ins (after bathroom, before food)
-- Compare weekly averages, not daily readings
-- Expect 1-3 day delays between caloric changes and scale responses
-
-**Better progress indicators:**
-- **Progress photos** (same lighting, poses, time of day)
-- **Body measurements** (waist, chest, arms, thighs)
-- **Performance metrics** (strength gains, endurance improvements)
-- **How clothes fit** and energy levels
-
-**When to adjust targets:**
-- Confirm logging accuracy (±5% of calories)
-- Re-validate activity multiplier - habit drift is common
-- Adjust calories by 5-10% only after two consecutive stalled weeks
-""",
-
-    'lifestyle_factors': """
-### 😴 **The Hidden Variables: Sleep & Stress**
-
-**Sleep's impact on body composition:**
-- **<7 hours sleep**: Increases cortisol, decreases leptin, increases ghrelin
-- **Poor sleep quality**: Can reduce muscle protein synthesis by 18-20%
-- **Sleep debt**: Makes fat loss 55% less effective even with identical caloric deficits
-
-**Stress management for better results:**
-- **Chronic stress**: Elevates cortisol, promotes abdominal fat storage
-- **High cortisol**: Increases appetite and cravings for high-calorie foods
-- **Recovery practices**: Meditation, yoga, deep breathing, nature walks
-
-**Optimization strategies:**
-- 7-9 hours sleep nightly with consistent sleep/wake times
-- Dark, cool sleeping environment (18-20°C)
-- Limit screens 1-2 hours before bed
-- Morning sunlight exposure for circadian rhythm regulation
-""",
-
-    'plateau_strategies': """
-### 🔄 **Breaking Through Plateaus**
-
-**For Weight Loss Plateaus:**
-1. **Recalculate targets** (your TDEE decreases as you lose weight)
-2. **Increase NEAT** (take stairs, park farther, fidget more)
-3. **Add 1-2 cardio sessions** (150-200 calories burned)
-4. **Implement refeed days** (1 day at maintenance every 7-14 days)
-5. **Check food logging accuracy** (weigh foods, track condiments/oils)
-
-**For Weight Gain Plateaus:**
-1. **Increase liquid calories** (smoothies, milk, juices)
-2. **Add healthy fats** (nuts, oils, avocados - calorie-dense)
-3. **Increase meal frequency** (5-6 smaller meals vs 3 large)
-4. **Time carbs around workouts** (pre/post training for better utilization)
-5. **Reduce excessive cardio** (if doing >300 min/week)
-
-**When to seek professional help:**
-- Persistent plateaus despite consistent adherence (4+ weeks)
-- Extreme fatigue, hair loss, or mood changes
-- Disordered eating patterns developing
-- Medical conditions affecting metabolism
-""",
-
-    'metabolic_adaptation': """
-### 🧬 **Understanding Metabolic Adaptation**
-
-**What happens during extended dieting:**
-- Your BMR can decrease by 10-25% during prolonged caloric restriction
-- Hormones like leptin, thyroid hormones (T3/T4), and testosterone may decline
-- Non-exercise activity thermogenesis (NEAT) often decreases unconsciously
-
-**Signs you need a diet break:**
-- Weight loss stalls despite adherence for 2+ weeks
-- Persistent fatigue, poor sleep, or mood changes
-- Decreased workout performance or recovery
-- Constant hunger or food obsession
-
-**Strategic diet breaks:** 1-2 weeks at maintenance calories every 6-8 weeks can help restore hormonal balance and improve long-term adherence.
-
-**Audit your progress every 4-6 weeks:**
-- Re-enter updated weight in the tracker (BMR and TDEE will shift)
-- Re-check waist/hip measurements or body composition scans
-- Assess energy levels, sleep quality, and workout performance
-""",
-
-    'protein_timing': """
-### ⏰ **Optimizing Protein Distribution**
-
-**Research-backed timing strategies:**
-- **Post-workout window**: 20-40g protein within 2 hours of training
-- **Even distribution**: Spread protein across 3-4 meals (20-30g per meal)
-- **Pre-sleep**: 20-30g casein protein can enhance overnight muscle protein synthesis
-- **Leucine threshold**: Each meal should contain ~2.5-3g leucine to maximize muscle protein synthesis
-
-**Practical application:** 
-- Aim for ≥0.4g protein per kg body weight per meal
-- Distribute across 3-5 feedings daily for optimal muscle protein synthesis
-- Pre-workout carbs (~1-2g per kg, 1-2 hours prior) boost high-intensity performance
-""",
-
-    'micronutrient_guide': """
-### 🌱 **Micronutrient Considerations for Plant-Forward Diets**
-
-**Common shortfalls to monitor:**
-- **Vitamin B₁₂**: Critical for vegetarians/vegans (supplement recommended)
-- **Iron**: Especially important for vegetarians (combine with vitamin C for better absorption)
-- **Zinc**: Important for immune function and testosterone production
-- **Calcium**: Ensure adequate intake from fortified foods or supplements
-- **Iodine**: Often low in plant-based diets (consider iodized salt)
-- **Long-chain Omega-3s (EPA/DHA)**: 1-3g daily if fish intake is low
-
-**Fiber targets:** 
-- Aim for 14g fiber per 1000 kcal (≈ 25-38g daily)
-- Gradually increase to avoid GI distress; adequate water intake is crucial
-- Focus on variety: fruits, vegetables, whole grains, legumes
-""",
-
-    'food_quality': """
-### 🌱 **Food Quality Within Your Macros**
-
-**The 80/20 principle:**
-- 80% of calories from nutrient-dense whole foods
-- 20% flexibility for treats and social situations
-- This approach is sustainable and prevents restrictive eating patterns
-
-**Prioritize these nutrient-dense options:**
-- **Proteins**: Lean meats, fish, eggs, legumes, Greek yogurt, tofu, tempeh
-- **Carbs**: Fruits, vegetables, whole grains, potatoes, oats, quinoa
-- **Fats**: Nuts, seeds, olive oil, avocados, fatty fish, nut butters
-
-**Quality over quantity principle:**
-- Iso-caloric diets with higher whole-food content improve satiety and compliance
-- When bulking, "clean surplus" (nutrient-dense foods) limits excess fat gain
-- Processed foods can fit within your macros but shouldn't dominate your intake
-""",
-
-    'periodization_tips': """
-### 🔄 **Long-term Periodization Strategy**
-
-**Fat-loss phases:** 
-- Duration: 8-12 weeks maximum
-- Follow with 2-week maintenance breaks to restore hormones and adherence
-- Monitor for signs of metabolic adaptation
-
-**Muscle-gain phases:** 
-- Duration: 12-24 weeks for optimal results
-- Consider a mini-cut if body fat increases >5 percentage points above baseline
-- Focus on progressive overload in resistance training
-
-**Maintenance phases:**
-- Critical for habit reinforcement and metabolic recovery
-- Practice flexible tracking (5 days/week instead of 7)
-- Regular check-ins: weigh weekly, measure monthly
-
-**Seasonal adjustments:**
-- Expect and plan for holiday/vacation fluctuations
-- Build in buffer periods around major life events
-- Think in years, not weeks - sustainable progress takes time
-"""
-}
-
-# -----------------------------------------------------------------------------
-# Cell 8: Initialize Application
+# Cell 7: Initialize Application
 # -----------------------------------------------------------------------------
 
 # Initialize session state
@@ -615,7 +492,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# Cell 9: Application Title and Enhanced Input Interface
+# Cell 8: Application Title and Unified Input Interface
 # -----------------------------------------------------------------------------
 
 st.title("Personalized Evidence-Based Nutrition Tracker 🍽️")
@@ -636,274 +513,373 @@ with st.expander("📚 **Scientific Foundation & Evidence-Based Approach**", exp
     
     Rather than using arbitrary caloric adjustments, this tracker uses **percentage-based adjustments** that scale appropriately to your individual metabolism:
     
-    - **Weight Loss:** -20% from TDEE (sustainable fat loss while preserving muscle mass)
-    - **Weight Maintenance:** 0% adjustment (maintain current weight and body composition)
-    - **Weight Gain:** +10% over TDEE (lean muscle gain while minimizing fat accumulation)
+    - **Weight Loss:** -20% from TDEE (sustainable fat loss while preserving muscle)
+    - **Weight Maintenance:** 0% from TDEE (energy balance)  
+    - **Weight Gain:** +10% over TDEE (lean muscle growth with minimal fat gain)
     
     ### **Protein-First Macronutrient Strategy**
     
-    **Why Protein Comes First:**
-    - Essential for muscle protein synthesis and preservation
-    - Highest thermic effect of food (burns ~30% of calories during digestion)
-    - Superior satiety compared to carbs and fats
+    This evidence-based approach prioritizes protein needs first, then allocates fat for hormonal health (minimum 20% of calories), with carbohydrates filling remaining energy needs:
     
-    **Goal-Specific Protein Targets:**
-    - **Weight Loss:** 1.8g/kg (preserves muscle during caloric deficit)
-    - **Maintenance:** 1.6g/kg (maintains muscle mass and metabolic health)
-    - **Weight Gain:** 2.0g/kg (supports muscle protein synthesis during surplus)
-    
-    ### **Fat & Carbohydrate Balance**
-    
-    After protein needs are met, remaining calories are distributed between fats and carbohydrates:
-    - **Fats:** 25-30% of total calories (hormone production, nutrient absorption)
-    - **Carbohydrates:** Remaining calories (energy for training and daily activities)
-    
-    This approach ensures adequate intake of all macronutrients while prioritizing the most metabolically important one: protein.
+    - **Weight Loss:** 1.8g protein/kg body weight, 25% fat
+    - **Weight Maintenance:** 1.6g protein/kg body weight, 30% fat
+    - **Weight Gain:** 2.0g protein/kg body weight, 25% fat
     """)
 
-# Sidebar Input Interface
-st.sidebar.header("Personal Information & Goals 📋")
+# ------ Sidebar for Improved User Experience ------
+st.sidebar.header("Personal Parameters for Daily Target Calculation 📊")
 
-# Collect user inputs using unified configuration
-user_inputs = {}
-for field, config in CONFIG['form_fields'].items():
-    if not config.get('advanced'):
-        user_inputs[field] = create_unified_input(field, config)
+all_inputs = {}
 
-# Advanced Settings Section
-with st.sidebar.expander("⚙️ Advanced Settings (Optional)", expanded=False):
-    st.markdown("*Leave blank to use evidence-based defaults for your goal*")
-    for field, config in CONFIG['form_fields'].items():
-        if config.get('advanced'):
-            value = create_unified_input(field, config, st)
-            if config.get('convert'):
-                value = config['convert'](value)
-            user_inputs[field] = value
+# Separate standard and advanced fields to control their display order
+standard_fields = {k: v for k, v in CONFIG['form_fields'].items() if not v.get('advanced')}
+advanced_fields = {k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')}
 
-# Process inputs and calculate targets
-final_values = get_final_values(user_inputs)
+# 1. Render the standard (primary) input fields first
+for field_name, field_config in standard_fields.items():
+    value = create_unified_input(field_name, field_config, container=st.sidebar)
+    if 'convert' in field_config:
+        value = field_config['convert'](value)
+    all_inputs[field_name] = value
+
+# 2. Render the advanced fields inside an expander placed at the bottom
+advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
+for field_name, field_config in advanced_fields.items():
+    value = create_unified_input(field_name, field_config, container=advanced_expander)
+    if 'convert' in field_config:
+        value = field_config['convert'](value)
+    all_inputs[field_name] = value
+
+# ------ Process Final Values Using Unified Approach ------
+final_values = get_final_values(all_inputs)
+
+# Display hydration recommendation in sidebar
+if all_inputs.get('weight_kg') and all_inputs.get('activity_level'):
+    hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
+    st.sidebar.info(f"💧 **Daily Hydration Target:** {hydration_ml} ml ({hydration_ml/250:.1f} cups)")
+
+# ------ Check User Input Completeness Dynamically ------
+required_fields = [
+    field for field, config in CONFIG['form_fields'].items() if config.get('required')
+]
+user_has_entered_info = all(
+    (all_inputs.get(field) is not None and all_inputs.get(field) != CONFIG['form_fields'][field].get('placeholder'))
+    for field in required_fields
+)
+
+# ------ Calculate Personalized Targets ------
 targets = calculate_personalized_targets(**final_values)
 
-# Enhanced Hydration Tracking in Sidebar
-hydration_needs = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
-st.sidebar.info(f"💧 **Daily Fluid Target:** {hydration_needs} ml ({hydration_needs/250:.1f} cups)")
-
-# Activity Level Descriptions
-activity_descriptions = {
-    'sedentary': "Little to no exercise, desk job",
-    'lightly_active': "Light exercise 1-3 days/week",
-    'moderately_active': "Moderate exercise 3-5 days/week",
-    'very_active': "Heavy exercise 6-7 days/week",
-    'extremely_active': "Very heavy exercise, physical job"
-}
-
-current_activity_desc = activity_descriptions.get(final_values['activity_level'], "")
-if current_activity_desc:
-    st.sidebar.caption(f"*{current_activity_desc}*")
-
 # -----------------------------------------------------------------------------
-# Cell 10: Results Display and Educational Guidance
+# Cell 9: Unified Target Display System
 # -----------------------------------------------------------------------------
 
-st.header("Your Personalized Daily Nutrition Targets 🎯")
+if not user_has_entered_info:
+    st.info("👈 Please enter your personal information in the sidebar to view your daily nutritional targets.")
+    st.header("Sample Daily Targets for Reference 🎯")
+    st.caption("These are example targets. Enter your information in the sidebar for personalized calculations.")
+else:
+    goal_labels = {'weight_loss': 'Weight Loss', 'weight_maintenance': 'Weight Maintenance', 'weight_gain': 'Weight Gain'}
+    goal_label = goal_labels.get(targets['goal'], 'Weight Gain')
+    st.header(f"Your Personalized Daily Nutritional Targets for {goal_label} 🎯")
 
-# Primary metrics display
-goal_labels = {
-    'weight_loss': 'Weight Loss',
-    'weight_maintenance': 'Weight Maintenance', 
-    'weight_gain': 'Weight Gain'
-}
-
-metrics_data = [
-    ("Daily Calories", f"{targets['total_calories']} kcal"),
-    ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}%)"),
-    ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}%)"),
-    ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)")
+# ------ Unified Metrics Display Configuration ------
+metrics_config = [
+    {
+        'title': 'Metabolic Information', 'columns': 4,
+        'metrics': [
+            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
+            ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal per day"),
+            ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal per day"),
+            ("Est. Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg per week")
+        ]
+    },
+    {
+        'title': 'Daily Macronutrient Targets', 'columns': 4,
+        'metrics': [
+            ("Total Calories", f"{targets['total_calories']} kcal"),
+            ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}%)"),
+            ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}%)"),
+            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}%)")
+        ]
+    }
 ]
 
-display_metrics_grid(metrics_data)
-
-# Enhanced Results Summary
-st.subheader("Detailed Breakdown 📊")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("### **Energy Calculations**")
-    st.write(f"**Basal Metabolic Rate (BMR):** {targets['bmr']} kcal/day")
-    st.write(f"**Total Daily Energy Expenditure (TDEE):** {targets['tdee']} kcal/day")
-    st.write(f"**Goal:** {goal_labels.get(targets['goal'], targets['goal'].title())}")
-    
-    adjustment_sign = "+" if targets['caloric_adjustment'] >= 0 else ""
-    st.write(f"**Caloric Adjustment:** {adjustment_sign}{targets['caloric_adjustment']} kcal/day")
-
-with col2:
-    st.markdown("### **Expected Progress**")
-    if targets['estimated_weekly_change'] > 0:
-        st.write(f"**Est. Weekly Weight Change:** +{targets['estimated_weekly_change']:.2f} kg/week")
-        st.caption("*Estimated weight gain assuming consistent adherence*")
-    elif targets['estimated_weekly_change'] < 0:
-        st.write(f"**Est. Weekly Weight Change:** {targets['estimated_weekly_change']:.2f} kg/week")
-        st.caption("*Estimated weight loss assuming consistent adherence*")
-    else:
-        st.write(f"**Est. Weekly Weight Change:** {targets['estimated_weekly_change']:.2f} kg/week")
-        st.caption("*Maintenance calories for weight stability*")
-    
-    st.write(f"**Protein per kg body weight:** {final_values['protein_per_kg']:.1f} g/kg")
-    st.write(f"**Fat percentage of calories:** {final_values['fat_percentage']*100:.0f}%")
-
-# Enhanced Educational Content Sections
-st.header("Evidence-Based Guidance for Success 📚")
-
-# Create tabs for different educational topics
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🏃‍♂️ Progress Tracking", 
-    "😴 Lifestyle Factors", 
-    "🔄 Plateau Solutions", 
-    "🧬 Advanced Concepts"
-])
-
-with tab1:
-    st.markdown(EDUCATIONAL_CONTENT['monitoring_tips'])
-
-with tab2:
-    st.markdown(EDUCATIONAL_CONTENT['lifestyle_factors'])
-
-with tab3:
-    st.markdown(EDUCATIONAL_CONTENT['plateau_strategies'])
-
-with tab4:
-    col1, col2 = st.columns(2)
-    with col1:
-        with st.expander("🧬 **Metabolic Adaptation**", expanded=False):
-            st.markdown(EDUCATIONAL_CONTENT['metabolic_adaptation'])
-        
-        with st.expander("⏰ **Protein Timing**", expanded=False):
-            st.markdown(EDUCATIONAL_CONTENT['protein_timing'])
-    
-    with col2:
-        with st.expander("🌱 **Micronutrients**", expanded=False):
-            st.markdown(EDUCATIONAL_CONTENT['micronutrient_guide'])
-        
-        with st.expander("🔄 **Periodization**", expanded=False):
-            st.markdown(EDUCATIONAL_CONTENT['periodization_tips'])
-
-# Additional expandable sections
-with st.expander("🌱 **Food Quality Guidelines**", expanded=False):
-    st.markdown(EDUCATIONAL_CONTENT['food_quality'])
+# ------ Display All Metric Sections ------
+for config in metrics_config:
+    st.subheader(config['title'])
+    display_metrics_grid(config['metrics'], config['columns'])
+    st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# Cell 11: Interactive Food Selection Interface
+# Cell 10: Enhanced Evidence-Based Tips & Context
 # -----------------------------------------------------------------------------
 
-st.header("Select Your Foods 🥗")
-
-# Calculate current totals
-totals, selected_foods = calculate_daily_totals(st.session_state.food_selections, foods)
-
-# Progress tracking section
-if any(totals.values()):
-    recommendations = create_progress_tracking(totals, targets)
+# ------ Foundation Tips (Always Visible) ------
+with st.expander("🏆 **Essential Tips for Success**", expanded=True):
+    st.markdown("""
+    ### **The Foundation Trio for Success**
     
-    if recommendations:
-        st.subheader("Recommendations to Meet Your Targets 💡")
-        for rec in recommendations:
-            st.write(rec)
+    **💧 Hydration Protocol:**
+    - **Target:** 35ml per kg body weight daily
+    - **Training bonus:** +500-750ml per hour of exercise
+    - **Fat loss hack:** 500ml water before meals increases satiety by 13%
+    
+    **😴 Sleep Quality (The Game-Changer):**
+    - **< 7 hours sleep** reduces fat loss effectiveness by up to 55%
+    - **Target:** 7-9 hours nightly with consistent sleep/wake times
+    - **Optimization:** Dark, cool room (18-20°C), no screens 1-2 hours before bed
+    
+    **⚖️ Weigh-In Best Practices:**
+    - **Daily:** Same time (morning, post-bathroom, minimal clothing)
+    - **Track:** Weekly averages, not daily fluctuations
+    - **Adjust:** Only after 2+ weeks of stalled progress
+    """)
 
-# Food selection interface with enhanced categorization
-st.subheader("Food Categories")
+# ------ Advanced Monitoring & Psychology ------
+with st.expander("📊 **Advanced Monitoring & Psychology**"):
+    st.markdown("""
+    ### **Beyond the Scale: Better Progress Indicators**
+    - **Progress photos:** Same lighting, poses, time of day
+    - **Body measurements:** Waist, hips, arms, thighs (monthly)
+    - **Performance metrics:** Strength gains, energy levels, sleep quality
+    
+    ### **The Psychology of Sustainable Change**
+    **80/20 Rule:** Aim for 80% adherence rather than perfection - this allows for social flexibility and prevents the "all-or-nothing" mentality that leads to diet cycling.
+    
+    **Progressive Implementation:**
+    - **Week 1-2:** Focus only on hitting calorie targets
+    - **Week 3-4:** Add protein targets
+    - **Week 5+:** Fine-tune fat and carb distribution
+    
+    **Biofeedback Awareness:** Monitor energy levels, sleep quality, gym performance, and hunger patterns—not just the scale.
+    """)
 
-# Sort categories to prioritize protein sources
-category_priority = {
-    'PRIMARY PROTEIN SOURCES': 1,
-    'PRIMARY CARBOHYDRATE SOURCES': 2, 
-    'PRIMARY FAT SOURCES': 3,
-    'PRIMARY MICRONUTRIENT SOURCES': 4
-}
+# ------ Plateau Prevention & Meal Timing ------
+with st.expander("🔄 **Plateau Prevention & Meal Timing**"):
+    st.markdown("""
+    ### **Plateau Troubleshooting Flow**
+    **Weight Loss Plateaus:**
+    1. Confirm logging accuracy (±5% calories)
+    2. Re-validate activity multiplier
+    3. Add 10-15 minutes daily walking before reducing calories
+    4. Implement "diet breaks": 1-2 weeks at maintenance every 6-8 weeks
+    
+    **Weight Gain Plateaus:**
+    1. Increase liquid calories (smoothies, milk)
+    2. Add healthy fats (nuts, oils, avocados)
+    3. Ensure progressive overload in training
+    4. Gradual increases: +100-150 calories when stalled 2+ weeks
+    
+    ### **Meal Timing & Distribution**
+    **Protein Optimization:**
+    - **Distribution:** 20-30g across 3-4 meals (0.4-0.5g per kg body weight per meal)
+    - **Post-workout:** 20-40g within 2 hours of training
+    - **Pre-sleep:** 20-30g casein for overnight muscle protein synthesis
+    
+    **Performance Timing:**
+    - **Pre-workout:** Moderate carbs + protein 1-2 hours prior
+    - **Post-workout:** Protein + carbs within 2 hours
+    """)
 
-sorted_categories = sorted(foods.keys(), key=lambda x: category_priority.get(x, 5))
+# ------ Food Quality & Micronutrients ------
+with st.expander("🌱 **Food Quality & Micronutrient Optimization**"):
+    st.markdown("""
+    ### **Satiety Hierarchy (for Better Adherence)**
+    1. **Protein** (highest satiety per calorie)
+    2. **Fiber-rich carbs** (vegetables, fruits, whole grains)
+    3. **Healthy fats** (nuts, avocado, olive oil)
+    4. **Processed foods** (lowest satiety per calorie)
+    
+    **Fiber Target:** 14g per 1,000 kcal (≈25-38g daily) - gradually increase to avoid GI distress
+    
+    **Volume Eating Strategy:** Prioritize low-calorie, high-volume foods (leafy greens, cucumbers, berries) to create meal satisfaction without exceeding calorie targets.
+    
+    ### **Micronutrient Considerations**
+    **Common Shortfalls in Plant-Forward Diets:**
+    - **B₁₂, iron, calcium, zinc, iodine, omega-3 (EPA/DHA)**
+    - **Strategy:** Include fortified foods or consider targeted supplementation based on lab work
+    """)
 
-for category in sorted_categories:
-    if not foods[category]:
+# ------ Long-Term Success Framework ------
+with st.expander("🎯 **Long-Term Success Framework**"):
+    st.markdown("""
+    ### **Maintenance Practice Concept**
+    - Spend time at maintenance calories between diet phases
+    - Practice maintaining goal weight for several months before further changes
+    - **Reverse dieting:** Gradually increase calories post-weight loss (50-100 kcal/week)
+    
+    ### **Metabolic Adaptation Awareness**
+    - BMR decreases 10-25% during prolonged restriction
+    - Recalculate targets every 4-6 weeks as weight changes
+    - TDEE naturally adjusts with body weight changes
+    
+    ### **Red Flag Adjustments**
+    - **Too fast weight loss (>1% body weight/week):** Increase calories to prevent muscle loss
+    - **Extreme fatigue/irritability:** Consider maintenance break
+    - **No change for 3+ weeks:** Adjust by 5-10%
+    """)
+
+# ------ Dynamic Monitoring Tips ------
+with st.expander("📈 **Dynamic Monitoring Tips**"):
+    st.markdown("""
+    ### **Important:** Your targets will change as you progress!
+    
+    **Why targets change:**
+    - As you lose weight, your BMR and TDEE naturally decrease (smaller body = less energy needed)
+    - As you gain weight, your TDEE increases (larger body = more energy needed)
+    - This is normal metabolic adaptation, not a sign of failure
+    
+    **When to recalculate:**
+    - **Every 4-6 weeks** or after **2-3 kg weight change**
+    - Update your weight in the sidebar and generate new targets
+    - Compare your actual vs. predicted weight change weekly
+    
+    **Patience is key:**
+    - Weight can fluctuate 1-3 kg daily (water, glycogen, digestion)
+    - Focus on weekly trends, not daily changes
+    - True body composition changes take 2-4 weeks to become apparent
+    """)
+
+# -----------------------------------------------------------------------------
+# Cell 11: Personalized Recommendations System
+# -----------------------------------------------------------------------------
+
+if user_has_entered_info:
+    st.header("🎯 **Your Personalized Action Plan**")
+    
+    # Calculate current totals for recommendations
+    totals, _ = calculate_daily_totals(st.session_state.food_selections, foods)
+    recommendations = generate_personalized_recommendations(totals, targets, final_values)
+    
+    for rec in recommendations:
+        st.info(rec)
+
+# -----------------------------------------------------------------------------
+# Cell 12: Food Selection Interface
+# -----------------------------------------------------------------------------
+
+st.header("Daily Food Selection & Tracking 🥗")
+st.markdown("Select the number of servings for each food item to track your daily nutrition intake.")
+
+# ------ Reset Selection Button ------
+if st.button("🔄 Reset All Food Selections", type="secondary"):
+    st.session_state.food_selections = {}
+    st.rerun()
+
+# ------ Sort and Display Food Categories ------
+sorted_items = sorted(foods.items())
+
+for category, items in sorted_items:
+    if not items:
         continue
         
-    with st.expander(f"**{category}** ({len(foods[category])} items)", expanded=True):
-        # Sort foods within category by emoji priority, then by primary nutrient
-        sorted_foods = sorted(
-            foods[category], 
-            key=lambda x: (
-                CONFIG['emoji_order'].get(x.get('emoji', ''), 4),
-                -x.get(CONFIG['nutrient_map'].get(category, {}).get('sort_by', 'calories'), 0)
-            )
+    with st.expander(f"🍽️ **{category}** ({len(items)} options)", expanded=True):
+        # Sort items within each category by emoji priority first, then by calories
+        sorted_items_in_category = sorted(
+            items, 
+            key=lambda x: (CONFIG['emoji_order'].get(x.get('emoji', ''), 4), -x['calories'])
         )
-        render_food_grid(sorted_foods, category, columns=2)
+        render_food_grid(sorted_items_in_category, category, columns=2)
 
 # -----------------------------------------------------------------------------
-# Cell 12: Daily Summary and Selected Foods Display
+# Cell 13: Daily Summary and Progress Tracking
 # -----------------------------------------------------------------------------
+
+st.header("Daily Nutrition Summary 📊")
+
+# Calculate current daily totals
+totals, selected_foods = calculate_daily_totals(st.session_state.food_selections, foods)
 
 if selected_foods:
-    st.header("Today's Food Selections 📝")
+    # Progress tracking with recommendations
+    recommendations = create_progress_tracking(totals, targets)
     
-    # Create summary table
-    summary_data = []
-    for item in selected_foods:
-        food = item['food']
-        servings = item['servings']
-        summary_data.append({
-            'Food': food['name'],
-            'Servings': f"{servings:.1f}",
-            'Calories': f"{food['calories'] * servings:.0f}",
-            'Protein (g)': f"{food['protein'] * servings:.1f}",
-            'Carbs (g)': f"{food['carbs'] * servings:.1f}",
-            'Fat (g)': f"{food['fat'] * servings:.1f}"
-        })
-    
-    summary_df = pd.DataFrame(summary_data)
-    st.dataframe(summary_df, use_container_width=True)
-    
-    # Daily totals summary
-    st.subheader("Daily Totals Summary")
-    
-    totals_metrics = [
-        ("Total Calories", f"{totals['calories']:.0f} kcal", f"{totals['calories'] - targets['total_calories']:+.0f}"),
-        ("Total Protein", f"{totals['protein']:.1f} g", f"{totals['protein'] - targets['protein_g']:+.1f}"),
-        ("Total Carbs", f"{totals['carbs']:.1f} g", f"{totals['carbs'] - targets['carb_g']:+.1f}"),
-        ("Total Fat", f"{totals['fat']:.1f} g", f"{totals['fat'] - targets['fat_g']:+.1f}")
+    # Daily summary metrics
+    st.subheader("Today's Nutrition Intake")
+    summary_metrics = [
+        ("Calories Consumed", f"{totals['calories']:.0f} kcal"),
+        ("Protein Intake", f"{totals['protein']:.0f} g"),
+        ("Carbohydrates", f"{totals['carbs']:.0f} g"),
+        ("Fat Intake", f"{totals['fat']:.0f} g")
     ]
+    display_metrics_grid(summary_metrics, 4)
     
-    display_metrics_grid(totals_metrics)
+    # Recommendations based on current intake
+    if recommendations:
+        st.subheader("Personalized Recommendations for Today")
+        for rec in recommendations:
+            st.info(rec)
     
-    # Clear selections button
-    if st.button("🗑️ Clear All Selections", type="secondary"):
-        st.session_state.food_selections = {}
-        st.rerun()
+    # Detailed food breakdown
+    with st.expander("📝 **Detailed Food Breakdown**"):
+        st.subheader("Foods Selected Today")
+        for item in selected_foods:
+            food = item['food']
+            servings = item['servings']
+            total_cals = food['calories'] * servings
+            total_protein = food['protein'] * servings
+            total_carbs = food['carbs'] * servings
+            total_fat = food['fat'] * servings
+            
+            st.write(f"**{food['name']}** - {servings} serving(s)")
+            st.write(f"  → {total_cals:.0f} kcal | {total_protein:.1f}g protein | {total_carbs:.1f}g carbs | {total_fat:.1f}g fat")
+else:
+    st.info("No foods selected yet. Choose foods from the categories above to track your daily intake.")
+    
+    # Show sample progress bars with zero values
+    st.subheader("Progress Toward Daily Nutritional Targets 🎯")
+    for nutrient, config in CONFIG['nutrient_configs'].items():
+        target = targets[config['target_key']]
+        st.progress(
+            0.0,
+            text=f"{config['label']}: 0% of daily target ({target:.0f} {config['unit']})"
+        )
 
 # -----------------------------------------------------------------------------
-# Cell 13: Footer and Additional Resources
+# Cell 14: Footer and Additional Resources
 # -----------------------------------------------------------------------------
 
 st.markdown("---")
-
-# Footer with additional tips and disclaimers
 st.markdown("""
-### 🔬 **Scientific Disclaimer**
+### **📚 Evidence-Based References & Methodology**
 
-This calculator provides evidence-based estimates based on established nutritional science. Individual results may vary due to genetics, medical conditions, medications, and other factors. For personalized nutrition advice, especially if you have medical conditions, consult with a registered dietitian or healthcare provider.
+This nutrition tracker is built on peer-reviewed research and evidence-based guidelines:
 
-### 📖 **Key References**
-- Mifflin-St Jeor Equation: *American Journal of Clinical Nutrition* (1990)
-- Protein Requirements: *Journal of the International Society of Sports Nutrition* (2017)
-- Activity Multipliers: *Institute of Medicine Dietary Reference Intakes* (2005)
+- **BMR Calculation:** Mifflin-St Jeor equation (Academy of Nutrition and Dietetics recommended)
+- **Activity Factors:** Based on validated TDEE multipliers from exercise physiology research
+- **Protein Targets:** International Society of Sports Nutrition position stands
+- **Caloric Adjustments:** Conservative, sustainable rates based on body composition research
 
-### 💡 **Pro Tips for Success**
-- **Consistency over perfection**: Aim for 80-90% adherence rather than 100% perfection
-- **Weekly averages matter**: Focus on weekly weight trends, not daily fluctuations  
-- **Listen to your body**: Adjust based on energy levels, performance, and wellbeing
-- **Be patient**: Sustainable changes take time - think in months, not days
+### **⚠️ Important Disclaimers**
 
-*Built with evidence-based nutrition science and designed for sustainable, long-term success.* 🌟
+- This tool provides general nutrition guidance based on population averages
+- Individual needs may vary based on genetics, medical conditions, and other factors
+- Consult with a qualified healthcare provider before making significant dietary changes
+- Monitor your biofeedback (energy, performance, health markers) and adjust as needed
+
+### **🔬 Continuous Improvement**
+
+This tracker incorporates the latest nutrition science. As research evolves, recommendations may be updated to reflect current best practices.
+
+**Remember:** The best nutrition plan is one you can follow consistently. Focus on sustainable habits over perfect adherence.
 """)
 
-# Version and update information
-st.caption("Version 2.0 - Enhanced with comprehensive educational content and evidence-based guidance")
+# -----------------------------------------------------------------------------
+# Cell 15: Session State Management and Performance
+# -----------------------------------------------------------------------------
+
+# Clean up session state if needed (prevent memory issues)
+if len(st.session_state.food_selections) > 100:  # Arbitrary limit
+    # Keep only non-zero selections
+    st.session_state.food_selections = {
+        k: v for k, v in st.session_state.food_selections.items() if v > 0
+    }
+
+# Add debugging info for development (can be removed in production)
+if st.sidebar.checkbox("Show Debug Info", value=False):
+    with st.expander("Debug Information"):
+        st.write("**Final Values:**", final_values)
+        st.write("**Current Selections:**", st.session_state.food_selections)
+        st.write("**Calculated Targets:**", targets)
+        st.write("**Current Totals:**", totals)
