@@ -78,7 +78,7 @@ def render_sidebar() -> Tuple[UserProfile, AdvancedSettings, bool]:
     # Add informational sections
     info_sections = [
         {'title': "Activity Level Guide 🏃‍♂️", 'content': "- **Sedentary**: Little to no exercise.\n- **Lightly Active**: Light exercise 1-3 days/week.\n- **Moderately Active**: Moderate exercise 3-5 days/week.\n- **Very Active**: Hard exercise 6-7 days/week.\n- **Extremely Active**: Very hard exercise, physical job."},
-        {'title': "Emoji Guide 💡", 'content': "- 🥇 **Superfood**: Top-tier in multiple categories.\n- 💥 **Nutrient & Calorie Dense**: High in both.\n- 🔥 **High-Calorie**: Energy-dense.\n- 💪/🍚/🥑/🥦 **Top Source**: Protein/Carbs/Fat/Micros."},
+        {'title': "Emoji Guide 💡", 'content': "- 💥 **Nutrient & Calorie Dense**: High in both.\n- 🔥 **High-Calorie**: Energy-dense.\n- 💪/🍚/🥑 **Top Source**: Protein/Carbs/Fat."},
         {'title': "About This Calculator 📖", 'content': "Uses Mifflin-St Jeor for BMR, adds a caloric surplus for weight gain (target 0.25% body weight/week), and follows evidence-based macronutrient targets."}
     ]
     for section in info_sections:
