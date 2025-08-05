@@ -708,10 +708,10 @@ metrics_config = [
     {
         'title': 'Macronutrient Distribution (% of Daily Calories)', 'columns': 4,
         'metrics': [
-            ("Protein", f"{targets['protein_percent']:.1f}%", f"↑ {targets['protein_calories']} kcal"),
-            ("Carbohydrates", f"{targets['carb_percent']:.1f}%", f"↑ {targets['carb_calories']} kcal"),
-            ("Fat", f"{targets['fat_percent']:.1f}%", f"↑ {targets['fat_calories']} kcal"),
-            ("Total Energy", f"100%", f"↑ {targets['total_calories']} kcal")
+            ("Protein", f"{targets['protein_percent']:.1f}%", f" {targets['protein_calories']} kcal"),
+            ("Carbohydrates", f"{targets['carb_percent']:.1f}%", f" {targets['carb_calories']} kcal"),
+            ("Fat", f"{targets['fat_percent']:.1f}%", f" {targets['fat_calories']} kcal"),
+            ("Total Energy", f"100%", f" {targets['total_calories']} kcal")
         ]
     }
 ]
