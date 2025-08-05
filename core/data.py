@@ -27,7 +27,7 @@ def load_food_database(file_path: str) -> Dict[str, List[FoodItem]]:
 
 def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodItem]]:
     """Assign emojis to foods using unified ranking system."""
-    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'calories': {}}
+    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'micro': [], 'calories': {}}
     
     for category, items in foods.items():
         if not items: continue
@@ -40,8 +40,8 @@ def assign_food_emojis(foods: Dict[str, List[FoodItem]]) -> Dict[str, List[FoodI
             sorted_by_nutrient = sorted(items, key=lambda x: getattr(x, map_info['sort_by']), reverse=True)
             top_foods[map_info['key']] = [food.name for food in sorted_by_nutrient[:3]]
 
-    all_top_foods = {food for key in ['protein', 'carbs', 'fat'] for food in top_foods[key]}
-
+    all_top_foods = {food for key in ['protein', 'carbs', 'fat', 'micro'] for food in top_foods[key]}
+    
     emoji_mapping = {'high_cal_nutrient': '💥', 'high_calorie': '🔥', 'protein': '💪', 'carbs': '🍚', 'fat': '🥑'}
     
     for items in foods.values():
