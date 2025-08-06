@@ -698,132 +698,102 @@ for config in metrics_config:
     st.divider()
 
 # -----------------------------------------------------------------------------
-# Cell 10: Enhanced Evidence-Based Tips and Context
+# Cell 10: Enhanced Evidence-Based Tips & Context
 # -----------------------------------------------------------------------------
 
-st.header("📚 Your Evidence-Based Playbook")
-tab1, tab2, tab3, tab4 = st.tabs([
-    "Foundations", "Advanced Strategies", "Troubleshooting", "Nutrition Science"
-])
+st.header("📚 Evidence-Based Playbook")
+tab1, tab2, tab3, tab4 = st.tabs(["Foundations", "Advanced Strategies", "Troubleshooting", "Nutrition Science"])
 
 with tab1:
-    st.subheader("🏆 Essential Tips for Your Success")
-    st.markdown(r"""
+    st.subheader("🏆 **Essential Tips for Success**")
+    st.markdown("""
     ### **The Foundation Trio for Success**
-
-    **💧 The Hydration Protocol:**
-    - **Target:** Aim for 35ml per kg of body weight daily
-    - **Training Bonus:** Add 500 to 750ml per hour of exercise
-    - **Fat Loss Hack:** Drinking 500ml of water before meals increases
-      satiety by 13%
-
+    
+    **💧 Hydration Protocol:**
+    - **Target:** 35ml per kg body weight daily
+    - **Training bonus:** +500-750ml per hour of exercise
+    - **Fat loss hack:** 500ml water before meals increases satiety by 13%
+    
     **😴 Sleep Quality (The Game-Changer):**
-    - **Less than 7 hours of sleep** can reduce fat loss effectiveness by
-      up to 55%
-    - **Target:** Aim for 7 to 9 hours nightly with consistent sleep and
-      wake times
-    - **Optimization:** Use a dark, cool room (18-20°C) and avoid screens
-      for 1 to 2 hours before bed
-
-    **⚖️ Best Practices for Weigh-Ins:**
-    - **Daily:** Weigh in at the same time, such as in the morning,
-      post-bathroom, and with minimal clothing
-    - **Track:** Focus on weekly averages, not daily fluctuations
-    - **Adjust:** Make changes only after two or more weeks of stalled
-      progress
+    - **< 7 hours sleep** reduces fat loss effectiveness by up to 55%
+    - **Target:** 7-9 hours nightly with consistent sleep/wake times
+    - **Optimization:** Dark, cool room (18-20°C), no screens 1-2 hours before bed
+    
+    **⚖️ Weigh-In Best Practices:**
+    - **Daily:** Same time (morning, post-bathroom, minimal clothing)
+    - **Track:** Weekly averages, not daily fluctuations
+    - **Adjust:** Only after 2+ weeks of stalled progress
     """)
 
 with tab2:
-    st.subheader("📊 Advanced Monitoring and Psychology")
-    st.markdown(r"""
-    ### **Beyond the Scale: Better Indicators of Progress**
-    - **Progress Photos:** Take photos in the same lighting, with the same
-      poses, and at the same time of day
-    - **Body Measurements:** Measure your waist, hips, arms, and thighs
-      monthly
-    - **Performance Metrics:** Track your strength gains, energy levels,
-      and sleep quality
-
+    st.subheader("📊 **Advanced Monitoring & Psychology**")
+    st.markdown("""
+    ### **Beyond the Scale: Better Progress Indicators**
+    - **Progress photos:** Same lighting, poses, time of day
+    - **Body measurements:** Waist, hips, arms, thighs (monthly)
+    - **Performance metrics:** Strength gains, energy levels, sleep quality
+    
     ### **The Psychology of Sustainable Change**
-    **The 80/20 Rule:** Aim for 80% adherence rather than perfection. This
-    practice allows for social flexibility and prevents the "all-or-nothing"
-    mentality that leads to diet cycling.
-
+    **80/20 Rule:** Aim for 80% adherence rather than perfection - this allows for social flexibility and prevents the "all-or-nothing" mentality that leads to diet cycling.
+    
     **Progressive Implementation:**
-    - **Weeks 1-2:** Focus only on hitting your calorie targets
-    - **Weeks 3-4:** Add your protein targets to the focus
-    - **Week 5+:** Fine-tune your fat and carbohydrate distribution
-
-    **Biofeedback Awareness:** Monitor your energy levels, sleep quality,
-    gym performance, and hunger patterns, not just the scale.
+    - **Week 1-2:** Focus only on hitting calorie targets
+    - **Week 3-4:** Add protein targets
+    - **Week 5+:** Fine-tune fat and carb distribution
+    
+    **Biofeedback Awareness:** Monitor energy levels, sleep quality, gym performance, and hunger patterns—not just the scale.
     """)
 
 with tab3:
-    st.subheader("🔄 Plateau Prevention and Meal Timing")
-    st.markdown(r"""
-    ### **A Troubleshooting Flow for Plateaus**
-    **For Weight Loss Plateaus:**
-    1. Confirm the accuracy of your logging (within ±5% of calories)
-    2. Re-validate your activity multiplier to ensure it is accurate
-    3. Add 10 to 15 minutes of daily walking before reducing calories
-    4. Implement "diet breaks" by spending 1 to 2 weeks at maintenance
-       every 6 to 8 weeks
-
-    **For Weight Gain Plateaus:**
-    1. Increase your intake of liquid calories (smoothies, milk)
-    2. Add more healthy fats to your diet (nuts, oils, avocados)
-    3. Ensure you are applying progressive overload in your training
-    4. Make gradual increases of 100 to 150 calories when stalled for
-       two or more weeks
-
-    ### **Meal Timing and Distribution**
-    **For Protein Optimization:**
-    - **Distribution:** Aim for 20 to 30g across 3 to 4 meals, which is
-      about 0.4 to 0.5g per kg of body weight per meal
-    - **Post-Workout:** Consume 20 to 40g within 2 hours of training
-    - **Pre-Sleep:** Have 20 to 30g of casein for overnight muscle protein
-      synthesis
-
-    **For Performance Timing:**
-    - **Pre-Workout:** Consume moderate carbohydrates and protein 1 to 2
-      hours prior to exercise
-    - **Post-Workout:** Have a combination of protein and carbohydrates
-      within 2 hours
+    st.subheader("🔄 **Plateau Prevention & Meal Timing**")
+    st.markdown("""
+    ### **Plateau Troubleshooting Flow**
+    **Weight Loss Plateaus:**
+    1. Confirm logging accuracy (±5% calories)
+    2. Re-validate activity multiplier
+    3. Add 10-15 minutes daily walking before reducing calories
+    4. Implement "diet breaks": 1-2 weeks at maintenance every 6-8 weeks
+    
+    **Weight Gain Plateaus:**
+    1. Increase liquid calories (smoothies, milk)
+    2. Add healthy fats (nuts, oils, avocados)
+    3. Ensure progressive overload in training
+    4. Gradual increases: +100-150 calories when stalled 2+ weeks
+    
+    ### **Meal Timing & Distribution**
+    **Protein Optimization:**
+    - **Distribution:** 20-30g across 3-4 meals (0.4-0.5g per kg body weight per meal)
+    - **Post-workout:** 20-40g within 2 hours of training
+    - **Pre-sleep:** 20-30g casein for overnight muscle protein synthesis
+    
+    **Performance Timing:**
+    - **Pre-workout:** Moderate carbs + protein 1-2 hours prior
+    - **Post-workout:** Protein + carbs within 2 hours
     """)
 
 with tab4:
-    st.subheader("🔬 The Scientific Foundation and a Deep Dive into Nutrition")
-    st.markdown(r"""
-    ### **The Energy Foundation: BMR and TDEE**
-
-    **Basal Metabolic Rate (BMR):** This is your body's energy needs at
-    complete rest, calculated using the **Mifflin-St Jeor equation**, which
-    is the most accurate formula recognized by the Academy of Nutrition and
-    Dietetics.
-
-    **Total Daily Energy Expenditure (TDEE):** These are your maintenance
-    calories, including all daily activities, calculated by multiplying your
-    BMR by scientifically validated activity factors.
-
-    ### **The Satiety Hierarchy (for Better Adherence)**
-    1. **Protein** (provides the highest satiety per calorie)
-    2. **Fiber-Rich Carbohydrates** (vegetables, fruits, whole grains)
-    3. **Healthy Fats** (nuts, avocado, olive oil)
-    4. **Processed Foods** (provide the lowest satiety per calorie)
-
-    **Fiber Target:** Aim for 14g per 1,000 kcal (approximately 25 to 38g
-    daily). It is best to increase fiber intake gradually to avoid any
-    gastrointestinal distress.
-
-    **The Volume Eating Strategy:** Prioritize low-calorie, high-volume
-    foods like leafy greens, cucumbers, and berries to create meal
-    satisfaction without exceeding your calorie targets.
-
-    ### **Considerations for Micronutrients**
+    st.subheader("🔬 **Scientific Foundation & Nutrition Deep Dive**")
+    st.markdown("""
+    ### **Energy Foundation: BMR & TDEE**
+    
+    **Basal Metabolic Rate (BMR):** Your body's energy needs at complete rest, calculated using the **Mifflin-St Jeor equation** - the most accurate formula recognized by the Academy of Nutrition and Dietetics.
+    
+    **Total Daily Energy Expenditure (TDEE):** Your maintenance calories including daily activities, calculated by multiplying BMR by scientifically validated activity factors.
+    
+    ### **Satiety Hierarchy (for Better Adherence)**
+    1. **Protein** (highest satiety per calorie)
+    2. **Fiber-rich carbs** (vegetables, fruits, whole grains)
+    3. **Healthy fats** (nuts, avocado, olive oil)
+    4. **Processed foods** (lowest satiety per calorie)
+    
+    **Fiber Target:** 14g per 1,000 kcal (≈25-38g daily) - gradually increase to avoid GI distress
+    
+    **Volume Eating Strategy:** Prioritize low-calorie, high-volume foods (leafy greens, cucumbers, berries) to create meal satisfaction without exceeding calorie targets.
+    
+    ### **Micronutrient Considerations**
     **Common Shortfalls in Plant-Forward Diets:**
-    - **B₁₂, iron, calcium, zinc, iodine, and omega-3 (EPA/DHA)**
-    - **Strategy:** Include fortified foods in your diet or consider
-      targeted supplementation based on your lab work.
+    - **B₁₂, iron, calcium, zinc, iodine, omega-3 (EPA/DHA)**
+    - **Strategy:** Include fortified foods or consider targeted supplementation based on lab work
     """)
 
 # -----------------------------------------------------------------------------
