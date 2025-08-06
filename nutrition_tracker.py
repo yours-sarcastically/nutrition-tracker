@@ -711,7 +711,7 @@ with tab1:
     st.markdown(r"""
     ### **The Foundation Trio for Success**
 
-    **💧 The Hydration Protocol:**
+    ** The Hydration Protocol:**
     - **Target:** Aim for 35ml per kg of body weight daily
     - **Training Bonus:** Add 500 to 750ml per hour of exercise
     - **Fat Loss Hack:** Drinking 500ml of water before meals increases
