@@ -351,7 +351,7 @@ def generate_personalized_recommendations(totals, targets, final_values):
         recommendations.extend([
             "🛏️ **Prioritize Sleep:** Aim for 7 to 9 hours nightly, as poor sleep can reduce fat loss effectiveness by up to 55%.",
             "📊 **Weigh-In Strategy:** Use daily morning weigh-ins but track the weekly averages to smooth out daily fluctuations.",
-            "🥗 **Practice Volume Eating:** Prioritize high-volume and low-calorie foods like leafy greens to enhance meal satisfaction."]
+            "🥗 **Practice Volume Eating:** Prioritize high-volume and low-calorie foods like leafy greens to enhance meal satisfaction."
         ])
     elif goal == 'weight_gain':
         recommendations.extend([
