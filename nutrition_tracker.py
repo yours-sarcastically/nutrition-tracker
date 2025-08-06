@@ -698,7 +698,9 @@ for config in metrics_config:
     st.divider()
 
 # -----------------------------------------------------------------------------
-# Cell 10: Enhanced Evidence-Based Tips and Context
+# # Cell 10
+# -----------------------------------------------------------------------------
+# # ------ Enhanced Evidence-Based Tips and Context ------
 # -----------------------------------------------------------------------------
 
 st.header("📚 Your Evidence-Based Playbook")
@@ -708,7 +710,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 with tab1:
     st.subheader("🏆 Essential Tips for Your Success")
-    st.markdown("""
+    st.markdown(r"""
     ### **The Foundation Trio for Success**
 
     **💧 The Hydration Protocol:**
@@ -735,7 +737,7 @@ with tab1:
 
 with tab2:
     st.subheader("📊 Advanced Monitoring and Psychology")
-    st.markdown("""
+    st.markdown(r"""
     ### **Beyond the Scale: Better Indicators of Progress**
     - **Progress Photos:** Take photos in the same lighting, with the same
       poses, and at the same time of day
@@ -760,7 +762,7 @@ with tab2:
 
 with tab3:
     st.subheader("🔄 Plateau Prevention and Meal Timing")
-    st.markdown("""
+    st.markdown(r"""
     ### **A Troubleshooting Flow for Plateaus**
     **For Weight Loss Plateaus:**
     1. Confirm the accuracy of your logging (within ±5% of calories)
@@ -793,7 +795,7 @@ with tab3:
 
 with tab4:
     st.subheader("🔬 The Scientific Foundation and a Deep Dive into Nutrition")
-    st.markdown("""
+    st.markdown(r"""
     ### **The Energy Foundation: BMR and TDEE**
 
     **Basal Metabolic Rate (BMR):** This is your body's energy needs at
