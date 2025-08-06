@@ -153,13 +153,13 @@ CONFIG = {
         'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
     },
     'form_fields': {
-        'age': {'type': 'number', 'label': 'Age (in Years)',
+        'age': {'type': 'number', 'label': 'Age',
                 'min': 16, 'max': 80, 'step': 1,
                 'placeholder': 'Enter your age', 'required': True},
-        'height_cm': {'type': 'number', 'label': 'Height (in Centimeters)',
+        'height_cm': {'type': 'number', 'label': 'Height (cm)',
                       'min': 140, 'max': 220, 'step': 1,
                       'placeholder': 'Enter your height', 'required': True},
-        'weight_kg': {'type': 'number', 'label': 'Weight (in Kilograms)',
+        'weight_kg': {'type': 'number', 'label': 'Weight (kg)',
                       'min': 40.0, 'max': 150.0, 'step': 0.5,
                       'placeholder': 'Enter your weight', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Sex',
