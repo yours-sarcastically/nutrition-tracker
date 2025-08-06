@@ -625,6 +625,26 @@ with st.sidebar.container(border=True):
     *💡 When in doubt, choose a lower activity level to avoid overestimating your calorie needs.*
     """)
 
+# ------ Process Final Values Using Unified Approach ------
+final_values = get_final_values(all_inputs)
+
+# Display hydration recommendation in sidebar
+if all_inputs.get('weight_kg') and all_inputs.get('activity_level'):
+    hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
+    st.sidebar.info(f"💧 **Daily Hydration Target:** {hydration_ml} ml ({hydration_ml/250:.1f} cups)")
+
+# ------ Check User Input Completeness Dynamically ------
+required_fields = [
+    field for field, config in CONFIG['form_fields'].items() if config.get('required')
+]
+user_has_entered_info = all(
+    (all_inputs.get(field) is not None and all_inputs.get(field) != CONFIG['form_fields'][field].get('placeholder'))
+    for field in required_fields
+)
+
+# ------ Calculate Personalized Targets ------
+targets = calculate_personalized_targets(**final_values)
+
 # -----------------------------------------------------------------------------
 # Cell 9: Unified Target Display System
 # -----------------------------------------------------------------------------
