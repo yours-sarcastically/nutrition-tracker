@@ -698,9 +698,7 @@ for config in metrics_config:
     st.divider()
 
 # -----------------------------------------------------------------------------
-# # Cell 10
-# -----------------------------------------------------------------------------
-# # ------ Enhanced Evidence-Based Tips and Context ------
+# Cell 10: Enhanced Evidence-Based Tips and Context
 # -----------------------------------------------------------------------------
 
 st.header("📚 Your Evidence-Based Playbook")
