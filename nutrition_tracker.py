@@ -709,7 +709,7 @@ with tab1:
     st.markdown("""
     ### **The Foundation Trio for Success**
     
-    **💧 Hydration Protocol:**
+    "**💧 Hydration Protocol:**"
     - **Target:** 35ml per kg body weight daily
     - **Training bonus:** +500-750ml per hour of exercise
     - **Fat loss hack:** 500ml water before meals increases satiety by 13%
