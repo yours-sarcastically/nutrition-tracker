@@ -3,15 +3,15 @@
 # -----------------------------------------------------------------------------
 
 """
-This script implements an interactive nutrition tracking application for
-personalized nutrition goals including weight loss, maintenance, and gain
-using vegetarian food sources. The application calculates personalized daily
-targets for calories, protein, fat, and carbohydrates based on user-specific
-attributes and activity levels, using the Mifflin-St Jeor equation for Basal
-Metabolic Rate and multiplying by an activity factor to estimate Total Daily
-Energy Expenditure. Goal-specific caloric adjustments are applied to support
-the selected objective. Macronutrient targets follow evidence-based
-nutritional guidelines with a protein-first approach.
+This script implements an interactive nutrition tracking application built with
+Streamlit. It is designed to provide personalized nutrition plans for weight
+loss, maintenance, or gain, with a focus on vegetarian food sources. The 
+application calculates personalized daily targets for calories, protein, fat, 
+and carbohydrates based on user-specific attributes and activity levels, using 
+the Mifflin-St Jeor equation for Basal Metabolic Rate and multiplying by an 
+activity factor to estimate Total Daily Energy Expenditure. Goal-specific caloric 
+adjustments are applied to support the selected objective. Macronutrient targets 
+follow evidence-based nutritional guidelines with a protein-first approach.
 
 The application includes comprehensive evidence-based tips for long-term
 success, interactive food selection with emoji-based categorization, progress
@@ -134,9 +134,9 @@ CONFIG = {
         'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
     },
     'form_fields': {
-        'age': {'type': 'number', 'label': 'Age (Years)', 'min': 16, 'max': 80, 'step': 1, 'placeholder': 'Enter your age', 'required': True},
-        'height_cm': {'type': 'number', 'label': 'Height (Centimeters)', 'min': 140, 'max': 220, 'step': 1, 'placeholder': 'Enter your height', 'required': True},
-        'weight_kg': {'type': 'number', 'label': 'Weight (kg)', 'min': 40.0, 'max': 150.0, 'step': 0.5, 'placeholder': 'Enter your weight', 'required': True},
+        'age': {'type': 'number', 'label': 'Age (in Years)', 'min': 16, 'max': 80, 'step': 1, 'placeholder': 'Enter your age', 'required': True},
+        'height_cm': {'type': 'number', 'label': 'Height (in Centimeters)', 'min': 140, 'max': 220, 'step': 1, 'placeholder': 'Enter your height', 'required': True},
+        'weight_kg': {'type': 'number', 'label': 'Weight (in Kilograms)', 'min': 40.0, 'max': 150.0, 'step': 0.5, 'placeholder': 'Enter your weight', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Sex', 'options': ["Select Sex", "Male", "Female"], 'required': True, 'placeholder': "Select Sex"},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level', 'options': [
             ("Select Activity Level", None),
@@ -152,8 +152,8 @@ CONFIG = {
             ("Weight Maintenance", "weight_maintenance"),
             ("Weight Gain", "weight_gain")
         ], 'required': True, 'placeholder': None},
-        'protein_per_kg': {'type': 'number', 'label': 'Protein (g Per Kilogram Body Weight)', 'min': 1.2, 'max': 3.0, 'step': 0.1, 'help': 'Protein intake per kilogram of body weight', 'advanced': True, 'required': False},
-        'fat_percentage': {'type': 'number', 'label': 'Fat (Percent of Total Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Percentage of total calories from fat', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True, 'required': False}
+        'protein_per_kg': {'type': 'number', 'label': 'Protein Intake (Grams Per Kilogram of Body Weight)', 'min': 1.2, 'max': 3.0, 'step': 0.1, 'help': 'Set protein intake per kilogram of body weight', 'advanced': True, 'required': False},
+        'fat_percentage': {'type': 'number', 'label': 'Fat Intake (Percentage of Total Calories)', 'min': 15, 'max': 40, 'step': 1, 'help': 'Set the percentage of total calories from fat', 'convert': lambda x: x / 100 if x is not None else None, 'advanced': True, 'required': False}
     }
 }
 
@@ -281,7 +281,7 @@ def find_best_food_for_nutrient(nutrient, deficit, foods):
         servings_needed = deficit / highest_nutrient_val
         # Suggest 1 serving for simplicity, or a rounded number
         suggestion_servings = 1
-        return f"Try adding **{suggestion_servings} serving of {best_food['name']}** (~{best_food[nutrient] * suggestion_servings:.0f}g {nutrient})."
+        return f"Try adding **{suggestion_servings} serving of {best_food['name']}** to get approximately {best_food[nutrient] * suggestion_servings:.0f}g of {nutrient}."
     return None
 
 def create_progress_tracking(totals, targets, foods):
@@ -291,10 +291,10 @@ def create_progress_tracking(totals, targets, foods):
     st.subheader("Progress Toward Daily Nutritional Targets 🎯")
 
     purpose_map = {
-        'calories': 'to reach your target',
-        'protein': 'for muscle preservation/building',
+        'calories': 'to reach your energy target',
+        'protein': 'for muscle preservation and growth',
         'carbs': 'for energy and performance',
-        'fat': 'for hormone production'
+        'fat': 'for hormone production and health'
     }
 
     for nutrient, config in CONFIG['nutrient_configs'].items():
@@ -344,31 +344,31 @@ def generate_personalized_recommendations(totals, targets, final_values):
 
     # Hydration recommendation
     hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
-    recommendations.append(f"💧 **Daily Hydration Target:** {hydration_ml} ml ({hydration_ml/250:.1f} cups) - drink 500ml before meals to boost satiety")
+    recommendations.append(f"💧 **Daily Hydration Target:** Aim for {hydration_ml} ml ({hydration_ml/250:.1f} cups). Drinking 500ml of water before meals can help to boost satiety.")
 
     # Goal-specific recommendations
     if goal == 'weight_loss':
         recommendations.extend([
-            "🛏️ **Sleep Priority:** Aim for 7-9 hours nightly - poor sleep reduces fat loss effectiveness by up to 55%",
-            "📊 **Weigh-in Strategy:** Daily morning weigh-ins, track weekly averages instead of daily fluctuations",
-            "🥗 **Volume Eating:** Prioritize high-volume, low-calorie foods (leafy greens, cucumbers, berries) for meal satisfaction"
+            "🛏️ **Prioritize Sleep:** Aim for 7 to 9 hours nightly, as poor sleep can reduce fat loss effectiveness by up to 55%.",
+            "📊 **Weigh-In Strategy:** Use daily morning weigh-ins but track the weekly averages to smooth out daily fluctuations.",
+            "🥗 **Practice Volume Eating:** Prioritize high-volume and low-calorie foods like leafy greens to enhance meal satisfaction."]
         ])
     elif goal == 'weight_gain':
         recommendations.extend([
-            "🥤 **Liquid Calories:** Include smoothies, milk, and juices to increase calorie density",
-            "🥑 **Healthy Fats:** Add nuts, oils, and avocados - calorie-dense options for easier surplus",
-            "💪 **Progressive Overload:** Ensure you're getting stronger in the gym - surplus without training = mostly fat gain"
+            "🥤 **Incorporate Liquid Calories:** Include smoothies, milk, and juices to increase your overall calorie density.",
+            "🥑 **Embrace Healthy Fats:** Add nuts, oils, and avocados, which are calorie-dense options that make a surplus easier to achieve.",
+            "💪 **Focus on Progressive Overload:** Ensure you are getting stronger in the gym, as a surplus without training leads to fat gain."
         ])
     else:  # maintenance
         recommendations.extend([
-            "⚖️ **Flexible Tracking:** Monitor intake 5 days/week instead of 7 for sustainable maintenance",
-            "📅 **Regular Check-ins:** Weigh weekly, measure monthly to catch changes early",
-            "🎯 **80/20 Balance:** 80% nutrient-dense foods, 20% flexibility for social situations"
+            "⚖️ **Use Flexible Tracking:** Monitor your intake five days per week instead of seven for more sustainable maintenance.",
+            "📅 **Conduct Regular Check-Ins:** Weigh yourself weekly and take measurements monthly to catch any changes early.",
+            "🎯 **Follow the 80/20 Balance:** Aim for 80% nutrient-dense foods and 20% flexibility for social situations."
         ])
 
     # Protein timing recommendations
     protein_per_meal = targets['protein_g'] / 4
-    recommendations.append(f"⏰ **Protein Timing:** Distribute protein across meals (~{protein_per_meal:.0f}g per meal) for optimal muscle protein synthesis")
+    recommendations.append(f"⏰ **Optimize Protein Timing:** Distribute protein across your meals (at approximately {protein_per_meal:.0f}g per meal) for optimal muscle protein synthesis.")
 
     return recommendations
 
@@ -580,7 +580,7 @@ st.markdown("""
 
 st.title("Personalized Evidence-Based Nutrition Tracker 🍽️")
 st.markdown("""
-This advanced nutrition tracker uses evidence-based calculations to provide personalized daily nutrition goals for **weight loss**, **weight maintenance**, or **weight gain**. The calculator employs the **Mifflin-St Jeor equation** for BMR and follows a **protein-first macronutrient strategy** recommended by nutrition science. 🚀
+This advanced nutrition tracker uses evidence-based calculations to provide personalized daily nutrition goals for **weight loss**, **weight maintenance**, or **weight gain**. The calculator employs the **Mifflin-St Jeor equation** for Basal Metabolic Rate and follows a **protein-first macronutrient strategy** as recommended by nutrition science. 🚀
 """)
 
 # ------ Sidebar for Improved User Experience ------
@@ -610,20 +610,19 @@ for field_name, field_config in advanced_fields.items():
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
     st.markdown("""
-    **Activity Level Guide:**
-
-    • 🛋️ **Sedentary:** Little to no exercise, desk job
+    **A Guide to Activity Levels:**
     
-    • 🚶 **Lightly Active:** Light exercise 1-3 days per week
+    - 🧑‍💻 **Sedentary:** Little to no exercise
     
-    • 🏃 **Moderately Active:** Moderate exercise 3-5 days per week
+    - 🚶 **Lightly Active:** Light exercise for 1 to 3 days per week
     
-    • 💪 **Very Active:** Heavy exercise 6-7 days per week
+    - 🏃 **Moderately Active:** Moderate exercise for 3 to 5 days per week
     
-    • 🔥 **Extremely Active:** Very heavy exercise, physical job, or 2x/day training
-
-    *💡 When in doubt, choose a lower activity level to avoid overestimating your calorie needs.*
-    """)
+    - 🏋️ **Very Active:** Heavy exercise for 6 to 7 days per week
+    
+    - 🚴 **Extremely Active:** Very heavy exercise or training twice per day
+    
+    *💡 When in doubt, it is best to choose a lower activity level to avoid overestimating your calorie needs*
 
 # ------ Process Final Values Using Unified Approach ------
 final_values = get_final_values(all_inputs)
@@ -652,14 +651,18 @@ targets = calculate_personalized_targets(**final_values)
 if not user_has_entered_info:
     st.info("👈 Please enter your personal information in the sidebar to view your daily nutritional targets.")
     st.header("Sample Daily Targets for Reference 🎯")
-    st.caption("These are example targets. Enter your information in the sidebar for personalized calculations.")
+    st.caption("These are example targets. Please enter your information in the sidebar for personalized calculations.")
 else:
     goal_labels = {'weight_loss': 'Weight Loss', 'weight_maintenance': 'Weight Maintenance', 'weight_gain': 'Weight Gain'}
     goal_label = goal_labels.get(targets['goal'], 'Weight Gain')
     st.header(f"Your Personalized Daily Nutritional Targets for {goal_label} 🎯")
 
 # ------ 80/20 Principle Info Box ------
-st.info("🎯 80/20 Principle: Aim for 80% adherence to your targets rather than perfection. This allows for social flexibility and prevents the all-or-nothing mentality that leads to diet cycling.")
+st.info(
+    "🎯 **The 80/20 Principle:** Aim for 80% adherence to your targets rather "
+    "than perfection. This approach allows for social flexibility and helps "
+    "to prevent the all-or-nothing mentality that often leads to diet cycling."
+)
 
 # Calculate hydration for the metrics grid
 hydration_ml = calculate_hydration_needs(final_values['weight_kg'], final_values['activity_level'])
@@ -677,7 +680,7 @@ metrics_config = [
         ]
     },
     {
-        'title': 'Daily Macronutrient & Hydration Targets', 'columns': 5,
+        'title': 'Daily Macronutrient and Hydration Targets', 'columns': 5,
         'metrics': [
             ("Total Calories", f"{targets['total_calories']} kcal"),
             ("Protein", f"{targets['protein_g']} g", f"{targets['protein_percent']:.0f}%"),
@@ -695,7 +698,7 @@ for config in metrics_config:
     st.divider()
 
 # -----------------------------------------------------------------------------
-# Cell 10: Enhanced Evidence-Based Tips & Context
+# Cell 10: Enhanced Evidence-Based Tips and Context
 # -----------------------------------------------------------------------------
 
 st.header("📚 Evidence-Based Playbook")
@@ -723,7 +726,7 @@ with tab1:
     """)
 
 with tab2:
-    st.subheader("📊 **Advanced Monitoring & Psychology**")
+    st.subheader("📊 **Advanced Monitoring and Psychology**")
     st.markdown("""
     ### **Beyond the Scale: Better Progress Indicators**
     - **Progress photos:** Same lighting, poses, time of day
@@ -742,7 +745,7 @@ with tab2:
     """)
 
 with tab3:
-    st.subheader("🔄 **Plateau Prevention & Meal Timing**")
+    st.subheader("🔄 **Plateau Prevention and Meal Timing**")
     st.markdown("""
     ### **Plateau Troubleshooting Flow**
     **Weight Loss Plateaus:**
@@ -757,7 +760,7 @@ with tab3:
     3. Ensure progressive overload in training
     4. Gradual increases: +100-150 calories when stalled 2+ weeks
     
-    ### **Meal Timing & Distribution**
+    ### **Meal Timing and Distribution**
     **Protein Optimization:**
     - **Distribution:** 20-30g across 3-4 meals (0.4-0.5g per kg body weight per meal)
     - **Post-workout:** 20-40g within 2 hours of training
@@ -769,9 +772,9 @@ with tab3:
     """)
 
 with tab4:
-    st.subheader("🔬 **Scientific Foundation & Nutrition Deep Dive**")
+    st.subheader("🔬 **The Scientific Foundation and a Deep Dive into Nutrition**")
     st.markdown("""
-    ### **Energy Foundation: BMR & TDEE**
+    ### **Energy Foundation: BMR and TDEE**
     
     **Basal Metabolic Rate (BMR):** Your body's energy needs at complete rest, calculated using the **Mifflin-St Jeor equation** - the most accurate formula recognized by the Academy of Nutrition and Dietetics.
     
@@ -811,24 +814,23 @@ if user_has_entered_info:
 # Cell 12: Food Selection Interface
 # -----------------------------------------------------------------------------
 
-st.header("Daily Food Selection & Tracking 🥗")
-st.markdown("Select the number of servings for each food item to track your daily nutrition intake.")
+st.header("Daily Food Selection and Tracking 🥗")
+st.markdown("Select the number of servings for each food item below to track your daily nutrition intake.")
 
-with st.expander("💡 **View Food Emoji Guide**"):
+with st.expander("💡 A Guide to the Food Emojis"):
     st.markdown("""
-    **Food Emoji Guide:**
     
-    • 🥇 **Gold Medal:** Top performer in both calories AND primary nutrient
+    - 🥇 **Gold Medal:** A top performer in both calories and its primary nutrient
     
-    • 🔥 **High Calorie:** Among the most calorie-dense in its category
+    - 🔥 **High Calorie:** Among the most calorie-dense foods in its category
     
-    • 💪 **High Protein:** Top protein source
+    - 💪 **High Protein:** A top source of protein
     
-    • 🍚 **High Carb:** Top carbohydrate source
+    - 🍚 **High Carbohydrate:** A top source of carbohydrates
     
-    • 🥑 **High Fat:** Top healthy fat source
+    - 🥑 **High Fat:** A top source of healthy fats
     
-    *Foods are ranked within each category to help you make efficient choices for your goals.*
+    *Foods are ranked within each category to help you make efficient choices that align with your goals.*
     """)
 
 # ------ Reset Selection Button ------
@@ -877,7 +879,7 @@ if selected_foods:
         display_metrics_grid(summary_metrics, 2)
     
     with col2:
-        st.subheader("Macronutrient Split (grams)")
+        st.subheader("Macronutrient Split (in Grams)")
         # Donut chart for macronutrient split
         macro_values = [totals['protein'], totals['carbs'], totals['fat']]
         if sum(macro_values) > 0:
@@ -896,7 +898,7 @@ if selected_foods:
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.caption("Select foods to see the macronutrient split.")
+            st.caption("Please select foods to see the macronutrient split.")
 
     # Recommendations based on current intake
     if recommendations:
@@ -905,7 +907,7 @@ if selected_foods:
             st.info(rec)
     
     # Detailed food breakdown
-    with st.expander("📝 **Detailed Food Breakdown**"):
+    with st.expander("📝 **View a Detailed Food Breakdown**"):
         st.subheader("Foods Selected Today")
         for item in selected_foods:
             food = item['food']
@@ -918,7 +920,7 @@ if selected_foods:
             st.write(f"**{food['name']}** - {servings} serving(s)")
             st.write(f"  → {total_cals:.0f} kcal | {total_protein:.1f}g protein | {total_carbs:.1f}g carbs | {total_fat:.1f}g fat")
 else:
-    st.info("No foods selected yet. Choose foods from the categories above to track your daily intake.")
+    st.info("You have not selected any foods yet. Please choose foods from the categories above to track your daily intake.")
     
     # Show sample progress bars with zero values
     st.subheader("Progress Toward Daily Nutritional Targets 🎯")
@@ -935,7 +937,7 @@ else:
 
 st.divider()
 st.markdown("""
-### **📚 Evidence-Based References & Methodology**
+### **📚 Evidence-Based References and Methodology**
 
 This nutrition tracker is built on peer-reviewed research and evidence-based guidelines:
 
@@ -951,7 +953,7 @@ This nutrition tracker is built on peer-reviewed research and evidence-based gui
 - Consult with a qualified healthcare provider before making significant dietary changes
 - Monitor your biofeedback (energy, performance, health markers) and adjust as needed
 
-### **🔬 Continuous Improvement**
+### **🔬 A Commitment to Continuous Improvement**
 
 This tracker incorporates the latest nutrition science. As research evolves, recommendations may be updated to reflect current best practices.
 
@@ -969,6 +971,8 @@ if len(st.session_state.food_selections) > 100:  # Arbitrary limit
         k: v for k, v in st.session_state.food_selections.items() if v > 0
     }
 
-# Print completion message with emoji
-print("🎉 Nutrition tracker application successfully loaded and ready for use!")
-print("Thanks for choosing evidence-based nutrition tracking - here's to your health journey! 🌟")
+# Add a fun and encouraging closing message
+st.success(
+    "You've got all the tools and information you need to crush your goals! "
+    "Thanks for using the tracker. Now go make it happen! 💪"
+)
