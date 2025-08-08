@@ -96,7 +96,7 @@ DEFAULTS = {
     'height_cm': 180,
     'weight_kg': 57.5,
     'sex': "Male",
-    'activity_level': "moderately_active",
+    'activity_level': "lightly_active",
     'goal': "weight_gain",
     'protein_per_kg': 2.0,
     'fat_percentage': 0.25,
