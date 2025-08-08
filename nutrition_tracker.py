@@ -91,43 +91,44 @@ DEFAULTS = {
     'height_cm': 180,
     'weight_kg': 57.5,
     'sex': "Male",
-    'activity_level': "Moderately Active",
-    'goal': "Weight Gain",
+    'activity_level': "moderately_active",
+    'goal': "weight_gain",
     'protein_per_kg': 2.0,
     'fat_percentage': 0.25
 }
 
 # ------ Activity Level Multipliers for TDEE Calculation ------
 ACTIVITY_MULTIPLIERS = {
-    'Sedentary': 1.2,
-    'Lightly Active': 1.375,
-    'Moderately Active': 1.55,
-    'Very Active': 1.725,
-    'Extremely Active': 1.9
+    'sedentary': 1.2,
+    'lightly_active': 1.375,
+    'moderately_active': 1.55,
+    'very_active': 1.725,
+    'extremely_active': 1.9
 }
 
 # ------ Activity Level Descriptions ------
 ACTIVITY_DESCRIPTIONS = {
-    'Sedentary': "You're basically married to your desk chair",
-    'Lightly Active': "You squeeze in walks or workouts one to three times a week",
-    'Moderately Active': "You're sweating it out three to five days a week",
-    'Very Active': "You might actually be part treadmill",
-    'Extremely Active': "You live in the gym and sweat is your second skin"
+    'sedentary': "Little to no exercise, desk job",
+    'lightly_active': "Light exercise one to three days per week",
+    'moderately_active': "Moderate exercise three to five days per week",
+    'very_active': "Heavy exercise six to seven days per week",
+    'extremely_active': "Very heavy exercise, a physical job, or "
+                        "two times per day training"
 }
 
 # ------ Goal-Specific Targets Based on an Evidence-Based Guide ------
 GOAL_TARGETS = {
-    'Weight Loss': {
+    'weight_loss': {
         'caloric_adjustment': -0.20,  # -20% from TDEE
         'protein_per_kg': 1.8,
         'fat_percentage': 0.25
     },
-    'Weight Maintenance': {
+    'weight_maintenance': {
         'caloric_adjustment': 0.0,  # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
-    'Weight Gain': {
+    'weight_gain': {
         'caloric_adjustment': 0.10,  # +10% over TDEE
         'protein_per_kg': 2.0,
         'fat_percentage': 0.25
@@ -167,18 +168,18 @@ CONFIG = {
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level',
                            'options': [
                                ("Pick what sounds most like your typical week", None),
-                               ("Sedentary", "Sedentary"),
-                               ("Lightly Active", "Lightly Active"),
-                               ("Moderately Active", "Moderately Active"),
-                               ("Very Active", "Very Active"),
-                               ("Extremely Active", "Extremely Active")
+                               ("Sedentary", "sedentary"),
+                               ("Lightly Active", "lightly_active"),
+                               ("Moderately Active", "moderately_active"),
+                               ("Very Active", "very_active"),
+                               ("Extremely Active", "extremely_active")
                            ], 'required': True, 'placeholder': None},
         'goal': {'type': 'selectbox', 'label': 'Your Goal',
                  'options': [
                      ("What are we working toward?", None),
-                     ("Weight Loss", "Weight Loss"),
-                     ("Weight Maintenance", "Weight Maintenance"),
-                     ("Weight Gain", "Weight Gain")
+                     ("Weight Loss", "weight_loss"),
+                     ("Weight Maintenance", "weight_maintenance"),
+                     ("Weight Gain", "weight_gain")
                  ], 'required': True, 'placeholder': None},
         'protein_per_kg': {'type': 'number',
                            'label': 'Protein Goal',
@@ -194,6 +195,7 @@ CONFIG = {
     }
 }
 
+
 # ---------------------------------------------------------------------------
 # Cell 4: Unified Helper Functions
 # ---------------------------------------------------------------------------
@@ -208,6 +210,7 @@ def initialize_session_state():
     for var in session_vars:
         if var not in st.session_state:
             st.session_state[var] = {} if var == 'food_selections' else None
+
 
 def create_unified_input(field_name, field_config, container=st.sidebar):
     """Creates an input widget based on a unified configuration."""
@@ -261,6 +264,7 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
     st.session_state[session_key] = value
     return value
 
+
 def get_final_values(user_inputs):
     """Processes all user inputs and applies default values where needed."""
     final_values = {}
@@ -284,16 +288,17 @@ def get_final_values(user_inputs):
 
     return final_values
 
+
 def calculate_hydration_needs(weight_kg, activity_level, climate='temperate'):
     """Calculates daily fluid needs based on body weight and activity."""
     base_needs = weight_kg * 35  # Baseline is 35 milliliters per kilogram
 
     activity_bonus = {
-        'Sedentary': 0,
-        'Lightly Active': 300,
-        'Moderately Active': 500,
-        'Very Active': 700,
-        'Extremely Active': 1000
+        'sedentary': 0,
+        'lightly_active': 300,
+        'moderately_active': 500,
+        'very_active': 700,
+        'extremely_active': 1000
     }
 
     climate_multiplier = {
@@ -309,6 +314,7 @@ def calculate_hydration_needs(weight_kg, activity_level, climate='temperate'):
     )
     return round(total_ml)
 
+
 def display_metrics_grid(metrics_data, num_columns=4):
     """Displays a grid of metrics in a configurable column layout."""
     columns = st.columns(num_columns)
@@ -321,6 +327,7 @@ def display_metrics_grid(metrics_data, num_columns=4):
             elif len(metric_info) == 3:
                 label, value, delta = metric_info
                 st.metric(label, value, delta)
+
 
 def find_best_food_for_nutrient(nutrient, deficit, foods):
     """Finds a food that is a good source for a needed nutrient."""
@@ -337,9 +344,10 @@ def find_best_food_for_nutrient(nutrient, deficit, foods):
     if best_food and highest_nutrient_val > 0:
         suggestion_servings = 1
         return (
-            f"Looking for a suggestion? Adding just {suggestion_servings} serving of {best_food['name']} will give you a solid {best_food[nutrient]:.0f} grams of {nutrient}."
+            f"Adding just {suggestion_servings} serving of {best_food['name']} will give you a solid {best_food[nutrient]:.0f} grams of {nutrient}."
         )
     return None
+
 
 def create_progress_tracking(totals, targets, foods):
     """Creates progress bars and recommendations for nutritional targets."""
@@ -379,15 +387,12 @@ def create_progress_tracking(totals, targets, foods):
                     nutrient, deficit, foods
                 )
                 if food_suggestion:
-                    base_rec += f" {food_suggestion}"
+                    base_rec += f" Looking for a suggestion? {food_suggestion}"
 
             recommendations.append(base_rec)
-        elif actual == target:
-            recommendations.append("You've hit your goal!")
-        else:
-            recommendations.append("You're on track!")
 
     return recommendations
+
 
 def calculate_daily_totals(food_selections, foods):
     """Calculates the total daily nutrition from all selected foods."""
@@ -404,6 +409,61 @@ def calculate_daily_totals(food_selections, foods):
 
     return totals, selected_foods
 
+
+def generate_personalized_recommendations(totals, targets, final_values):
+    """Generates personalized tips based on current intake and goals."""
+    recommendations = []
+    goal = final_values['goal']
+    hydration_ml = calculate_hydration_needs(
+        final_values['weight_kg'], final_values['activity_level']
+    )
+    recommendations.append(
+        f"💧 Your Estimated Daily Hydration Goal: {hydration_ml} ml. That's roughly {hydration_ml/250:.1f} cups of water throughout the day."
+    )
+
+    if goal == 'weight_loss':
+        recommendations.extend([
+            "The Shocking Truth: Getting less than 7 hours of sleep can torpedo your fat loss by a more than half.",
+            "Daily Goal: Shoot for 7-9 hours and try to keep a consistent schedule.",
+            "Set the Scene: Keep your cave dark, cool (18-20°C), and screen-free for at least an hour before lights out.",
+            "Morning Ritual: Weigh yourself first thing after using the bathroom, before eating or drinking, in minimal clothing",
+            "Look for Trends, Not Blips: Watch your weekly average instead of getting hung up on daily fluctuations. Your weight can swing 2-3 pounds daily.",
+            "Hold the Line: Don’t tweak your plan too soon. Wait for two or more weeks of stalled progress before making changes.",
+            "Leaf Your Hunger Behind: Load your plate with low-calorie, high-volume foods like leafy greens, cucumbers, and berries. They’re light on calories but big on satisfaction."
+        ])
+    elif goal == 'weight_gain':
+        recommendations.extend([
+            "Drink Your Calories: Liquid calories from smoothies, milk, and protein shakes go down way easier than another full meal",
+            "Fat is Fuel: Load up healthy fats like nuts, oils, and avocados.",
+            "Push Your Limits: Give your body a reason to grow! Make sure you’re consistently challenging yourself in the gym.",
+            "Turn Up the Heat: If you've been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again."
+        ])
+    else:  # This handles the 'weight_maintenance' goal
+        recommendations.extend([
+            "⚖️ **Flexible Tracking:** Monitor your intake five days per week "
+            "instead of seven for a more sustainable and flexible approach "
+            "to maintenance.",
+            "📅 **Regular Check-ins:** Weigh yourself weekly and take body "
+            "measurements monthly to catch any significant changes early.",
+            "🎯 **The 80/20 Balance:** Aim for 80 percent of your diet to "
+            "consist of nutrient-dense foods, with 20 percent flexibility "
+            "for social situations."
+        ])
+
+    protein_per_meal = targets['protein_g'] / 4
+    recommendations.append(
+        "Spread the Love: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal."
+    )
+    recommendations.append(
+        "Frame Your Fitness: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout."
+    )
+    recommendations.append(
+        "The Night Shift: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze"
+    )
+
+    return recommendations
+
+
 # ---------------------------------------------------------------------------
 # Cell 5: Nutritional Calculation Functions
 # ---------------------------------------------------------------------------
@@ -413,10 +473,12 @@ def calculate_bmr(age, height_cm, weight_kg, sex='male'):
     base_calc = (10 * weight_kg) + (6.25 * height_cm) - (5 * age)
     return base_calc + (5 if sex.lower() == 'male' else -161)
 
+
 def calculate_tdee(bmr, activity_level):
     """Calculates Total Daily Energy Expenditure based on activity level."""
     multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
     return bmr * multiplier
+
 
 def calculate_estimated_weekly_change(daily_caloric_adjustment):
     """Calculates the estimated weekly weight change from a caloric adjustment."""
@@ -424,14 +486,15 @@ def calculate_estimated_weekly_change(daily_caloric_adjustment):
     # contains approximately 7,700 kilocalories.
     return (daily_caloric_adjustment * 7) / 7700
 
+
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
-                                   activity_level='Moderately Active',
-                                   goal='Weight Gain', protein_per_kg=None,
+                                   activity_level='moderately_active',
+                                   goal='weight_gain', protein_per_kg=None,
                                    fat_percentage=None):
     """Calculates personalized daily nutritional targets."""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
-    goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['Weight Gain'])
+    goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['weight_gain'])
     caloric_adjustment = tdee * goal_config['caloric_adjustment']
     total_calories = tdee + caloric_adjustment
 
@@ -482,6 +545,7 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
 
     return targets
 
+
 # ---------------------------------------------------------------------------
 # Cell 6: Food Database Processing Functions
 # ---------------------------------------------------------------------------
@@ -501,6 +565,7 @@ def load_food_database(file_path):
                 'carbs': row['carbs'], 'fat': row['fat']
             })
     return foods
+
 
 def assign_food_emojis(foods):
     """Assigns emojis to foods based on a unified ranking system."""
@@ -555,6 +620,7 @@ def assign_food_emojis(foods):
                 food['emoji'] = ''
     return foods
 
+
 def render_food_item(food, category):
     """Renders a single food item with its interaction controls."""
     with st.container(border=True):
@@ -601,6 +667,7 @@ def render_food_item(food, category):
         )
         st.caption(caption_text)
 
+
 def render_food_grid(items, category, columns=2):
     """Renders a grid of food items for a given category."""
     for i in range(0, len(items), columns):
@@ -609,6 +676,7 @@ def render_food_grid(items, category, columns=2):
             if i + j < len(items):
                 with cols[j]:
                     render_food_item(items[i + j], category)
+
 
 # ---------------------------------------------------------------------------
 # Cell 7: Initialize Application
@@ -637,7 +705,7 @@ st.markdown("""
 
 st.title("Your Personal Nutrition Coach 🍽️")
 st.markdown("""
-A Smart, Evidence-Based Nutrition Tracker That Actually Gets You 
+A Smart, Evidence-Based Nutrition Tracker That Actually Gets You
 
 Welcome aboard!
 
@@ -657,123 +725,178 @@ advanced_fields = {
     k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')
 }
 
-for field, config in standard_fields.items():
-    all_inputs[field] = create_unified_input(field, config)
+for field_name, field_config in standard_fields.items():
+    value = create_unified_input(field_name, field_config, container=st.sidebar)
+    if 'convert' in field_config:
+        value = field_config['convert'](value)
+    all_inputs[field_name] = value
 
-advanced_expander = st.sidebar.expander("Fine-Tune Your Settings ⚙️", expanded=False)
-for field, config in advanced_fields.items():
-    all_inputs[field] = create_unified_input(field, config, container=advanced_expander)
+advanced_expander = st.sidebar.expander("Fine-Tune Your Settings ⚙️")
+for field_name, field_config in advanced_fields.items():
+    value = create_unified_input(
+        field_name, field_config, container=advanced_expander
+    )
+    if 'convert' in field_config:
+        value = field_config['convert'](value)
+    all_inputs[field_name] = value
 
-# ------ Process User Inputs and Check for Completion ------
-user_inputs = {k: v for k, v in all_inputs.items() if v is not None}
-required_fields = [k for k, v in CONFIG['form_fields'].items() if v.get('required')]
-user_has_entered_info = all(
-    all_inputs.get(field) is not None for field in required_fields
-)
+# ------ Activity Level Guide in Sidebar ------
+with st.sidebar.container(border=True):
+    st.markdown("""
+    Your Activity Level Decoded
 
+Here's a quick breakdown of what these levels really mean:
+
+🧑‍💻 Sedentary: You're basically married to your desk chair
+
+🏃 Lightly Active: You squeeze in walks or workouts one to three times a week
+
+🚴 Moderately Active: You're sweating it out three to five days a week
+
+🏋️ Very Active: You might actually be part treadmill
+
+🤸 Extremely Active: You live in the gym and sweat is your second skin
+
+💡 Pro tip: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.
+
+👈 Pop your details into the sidebar to get your personalized daily targets.
+    """)
+
+# ------ Process Final Values ------
 final_values = get_final_values(all_inputs)
 
-# ------ Sidebar Activity Level Guide ------
-st.sidebar.markdown("### Your Activity Level Decoded")
-st.sidebar.markdown("Here's a quick breakdown of what these levels really mean:")
-for level, desc in ACTIVITY_DESCRIPTIONS.items():
-    emoji = {
-        'Sedentary': '🧑‍💻',
-        'Lightly Active': '🏃',
-        'Moderately Active': '🚴',
-        'Very Active': '🏋️',
-        'Extremely Active': '🤸'
-    }.get(level, '')
-    st.sidebar.markdown(f"{emoji} **{level}**: {desc}")
-
-st.sidebar.markdown("💡 Pro tip: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.")
-st.sidebar.markdown("👈 Pop your details into the sidebar to get your personalized daily targets.")
-
-# ---------------------------------------------------------------------------
-# Cell 9: Calculate Personalized Targets
-# ---------------------------------------------------------------------------
-
-if user_has_entered_info:
-    targets = calculate_personalized_targets(**final_values)
+if all_inputs.get('weight_kg') and all_inputs.get('activity_level'):
     hydration_ml = calculate_hydration_needs(
         final_values['weight_kg'], final_values['activity_level']
     )
-    goal_label = final_values['goal']
-    estimated_weekly_change = targets['estimated_weekly_change']
-    weekly_change_sign = '+' if estimated_weekly_change > 0 else ''
-    estimated_change_str = f"{weekly_change_sign}{estimated_weekly_change:.2f} kg/week"
+    st.sidebar.info(
+        f"💧 Your Estimated Daily Hydration Goal: {hydration_ml} ml. That's roughly {hydration_ml/250:.1f} cups of water throughout the day."
+    )
+
+# ------ Check for User Input ------
+required_fields = [
+    field for field, config in CONFIG['form_fields'].items()
+    if config.get('required')
+]
+user_has_entered_info = all(
+    (all_inputs.get(field) is not None and
+     all_inputs.get(field) != CONFIG['form_fields'][field].get('placeholder'))
+    for field in required_fields
+)
+
+# ------ Calculate Personalized Targets ------
+targets = calculate_personalized_targets(**final_values)
+
+# ---------------------------------------------------------------------------
+# Cell 9: Unified Target Display System
+# ---------------------------------------------------------------------------
+
+if not user_has_entered_info:
+    st.info(
+        "👈 Pop your details into the sidebar to get your personalized daily targets."
+    )
+    st.header("Sample Daily Targets for Reference 🎯")
+    st.caption(
+        "These are example targets. Please enter your information in the "
+        "sidebar for personalized calculations."
+    )
 else:
-    # Use sample targets for demonstration purposes
-    targets = {
-        'total_calories': 2500, 'protein_g': 150, 'carb_g': 300,
-        'fat_g': 80, 'protein_percent': 24, 'carb_percent': 48,
-        'fat_percent': 28
+    goal_labels = {
+        'weight_loss': 'Weight Loss',
+        'weight_maintenance': 'Weight Maintenance',
+        'weight_gain': 'Weight Gain'
     }
-    hydration_ml = 2500
-    goal_label = "Weight Gain"
-    estimated_change_str = "+0.25 kg/week"
-
-# ---------------------------------------------------------------------------
-# Cell 10: Main Content Display
-# ---------------------------------------------------------------------------
-
-if user_has_entered_info:
+    goal_label = goal_labels.get(targets['goal'], 'Weight Gain')
     st.header(f"Your Custom Daily Nutrition Roadmap for {goal_label} 🎯")
-    st.markdown("🎯 The 80/20 Rule: Try to hit your targets about 80% of the time. This gives you wiggle room for birthday cake, date nights, and those inevitable moments when life throws you a curveball. Flexibility builds consistency and helps you avoid the dreaded yo-yo diet trap.")
 
-    # Display metrics in a grid
-    metrics_data = [
-        ("Total Calories", f"{targets['total_calories']} kcal"),
-        ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}% of your calories)"),
-        ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}% of your calories)"),
-        ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}% of your calories)"),
-        ("Water", f"{hydration_ml} ml (~{hydration_ml/250:.1f} cups)"),
-    ]
-    st.subheader("Your Daily Nutrition Targets")
-    display_metrics_grid(metrics_data, num_columns=3)
+st.info(
+    "🎯 The 80/20 Rule: Try to hit your targets about 80% of the time. This gives you wiggle room for birthday cake, date nights, and those inevitable moments when life throws you a curveball. Flexibility builds consistency and helps you avoid the dreaded yo-yo diet trap."
+)
+
+hydration_ml = calculate_hydration_needs(
+    final_values['weight_kg'], final_values['activity_level']
+)
+
+# ------ Unified Metrics Display Configuration ------
+metrics_config = [
+    {
+        'title': 'Metabolic Information', 'columns': 5,
+        'metrics': [
+            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
+            ("Total Daily Energy Expenditure (TDEE)",
+             f"{targets['tdee']} kcal per day"),
+            ("Daily Caloric Adjustment",
+             f"{targets['caloric_adjustment']:+} kcal per day"),
+            ("Estimated Weekly Weight Change",
+             f"{targets['estimated_weekly_change']:+.2f} kg per week"),
+            ("", "")
+        ]
+    },
+    {
+        'title': 'Your Daily Nutrition Targets', 'columns': 5,
+        'metrics': [
+            ("Total Calories", f"{targets['total_calories']} kcal"),
+            ("Protein", f"{targets['protein_g']} g",
+             f"{targets['protein_percent']:.0f}% of your calories"),
+            ("Carbohydrates", f"{targets['carb_g']} g",
+             f"{targets['carb_percent']:.0f}% of your calories"),
+            ("Fat", f"{targets['fat_g']} g",
+             f"{targets['fat_percent']:.0f}% of your calories"),
+            ("Water", f"{hydration_ml} ml",
+             f"~{hydration_ml/250:.1f} cups")
+        ]
+    }
+]
+
+# ------ Display All Metric Sections ------
+for config in metrics_config:
+    st.subheader(config['title'])
+    display_metrics_grid(config['metrics'], config['columns'])
+    st.divider()
 
 # ---------------------------------------------------------------------------
-# Cell 11: Evidence-Based Tips Tabs
+# Cell 10: Enhanced Evidence-Based Tips and Context
 # ---------------------------------------------------------------------------
 
 st.header("Your Evidence-Based Game Plan 📚")
-
 tab1, tab2, tab3, tab4 = st.tabs([
-    "The Big Three to Win At Nutrition 🏆",
-    "Level Up Your Progress Tracking 📊",
-    "Pace Your Protein",
-    "The Science Behind the Magic 🔬"
+    "The Big Three to Win At Nutrition 🏆", "Level Up Your Progress Tracking 📊",
+    "Mindset Is Everything 🧠", "The Science Behind the Magic 🔬"
 ])
 
 with tab1:
+    st.subheader("💧 Master Your Hydration Game")
     st.markdown("""
-    💧 Master Your Hydration Game:
-
-    Daily Goal: Shoot for about 35 ml per kilogram of your body weight daily. 
+    Daily Goal: Shot for about 35 ml per kilogram of your body weight daily. 
     Training Bonus: Tack on an extra 500-750 ml per hour of sweat time
-    Fat Loss Hack: Chugging 500 ml of water before meals can boost fullness by 13%. Your stomach will thank you, and so will your waistline.
+    Fat Loss Hack: Chugging 500 ml of water before meals can boost fullness by by 13%. Your stomach will thank you, and so will your waistline.
+    """)
 
-    😴 Sleep Like Your Goals Depend on It:
-    The Shocking Truth: Getting less than 7 hours of sleep can torpedo your fat loss by more than half.
+    st.subheader("😴 Sleep Like Your Goals Depend on It")
+    st.markdown("""
+    The Shocking Truth: Getting less than 7 hours of sleep can torpedo your fat loss by a more than half.
     Daily Goal: Shoot for 7-9 hours and try to keep a consistent schedule.
     Set the Scene: Keep your cave dark, cool (18-20°C), and screen-free for at least an hour before lights out.
+    """)
 
-    📅 Follow Your Wins:
+    st.subheader("📅 Follow Your Wins")
+    st.markdown("""
     Morning Ritual: Weigh yourself first thing after using the bathroom, before eating or drinking, in minimal clothing
     Look for Trends, Not Blips: Watch your weekly average instead of getting hung up on daily fluctuations. Your weight can swing 2-3 pounds daily. 
     Hold the Line: Don’t tweak your plan too soon. Wait for two or more weeks of stalled progress before making changes.
     """)
 
 with tab2:
+    st.subheader("Go Beyond the Scale 📸")
     st.markdown("""
-    Go Beyond the Scale 📸
-
     The Bigger Picture: Snap a few pics every month. Use the same pose, lighting, and time of day. The mirror doesn't lie.
     Size Up Your Wins: Measure your waist, hips, arms, and thighs monthly
     The Quiet Victories: Pay attention to how you feel. Your energy levels, sleep quality, gym performance, and hunger patterns tell a story numbers can’t.
+    """)
 
-    Mindset Is Everything 🧠
-
+with tab3:
+    st.subheader("Mindset Is Everything 🧠")
+    st.markdown("""
     The 80/20 principle is your best defense against the perfectionist trap. It's about ditching that mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually and you’ll be far more likely to stick with them for the long haul.
 
     Start Small, Win Big:
@@ -789,7 +912,7 @@ with tab2:
     Guess Less, Stress Less: Before you do anything else, double-check how accurately you’re logging your food. Little things can add up!
     Activity Audit: Take a fresh look at your activity level. Has it shifted?
     Walk it Off: Try adding 10-15 minutes of walking to your daily routine before cutting calories further. It’s a simple way to boost progress without tightening the belt just yet.
-    Step Back to Leap Forward: Consider a "diet break" every 6-8 weeks. Eating at your maintenance calories for a week or two can give your metabolism and your mind a well-deserved reset.
+    Step Back to Leap Forwarde: Consider a "diet break" every 6-8 weeks. Eating at your maintenance calories for a week or two can give your metabolism and your mind a well-deserved reset.
     Leaf Your Hunger Behind: Load your plate with low-calorie, high-volume foods like leafy greens, cucumbers, and berries. They’re light on calories but big on satisfaction.
 
     Struggling to Gain Weight?
@@ -798,20 +921,18 @@ with tab2:
     Fat is Fuel: Load up healthy fats like nuts, oils, and avocados. 
     Push Your Limits: Give your body a reason to grow! Make sure you’re consistently challenging yourself in the gym.
     Turn Up the Heat: If you've been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again.
-    """)
 
-with tab3:
-    st.markdown("""
+    Pace Your Protein
+
     Spread the Love: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal.
     Frame Your Fitness: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout.
     The Night Shift: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze
     """)
 
 with tab4:
+    st.subheader("Understanding Your Metabolism")
     st.markdown("""
-    Understanding Your Metabolism
-
-    Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
+    Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
 
     The Smart Eater's Cheat Sheet
 
@@ -844,19 +965,37 @@ with tab4:
     """)
 
 # ---------------------------------------------------------------------------
-# Cell 12: Food Selection and Tracking
+# Cell 11: Personalized Recommendations System
+# ---------------------------------------------------------------------------
+
+if user_has_entered_info:
+    st.header("Your Personalized Action Steps 🎯")
+    totals, _ = calculate_daily_totals(st.session_state.food_selections, foods)
+    recommendations = generate_personalized_recommendations(
+        totals, targets, final_values
+    )
+    for rec in recommendations:
+        st.info(rec)
+
+# ---------------------------------------------------------------------------
+# Cell 12: Food Selection Interface
 # ---------------------------------------------------------------------------
 
 st.header("Track Your Daily Intake 🥗")
-st.markdown("Pick how many servings of each food you’re having to see how your choices stack up against your daily targets.")
-st.markdown("💡 Need a hand with food choices? Check out the emoji guide below!")
+st.markdown(
+    "Pick how many servings of each food you’re having to see how your choices stack up against your daily targets."
+)
 
-with st.expander("Emoji Guide", expanded=False):
+with st.expander("💡 Need a hand with food choices? Check out the emoji guide below!"):
     st.markdown("""
     🥇 Gold Medal: A nutritional all-star! High in its target nutrient and very calorie-efficient.
+
     🔥 High Calorie: One of the more calorie-dense options in its group.
+
     💪 High Protein: A true protein powerhouse.
+
     🍚 High Carb: A carbohydrate champion.
+
     🥑 High Fat: A healthy fat hero.
     """)
 
@@ -864,75 +1003,107 @@ if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary"):
     st.session_state.food_selections = {}
     st.rerun()
 
-# Render food categories in tabs
-food_tabs = st.tabs(list(foods.keys()))
-for idx, (category, items) in enumerate(foods.items()):
-    with food_tabs[idx]:
-        sorted_items = sorted(
-            items,
-            key=lambda x: CONFIG['emoji_order'].get(x.get('emoji', ''), 4)
+# ------ Food Selection with Tabs ------
+available_categories = [
+    cat for cat, items in sorted(foods.items()) if items
+]
+tabs = st.tabs(available_categories)
+
+for i, category in enumerate(available_categories):
+    items = foods[category]
+    sorted_items_in_category = sorted(
+        items,
+        key=lambda x: (
+            CONFIG['emoji_order'].get(x.get('emoji', ''), 4), -x['calories']
         )
-        render_food_grid(sorted_items, category)
+    )
+    with tabs[i]:
+        render_food_grid(sorted_items_in_category, category, columns=2)
 
 # ---------------------------------------------------------------------------
-# Cell 13: Daily Summary and Visualizations
+# Cell 13: Daily Summary and Progress Tracking
 # ---------------------------------------------------------------------------
-
-totals, selected_foods = calculate_daily_totals(st.session_state.food_selections, foods)
 
 st.header("Today’s Scorecard 📊")
-
-# Progress Bars
-create_progress_tracking(totals, targets, foods)
-
-# Nutrition Summary and Pie Chart
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.subheader("Today's Nutrition Snapshot")
-    st.markdown(f"Calories Consumed: {totals['calories']:.0f} kcal")
-    st.markdown(f"Protein Intake: {totals['protein']:.0f} g")
-    st.markdown(f"Carbohydrates: {totals['carbs']:.0f} g")
-    st.markdown(f"Fat Intake: {totals['fat']:.0f} g")
-
-with col2:
-    macro_values = [totals['protein'], totals['carbs'], totals['fat']]
-    if sum(macro_values) > 0:
-        fig = go.Figure(data=[go.Pie(
-            labels=['Protein', 'Carbs', 'Fat'],
-            values=macro_values,
-            hole=0.3,
-            marker_colors=['#FF6384', '#36A2EB', '#FFCE56']
-        )])
-        fig.update_layout(
-            title_text="Your Macronutrient Split (in grams)",
-            annotations=[dict(text='Macros', x=0.5, y=0.5, font_size=20, showarrow=False)]
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.caption("Your Macronutrient Split (in grams)\nProtein | Carbs | Fat")
-
-# Selected Foods List
-st.subheader("Your Food Choices Today")
-st.markdown("What You've Logged:")
+totals, selected_foods = calculate_daily_totals(
+    st.session_state.food_selections, foods
+)
 
 if selected_foods:
-    for item in selected_foods:
-        food = item['food']
-        servings = item['servings']
-        total_cals = food['calories'] * servings
-        total_protein = food['protein'] * servings
-        total_carbs = food['carbs'] * servings
-        total_fat = food['fat'] * servings
-        st.markdown(f"{food['name']} - {servings} serving(s)\n→ {total_cals:.0f} kcal | {total_protein:.1f}g protein | {total_carbs:.1f}g carbs | {total_fat:.1f}g fat")
+    recommendations = create_progress_tracking(totals, targets, foods)
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.subheader("Today's Nutrition Snapshot")
+        summary_metrics = [
+            ("Calories Consumed", f"{totals['calories']:.0f} kcal"),
+            ("Protein Intake", f"{totals['protein']:.0f} g"),
+            ("Carbohydrates", f"{totals['carbs']:.0f} g"),
+            ("Fat Intake", f"{totals['fat']:.0f} g")
+        ]
+        display_metrics_grid(summary_metrics, 2)
+
+    with col2:
+        st.subheader("Your Macronutrient Split (in grams)")
+        macro_values = [totals['protein'], totals['carbs'], totals['fat']]
+        if sum(macro_values) > 0:
+            fig = go.Figure(go.Pie(
+                labels=['Protein', 'Carbs', 'Fat'],
+                values=macro_values,
+                hole=.4,
+                marker_colors=['#ff6b6b', '#feca57', '#48dbfb'],
+                textinfo='label+percent',
+                insidetextorientation='radial'
+            ))
+            fig.update_layout(
+                showlegend=False,
+                margin=dict(l=10, r=10, t=10, b=10),
+                height=250
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.caption("Please select foods to see the macronutrient split.")
+
+    if recommendations:
+        st.subheader("Personalized Recommendations for Today")
+        for rec in recommendations:
+            st.info(rec)
+
+    with st.expander("Your Food Choices Today"):
+        st.subheader("What You've Logged")
+        for item in selected_foods:
+            food = item['food']
+            servings = item['servings']
+            total_cals = food['calories'] * servings
+            total_protein = food['protein'] * servings
+            total_carbs = food['carbs'] * servings
+            total_fat = food['fat'] * servings
+
+            st.write(f"**{food['name']}** - {servings} serving(s)")
+            st.write(
+                f"→ {total_cals:.0f} kcal | {total_protein:.1f}g protein | "
+                f"{total_carbs:.1f}g carbs | {total_fat:.1f}g fat"
+            )
 else:
-    st.markdown("Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!")
+    st.info(
+        "Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!"
+    )
+    st.subheader("Progress Snapshot")
+    for nutrient, config in CONFIG['nutrient_configs'].items():
+        target = targets[config['target_key']]
+        st.progress(
+            0.0,
+            text=(
+                f"{config['label']}: 0% of daily target ({target:.0f} "
+                f"{config['unit']})"
+            )
+        )
 
 # ---------------------------------------------------------------------------
-# Cell 14: Footer with Scientific Basis and Disclaimer
+# Cell 14: Footer and Additional Resources
 # ---------------------------------------------------------------------------
 
-st.markdown("---")
+st.divider()
 st.markdown("""
 ### The Science We Stand On 📚
 
@@ -943,6 +1114,18 @@ When it comes to any calorie adjustments, we stick to conservative, sustainable 
 ### The Fine Print ⚠️
 
 Think of this tool as your launchpad, but remember—everyone’s different. Your mileage may vary due to factors like genetics, health conditions, medications, and other factors that a calculator simply can't account for. It's always wise to consult a qualified healthcare provider before making any big dietary shifts. Above all, tune into your body—keep tabs on your energy levels, performance,and tweak things as needed. We’re here to help, but you know yourself best!
-
-You made it to the finish line! Thanks for sticking with us on this nutrition adventure. Remember, the sun doesn’t rush to rise, but it always shows up. Keep shining—you’ve got this! 🥳
 """)
+
+st.success(
+    "You made it to the finish line! Thanks for sticking with us on this nutrition adventure. Remember, the sun doesn’t rush to rise, but it always shows up. Keep shining—you’ve got this! 🥳"
+)
+
+# ---------------------------------------------------------------------------
+# Cell 15: Session State Management and Performance
+# ---------------------------------------------------------------------------
+
+# ------ Clean Up Session State to Prevent Memory Issues ------
+if len(st.session_state.food_selections) > 100:
+    st.session_state.food_selections = {
+        k: v for k, v in st.session_state.food_selections.items() if v > 0
+    }
