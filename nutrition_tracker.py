@@ -1162,7 +1162,7 @@ with st.sidebar.container(border=True):
 * **🏋️ Very Active**: You might actually be part treadmill
 * **🤸 Extremely Active**: You live in the gym and sweat is your second skin
 
-💡 * If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
+💡 If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
     """)
 
 # ------ Dynamic Sidebar Summary ------
