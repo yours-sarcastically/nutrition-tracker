@@ -1040,7 +1040,6 @@ st.markdown("""
 .stButton>button[kind="secondary"] { 
     border: 1px solid #ff6b6b; 
     color: #333;
-    background-color: #ffffff;
 }
 .sidebar .sidebar-content { 
     background-color: #f0f2f6; 
@@ -1057,12 +1056,6 @@ st.markdown("""
 /* Improved contrast for captions */
 .stCaption {
     color: #555555 !important;
-}
-/* Enhanced visibility for sidebar buttons */
-.stSidebar .stButton>button {
-    background-color: #ff6b6b !important;
-    color: white !important;
-    border: 1px solid #ff6b6b !important;
 }
 </style>
 """, unsafe_allow_html=True)
