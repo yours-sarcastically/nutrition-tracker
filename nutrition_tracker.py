@@ -69,6 +69,8 @@ import math
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import json
+import io
 
 # ---------------------------------------------------------------------------
 # Cell 2: Page Configuration and Initial Setup
@@ -232,7 +234,8 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
             value=st.session_state[session_key],
             step=field_config['step'],
             placeholder=placeholder,
-            help=field_config.get('help')
+            help=field_config.get('help'),
+            key=session_key
         )
     elif field_config['type'] == 'selectbox':
         current_value = st.session_state[session_key]
@@ -247,7 +250,8 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
                 field_config['label'],
                 options,
                 index=index,
-                format_func=lambda x: x[0]
+                format_func=lambda x: x[0],
+                key=session_key
             )
             value = selection[1]
         else:
@@ -256,7 +260,8 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
             value = container.selectbox(
                 field_config['label'],
                 options,
-                index=index
+                index=index,
+                key=session_key
             )
 
     st.session_state[session_key] = value
@@ -359,12 +364,22 @@ def create_progress_tracking(totals, targets, foods):
         target = targets[config['target_key']]
         percent = min(actual / target * 100, 100) if target > 0 else 0
 
-        st.progress(
-            percent / 100,
-            text=(
-                f"{config['label']}: {percent:.0f}% of your daily target "
-                f"({target:.0f} {config['unit']})"
-            )
+        # Custom color-coded progress bar using HTML
+        if percent > 80:
+            color = "green"
+        elif percent > 50:
+            color = "yellow"
+        else:
+            color = "red"
+        progress_html = f"""
+        <div style="background-color: #f0f0f0; border-radius: 5px; height: 20px; width: 100%;">
+            <div style="background-color: {color}; width: {percent}%; height: 100%; border-radius: 5px;"></div>
+        </div>
+        """
+        st.markdown(progress_html, unsafe_allow_html=True)
+        st.caption(
+            f"{config['label']}: {percent:.0f}% of your daily target "
+            f"({target:.0f} {config['unit']})"
         )
 
         if actual < target:
@@ -560,6 +575,7 @@ def load_food_database(file_path):
     return foods
 
 
+@st.cache_data
 def assign_food_emojis(foods):
     """Assigns emojis to foods based on a unified ranking system."""
     top_foods = {'protein': [], 'carbs': [], 'fat': [], 'calories': {}}
@@ -617,7 +633,19 @@ def assign_food_emojis(foods):
 def render_food_item(food, category):
     """Renders a single food item with its interaction controls."""
     with st.container(border=True):
-        st.subheader(f"{food.get('emoji', '')} {food['name']}")
+        emoji = food.get('emoji', '')
+        emoji_tooltips = {
+            '🥇': 'Gold Medal: A nutritional all-star! High in its target nutrient and very calorie-efficient.',
+            '🔥': 'High Calorie: One of the more calorie-dense options in its group.',
+            '💪': 'High Protein: A true protein powerhouse.',
+            '🍚': 'High Carb: A carbohydrate champion.',
+            '🥑': 'High Fat: A healthy fat hero.'
+        }
+        tooltip = emoji_tooltips.get(emoji, '')
+        if emoji:
+            st.markdown(f"<span title='{tooltip}'>{emoji}</span> {food['name']}", unsafe_allow_html=True)
+        else:
+            st.subheader(food['name'])
         key = f"{category}_{food['name']}"
         current_serving = st.session_state.food_selections.get(food['name'], 0.0)
 
@@ -679,16 +707,19 @@ def render_food_grid(items, category, columns=2):
 initialize_session_state()
 
 # ------ Load Food Database and Assign Emojis ------
-foods = load_food_database('nutrition_results.csv')
-foods = assign_food_emojis(foods)
+foods_raw = load_food_database('nutrition_results.csv')
+foods = assign_food_emojis(foods_raw)
 
-# ------ Apply Custom CSS for Enhanced Styling ------
+# ------ Apply Custom CSS for Enhanced Styling and Contrast ------
 st.markdown("""
 <style>
 [data-testid="InputInstructions"] { display: none; }
 .stButton>button[kind="primary"] { background-color: #ff6b6b; color: white; border: 1px solid #ff6b6b; }
 .stButton>button[kind="secondary"] { border: 1px solid #ff6b6b; }
 .sidebar .sidebar-content { background-color: #f0f2f6; }
+body { color: #000000; background-color: #ffffff; }
+.stMetric { color: #000000 !important; }
+.stCaption { color: #333333 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -710,6 +741,9 @@ Let’s get rolling—your journey to feeling awesome starts now! 🚀
 # ------ Sidebar for User Input ------
 st.sidebar.header("Let’s Get Personal 📊")
 
+# Units Toggle
+units = st.sidebar.selectbox("Units", ["Metric (kg/cm)", "Imperial (lbs/in)"], key="units")
+
 all_inputs = {}
 standard_fields = {
     k: v for k, v in CONFIG['form_fields'].items() if not v.get('advanced')
@@ -718,20 +752,33 @@ advanced_fields = {
     k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')
 }
 
-for field_name, field_config in standard_fields.items():
-    value = create_unified_input(field_name, field_config, container=st.sidebar)
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
+with st.sidebar.form(key="user_input_form"):
+    for field_name, field_config in standard_fields.items():
+        if field_name == 'height_cm' and units == "Imperial (lbs/in)":
+            field_config['label'] = 'Height (in inches)'
+            field_config['min'] = 55
+            field_config['max'] = 87
+            field_config['placeholder'] = 'Enter your height in inches'
+        elif field_name == 'weight_kg' and units == "Imperial (lbs/in)":
+            field_config['label'] = 'Weight (in pounds)'
+            field_config['min'] = 88.0
+            field_config['max'] = 330.0
+            field_config['placeholder'] = 'Enter your weight in lbs'
+        value = create_unified_input(field_name, field_config, container=st.sidebar)
+        if 'convert' in field_config:
+            value = field_config['convert'](value)
+        all_inputs[field_name] = value
 
-advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
-for field_name, field_config in advanced_fields.items():
-    value = create_unified_input(
-        field_name, field_config, container=advanced_expander
-    )
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
+    advanced_expander = st.expander("Advanced Settings ⚙️")
+    for field_name, field_config in advanced_fields.items():
+        value = create_unified_input(
+            field_name, field_config, container=advanced_expander
+        )
+        if 'convert' in field_config:
+            value = field_config['convert'](value)
+        all_inputs[field_name] = value
+
+    submit_button = st.form_submit_button("Calculate")
 
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
@@ -747,16 +794,41 @@ with st.sidebar.container(border=True):
 *💡 If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.*
     """)
 
-# ------ Process Final Values ------
-final_values = get_final_values(all_inputs)
+# ------ Dynamic Summary in Sidebar ------
+st.sidebar.subheader("Quick Summary")
+if 'targets' in locals():
+    st.sidebar.metric("Calories Target", f"{targets['total_calories']} kcal")
+    st.sidebar.metric("Protein Target", f"{targets['protein_g']} g")
+    st.sidebar.metric("Carbs Target", f"{targets['carb_g']} g")
+    st.sidebar.metric("Fat Target", f"{targets['fat_g']} g")
 
-if all_inputs.get('weight_kg') and all_inputs.get('activity_level'):
-    hydration_ml = calculate_hydration_needs(
-        final_values['weight_kg'], final_values['activity_level']
-    )
-    st.sidebar.info(
-        f"💧 Your Estimated Daily Hydration Goal: {hydration_ml} ml. That's roughly {hydration_ml/250:.1f} cups of water throughout the day."
-    )
+# ------ Process Final Values ------
+if submit_button:
+    errors = []
+    required_fields = [field for field, config in CONFIG['form_fields'].items() if config.get('required')]
+    for field in required_fields:
+        if all_inputs.get(field) is None:
+            errors.append(f"Please enter your {field.replace('_', ' ')}!")
+    if errors:
+        for error in errors:
+            st.sidebar.error(error)
+    else:
+        if units == "Imperial (lbs/in)":
+            all_inputs['height_cm'] = all_inputs['height_cm'] * 2.54
+            all_inputs['weight_kg'] = all_inputs['weight_kg'] / 2.205
+        final_values = get_final_values(all_inputs)
+
+        if all_inputs.get('weight_kg') and all_inputs.get('activity_level'):
+            hydration_ml = calculate_hydration_needs(
+                final_values['weight_kg'], final_values['activity_level']
+            )
+            st.sidebar.info(
+                f"💧 Your Estimated Daily Hydration Goal: {hydration_ml} ml. That's roughly {hydration_ml/250:.1f} cups of water throughout the day."
+            )
+
+        # ------ Calculate Personalized Targets ------
+        targets = calculate_personalized_targets(**final_values)
+        st.success(f"Great job setting up! You're on track for {targets['estimated_weekly_change']:+.2f} kg change.")
 
 # ------ Check for User Input ------
 required_fields = [
@@ -768,12 +840,24 @@ user_has_entered_info = all(
     for field in required_fields
 )
 
-# ------ Calculate Personalized Targets ------
-targets = calculate_personalized_targets(**final_values)
+if not submit_button:
+    user_has_entered_info = False
 
 # ---------------------------------------------------------------------------
 # Cell 9: Unified Target Display System
 # ---------------------------------------------------------------------------
+
+metric_tooltips = {
+    "Basal Metabolic Rate (BMR)": "The energy your body needs at rest.",
+    "Total Daily Energy Expenditure (TDEE)": "Your total calorie burn including activity.",
+    "Daily Caloric Adjustment": "Adjustment based on your goal.",
+    "Estimated Weekly Weight Change": "Projected weight change per week.",
+    "Total Calories": "Your daily calorie target.",
+    "Protein": "Daily protein intake target.",
+    "Carbohydrates": "Daily carbs intake target.",
+    "Fat": "Daily fat intake target.",
+    "Water": "Daily hydration goal."
+}
 
 if not user_has_entered_info:
     st.info(
@@ -829,121 +913,129 @@ metrics_config = [
     }
 ]
 
-# ------ Display All Metric Sections ------
+# ------ Display All Metric Sections with Tooltips ------
 for config in metrics_config:
     st.subheader(config['title'])
-    display_metrics_grid(config['metrics'], config['columns'])
+    columns = st.columns(config['columns'])
+    for i, metric_info in enumerate(config['metrics']):
+        with columns[i % config['columns']]:
+            if len(metric_info) == 2:
+                label, value = metric_info
+                st.metric(label, value, help=metric_tooltips.get(label))
+            elif len(metric_info) == 3:
+                label, value, delta = metric_info
+                st.metric(label, value, delta, help=metric_tooltips.get(label))
     st.divider()
 
 # ---------------------------------------------------------------------------
 # Cell 10: Enhanced Evidence-Based Tips and Context
 # ---------------------------------------------------------------------------
 
-st.header("Your Evidence-Based Game Plan 📚")
-tab1, tab2, tab3, tab4 = st.tabs([
-    "The Big Three to Win At Nutrition 🏆", "Level Up Your Progress Tracking 📊",
-    "Mindset Is Everything 🧠", "The Science Behind the Magic 🔬"
-])
+with st.expander("Your Evidence-Based Game Plan 📚", expanded=False):
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "The Big Three to Win At Nutrition 🏆", "Level Up Your Progress Tracking 📊",
+        "Mindset Is Everything 🧠", "The Science Behind the Magic 🔬"
+    ])
 
-with tab1:
-    st.subheader("💧 Master Your Hydration Game")
-    st.markdown("""
-    Daily Goal: Shot for about 35 ml per kilogram of your body weight daily. 
-    Training Bonus: Tack on an extra 500-750 ml per hour of sweat time
-    Fat Loss Hack: Chugging 500 ml of water before meals can boost fullness by by 13%. Your stomach will thank you, and so will your waistline.
-    """)
+    with tab1:
+        st.subheader("💧 Master Your Hydration Game")
+        st.markdown("""
+        Daily Goal: Shot for about 35 ml per kilogram of your body weight daily. 
+        Training Bonus: Tack on an extra 500-750 ml per hour of sweat time
+        Fat Loss Hack: Chugging 500 ml of water before meals can boost fullness by by 13%. Your stomach will thank you, and so will your waistline.
+        """)
 
-    st.subheader("😴 Sleep Like Your Goals Depend on It")
-    st.markdown("""
-    The Shocking Truth: Getting less than 7 hours of sleep can torpedo your fat loss by a more than half.
-    Daily Goal: Shoot for 7-9 hours and try to keep a consistent schedule.
-    Set the Scene: Keep your cave dark, cool (18-20°C), and screen-free for at least an hour before lights out.
-    """)
+        st.subheader("😴 Sleep Like Your Goals Depend on It")
+        st.markdown("""
+        The Shocking Truth: Getting less than 7 hours of sleep can torpedo your fat loss by a more than half.
+        Daily Goal: Shoot for 7-9 hours and try to keep a consistent schedule.
+        Set the Scene: Keep your cave dark, cool (18-20°C), and screen-free for at least an hour before lights out.
+        """)
 
-    st.subheader("📅 Follow Your Wins")
-    st.markdown("""
-    Morning Ritual: Weigh yourself first thing after using the bathroom, before eating or drinking, in minimal clothing
-    Look for Trends, Not Blips: Watch your weekly average instead of getting hung up on daily fluctuations. Your weight can swing 2-3 pounds daily. 
-    Hold the Line: Don’t tweak your plan too soon. Wait for two or more weeks of stalled progress before making changes.
-    """)
+        st.subheader("📅 Follow Your Wins")
+        st.markdown("""
+        Morning Ritual: Weigh yourself first thing after using the bathroom, before eating or drinking, in minimal clothing
+        Look for Trends, Not Blips: Watch your weekly average instead of getting hung up on daily fluctuations. Your weight can swing 2-3 pounds daily. 
+        Hold the Line: Don’t tweak your plan too soon. Wait for two or more weeks of stalled progress before making changes.
+        """)
 
-with tab2:
-    st.subheader("Go Beyond the Scale 📸")
-    st.markdown("""
-    The Bigger Picture: Snap a few pics every month. Use the same pose, lighting, and time of day. The mirror doesn't lie.
-    Size Up Your Wins: Measure your waist, hips, arms, and thighs monthly
-    The Quiet Victories: Pay attention to how you feel. Your energy levels, sleep quality, gym performance, and hunger patterns tell a story numbers can’t.
-    """)
+    with tab2:
+        st.subheader("Go Beyond the Scale 📸")
+        st.markdown("""
+        The Bigger Picture: Snap a few pics every month. Use the same pose, lighting, and time of day. The mirror doesn't lie.
+        Size Up Your Wins: Measure your waist, hips, arms, and thighs monthly
+        The Quiet Victories: Pay attention to how you feel. Your energy levels, sleep quality, gym performance, and hunger patterns tell a story numbers can’t.
+        """)
 
-with tab3:
-    st.subheader("Mindset Is Everything 🧠")
-    st.markdown("""
-    The 80/20 principle is your best defense against the perfectionist trap. It's about ditching that mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually and you’ll be far more likely to stick with them for the long haul.
+    with tab3:
+        st.subheader("Mindset Is Everything 🧠")
+        st.markdown("""
+        The 80/20 principle is your best defense against the perfectionist trap. It's about ditching that mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually and you’ll be far more likely to stick with them for the long haul.
 
-    Start Small, Win Big:
+        Start Small, Win Big:
 
-    Weeks 1–2: Your only job is to focus on hitting your calorie targets. Don’t worry about anything else!
-    Weeks 3–4: Once calories feel like second nature, start layering in protein tracking
-    Week 5 and Beyond: With calories and protein in the bag, you can now fine-tune your carb and fat intake
+        Weeks 1–2: Your only job is to focus on hitting your calorie targets. Don’t worry about anything else!
+        Weeks 3–4: Once calories feel like second nature, start layering in protein tracking
+        Week 5 and Beyond: With calories and protein in the bag, you can now fine-tune your carb and fat intake
 
-    When Progress Stalls 🔄
+        When Progress Stalls 🔄
 
-    Hit a Weight Loss Plateau?
+        Hit a Weight Loss Plateau?
 
-    Guess Less, Stress Less: Before you do anything else, double-check how accurately you’re logging your food. Little things can add up!
-    Activity Audit: Take a fresh look at your activity level. Has it shifted?
-    Walk it Off: Try adding 10-15 minutes of walking to your daily routine before cutting calories further. It’s a simple way to boost progress without tightening the belt just yet.
-    Step Back to Leap Forwarde: Consider a "diet break" every 6-8 weeks. Eating at your maintenance calories for a week or two can give your metabolism and your mind a well-deserved reset.
-    Leaf Your Hunger Behind: Load your plate with low-calorie, high-volume foods like leafy greens, cucumbers, and berries. They’re light on calories but big on satisfaction.
+        Guess Less, Stress Less: Before you do anything else, double-check how accurately you’re logging your food. Little things can add up!
+        Activity Audit: Take a fresh look at your activity level. Has it shifted?
+        Walk it Off: Try adding 10-15 minutes of walking to your daily routine before cutting calories further. It’s a simple way to boost progress without tightening the belt just yet.
+        Step Back to Leap Forwarde: Consider a "diet break" every 6-8 weeks. Eating at your maintenance calories for a week or two can give your metabolism and your mind a well-deserved reset.
+        Leaf Your Hunger Behind: Load your plate with low-calorie, high-volume foods like leafy greens, cucumbers, and berries. They’re light on calories but big on satisfaction.
 
-    Struggling to Gain Weight?
+        Struggling to Gain Weight?
 
-    Drink Your Calories: Liquid calories from smoothies, milk, and protein shakes go down way easier than another full meal 
-    Fat is Fuel: Load up healthy fats like nuts, oils, and avocados. 
-    Push Your Limits: Give your body a reason to grow! Make sure you’re consistently challenging yourself in the gym.
-    Turn Up the Heat: If you've been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again.
+        Drink Your Calories: Liquid calories from smoothies, milk, and protein shakes go down way easier than another full meal 
+        Fat is Fuel: Load up healthy fats like nuts, oils, and avocados. 
+        Push Your Limits: Give your body a reason to grow! Make sure you’re consistently challenging yourself in the gym.
+        Turn Up the Heat: If you've been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again.
 
-    Pace Your Protein
+        Pace Your Protein
 
-    Spread the Love: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal.
-    Frame Your Fitness: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout.
-    The Night Shift: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze
-    """)
+        Spread the Love: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal.
+        Frame Your Fitness: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout.
+        The Night Shift: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze
+        """)
 
-with tab4:
-    st.subheader("Understanding Your Metabolism")
-    st.markdown("""
-    Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
+    with tab4:
+        st.subheader("Understanding Your Metabolism")
+        st.markdown("""
+        Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
 
-    The Smart Eater's Cheat Sheet
+        The Smart Eater's Cheat Sheet
 
-    Not all calories are created equal. Some foods fill you up, while others leave you rummaging through the pantry an hour later. Here’s the pecking order:
+        Not all calories are created equal. Some foods fill you up, while others leave you rummaging through the pantry an hour later. Here’s the pecking order:
 
-    Protein: Protein is the undisputed king of fullness! It digests slowly, steadies blood sugar, and even burns a few extra calories in the process. Eggs, Greek yogurt, chicken, tofu, and lentils are all your hunger-busting best friends.
+        Protein: Protein is the undisputed king of fullness! It digests slowly, steadies blood sugar, and even burns a few extra calories in the process. Eggs, Greek yogurt, chicken, tofu, and lentils are all your hunger-busting best friends.
 
-    Fiber-Rich Carbohydrates: Veggies, fruits, and whole grains are the unsung heroes of fullness. They fill you up, slow things down, and bulk up meals without blowing your calorie budget.
+        Fiber-Rich Carbohydrates: Veggies, fruits, and whole grains are the unsung heroes of fullness. They fill you up, slow things down, and bulk up meals without blowing your calorie budget.
 
-    Healthy Fats: Think of nuts, olive oil, and avocados as the smooth operators delivering steady, long-lasting energy that keeps you powered throughout the day.
+        Healthy Fats: Think of nuts, olive oil, and avocados as the smooth operators delivering steady, long-lasting energy that keeps you powered throughout the day.
 
-    Processed Stuff: These foods promise the world but leave you hanging. They're fine for a cameo appearance, but you can't build a winning strategy around them.
+        Processed Stuff: These foods promise the world but leave you hanging. They're fine for a cameo appearance, but you can't build a winning strategy around them.
 
-    As a great rule of thumb, aim for 14 grams of fibre for every 1,000 calories you consume, which usually lands between 25 and 38 grams daily. Ramp up gradually to avoid digestive drama.
+        As a great rule of thumb, aim for 14 grams of fibre for every 1,000 calories you consume, which usually lands between 25 and 38 grams daily. Ramp up gradually to avoid digestive drama.
 
-    Your Nutritional Supporting Cast
+        Your Nutritional Supporting Cast
 
-    Going plant-based? There are a few tiny but mighty micronutrients to keep an eye on. They may not get top billing, but they’re essential for keeping the show running smoothly.
+        Going plant-based? There are a few tiny but mighty micronutrients to keep an eye on. They may not get top billing, but they’re essential for keeping the show running smoothly.
 
-    The Watch List:
+        The Watch List:
 
-    B₁₂: B₁₂ keeps your cells and nerves firing like a well-oiled machine. It’s almost exclusively found in animal products, so if you’re running a plant-powered show, you’ll need reinforcements. A trusty supplement is often the easiest way to keep your levels topped up and your brain buzzing.
-    Iron: Iron is the taxi service that shuttles oxygen all over your body. When it’s running low, you’ll feel like a sloth on a Monday morning. Load up on leafy greens, lentils, and fortified grains, and team them with a hit of vitamin C—think bell peppers or citrus—to supercharge absorption.
-    Calcium: This multitasker helps build bones, power muscles, and keeps your heart thumping to a steady beat. While dairy is the classic go-to, you can also get your fix from kale, almonds, tofu, and fortified plant milks.
-    Zinc: Think of zinc as your immune system's personal security detail. You’ll find it hanging out in nuts, seeds, and whole grains. Keep your zinc levels up, and you’ll be dodging colds like a ninja.
-    Iodine: Your thyroid is the command center for your metabolism, and iodine is its right-hand mineral. A pinch of iodized salt is usually all it takes.
-    Omega-3s (EPA/DHA): These healthy fats are premium fuel for your brain, heart, and emotional well-being. If fish isn’t on your plate, fortified foods or supplements can help you stay sharp and serene.
+        B₁₂: B₁₂ keeps your cells and nerves firing like a well-oiled machine. It’s almost exclusively found in animal products, so if you’re running a plant-powered show, you’ll need reinforcements. A trusty supplement is often the easiest way to keep your levels topped up and your brain buzzing.
+        Iron: Iron is the taxi service that shuttles oxygen all over your body. When it’s running low, you’ll feel like a sloth on a Monday morning. Load up on leafy greens, lentils, and fortified grains, and team them with a hit of vitamin C—think bell peppers or citrus—to supercharge absorption.
+        Calcium: This multitasker helps build bones, power muscles, and keeps your heart thumping to a steady beat. While dairy is the classic go-to, you can also get your fix from kale, almonds, tofu, and fortified plant milks.
+        Zinc: Think of zinc as your immune system's personal security detail. You’ll find it hanging out in nuts, seeds, and whole grains. Keep your zinc levels up, and you’ll be dodging colds like a ninja.
+        Iodine: Your thyroid is the command center for your metabolism, and iodine is its right-hand mineral. A pinch of iodized salt is usually all it takes.
+        Omega-3s (EPA/DHA): These healthy fats are premium fuel for your brain, heart, and emotional well-being. If fish isn’t on your plate, fortified foods or supplements can help you stay sharp and serene.
 
-    The good news? Fortified foods and targeted supplements have your back. Plant milks, cereals, and nutritional yeast are often spiked with B₁₂, calcium, or iodine. Supplements are a safety net, but don’t overdo it. It’s always best to chat with a doctor or dietitian to build a plan that’s right for you.
-    """)
+        The good news? Fortified foods and targeted supplements have your back. Plant milks, cereals, and nutritional yeast are often spiked with B₁₂, calcium, or iodine. Supplements are a safety net, but don’t overdo it. It’s always best to chat with a doctor or dietitian to build a plan that’s right for you.
+        """)
 
 # ---------------------------------------------------------------------------
 # Cell 11: Personalized Recommendations System
@@ -980,6 +1072,27 @@ if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary"):
     st.session_state.food_selections = {}
     st.rerun()
 
+# Save and Load Progress
+col_save, col_load = st.columns(2)
+with col_save:
+    if st.button("Save Progress"):
+        json_string = json.dumps(st.session_state.food_selections)
+        st.download_button(
+            label="Download JSON",
+            data=json_string,
+            file_name="food_selections.json",
+            mime="application/json"
+        )
+with col_load:
+    uploaded_file = st.file_uploader("Load Progress", type="json")
+    if uploaded_file is not None:
+        loaded_data = json.load(uploaded_file)
+        st.session_state.food_selections = loaded_data
+        st.rerun()
+
+# Food Search
+search_query = st.text_input("Search Foods", key="food_search")
+
 # ------ Food Selection with Tabs ------
 available_categories = [
     cat for cat, items in sorted(foods.items()) if items
@@ -988,6 +1101,8 @@ tabs = st.tabs(available_categories)
 
 for i, category in enumerate(available_categories):
     items = foods[category]
+    if search_query:
+        items = [item for item in items if search_query.lower() in item['name'].lower()]
     sorted_items_in_category = sorted(
         items,
         key=lambda x: (
@@ -1061,6 +1176,22 @@ if selected_foods:
                 f"→ {total_cals:.0f} kcal | {total_protein:.1f}g protein | "
                 f"{total_carbs:.1f}g carbs | {total_fat:.1f}g fat"
             )
+
+    # Export Daily Summary
+    if st.button("Export Daily Summary"):
+        summary_data = {
+            'Totals': totals,
+            'Targets': targets,
+            'Recommendations': recommendations
+        }
+        df = pd.DataFrame.from_dict(summary_data, orient='index').transpose()
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download CSV",
+            data=csv,
+            file_name="daily_summary.csv",
+            mime="text/csv"
+        )
 else:
     st.info(
         "Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!"
@@ -1068,12 +1199,16 @@ else:
     st.subheader("Progress Snapshot")
     for nutrient, config in CONFIG['nutrient_configs'].items():
         target = targets[config['target_key']]
-        st.progress(
-            0.0,
-            text=(
-                f"{config['label']}: 0% of daily target ({target:.0f} "
-                f"{config['unit']})"
-            )
+        # Custom color-coded progress bar using HTML for zero progress
+        progress_html = """
+        <div style="background-color: #f0f0f0; border-radius: 5px; height: 20px; width: 100%;">
+            <div style="background-color: red; width: 0%; height: 100%; border-radius: 5px;"></div>
+        </div>
+        """
+        st.markdown(progress_html, unsafe_allow_html=True)
+        st.caption(
+            f"{config['label']}: 0% of daily target ({target:.0f} "
+            f"{config['unit']})"
         )
 
 # ---------------------------------------------------------------------------
@@ -1096,6 +1231,13 @@ Think of this tool as your launchpad, but remember—everyone’s different. You
 st.success(
     "You made it to the finish line! Thanks for sticking with us on this nutrition adventure. Remember, the sun doesn’t rush to rise, but it always shows up. Keep shining—you’ve got this! 🥳"
 )
+
+# User Feedback Form
+st.subheader("How can we improve?")
+feedback = st.text_area("Your feedback:")
+if st.button("Submit Feedback"):
+    # Placeholder for feedback submission (e.g., log to file or send to server)
+    st.success("Thank you for your feedback!")
 
 # ---------------------------------------------------------------------------
 # Cell 15: Session State Management and Performance
