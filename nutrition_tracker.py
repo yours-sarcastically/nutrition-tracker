@@ -1328,8 +1328,9 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
 
         ---
 
-        st.markdown("#### When Progress Stalls** 🔄")
         """)
+
+        st.markdown("#### When Progress Stalls** 🔄")
 
         st.markdown("##### Hit a Weight Loss Plateau?")
         for tip in TIPS_CONTENT['weight_loss_plateau']:
