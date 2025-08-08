@@ -1327,7 +1327,8 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         * **Week 5 and Beyond**: With calories and protein in the bag, you can now fine-tune your carb and fat intake.
 
         ---
-        **When Progress Stalls** 🔄
+
+        st.markdown("#### When Progress Stalls** 🔄")
         """)
 
         st.markdown("##### Hit a Weight Loss Plateau?")
