@@ -131,7 +131,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,    # 0% from TDEE
+        'caloric_adjustment': 0.0,   # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -587,10 +587,10 @@ def create_progress_tracking(totals, targets, foods):
         recommendations.append(summary_text)
         
         if top_suggestions:
-            # Handle the primary suggestion
-            primary_suggestion = top_suggestions[0]
-            food = primary_suggestion['food']
-            nutrients_helped = primary_suggestion['nutrients_helped']
+            # First suggestion as smart pick
+            first_suggestion = top_suggestions[0]
+            food = first_suggestion['food']
+            nutrients_helped = first_suggestion['nutrients_helped']
             
             nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
             
@@ -598,16 +598,16 @@ def create_progress_tracking(totals, targets, foods):
                 benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
             else:
                 benefits_text = nutrient_benefits[0]
-
+            
             recommendations.append(
-                f"🎯 **Smart pick**: One serving of **{food['name']}** would give you {benefits_text}, knocking out multiple targets at once!"
+                f"🎯 Smart pick: One serving of {food['name']} would give you {benefits_text}, "
+                f"knocking out multiple targets at once!"
             )
-
-            # Handle and consolidate alternative suggestions
-            alternative_suggestions = top_suggestions[1:]
-            if alternative_suggestions:
-                alt_texts = []
-                for suggestion in alternative_suggestions:
+            
+            # Consolidate alternative options into one statement
+            if len(top_suggestions) > 1:
+                alternative_foods = []
+                for suggestion in top_suggestions[1:]:
                     food = suggestion['food']
                     nutrients_helped = suggestion['nutrients_helped']
                     nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
@@ -617,12 +617,19 @@ def create_progress_tracking(totals, targets, foods):
                     else:
                         benefits_text = nutrient_benefits[0]
                     
-                    alt_texts.append(f"**{food['name']}** (provides {benefits_text})")
+                    alternative_foods.append(f"{food['name']} (provides {benefits_text})")
+                
+                # Create single consolidated alternative statement
+                if len(alternative_foods) == 1:
+                    alternatives_text = alternative_foods[0]
+                elif len(alternative_foods) == 2:
+                    alternatives_text = f"{alternative_foods[0]} or {alternative_foods[1]}"
+                else:
+                    alternatives_text = ", ".join(alternative_foods[:-1]) + f", or {alternative_foods[-1]}"
                 
                 recommendations.append(
-                    f"💡 **Alternative options**: {'; '.join(alt_texts)}."
+                    f"💡 Alternative options: {alternatives_text} are also great ways to hit multiple goals!"
                 )
-
         else:
             biggest_deficit = max(deficits.items(), key=lambda x: x[1]['amount'])
             nutrient, deficit_info = biggest_deficit
@@ -635,7 +642,7 @@ def create_progress_tracking(totals, targets, foods):
             
             if best_single_food and best_single_food.get(nutrient, 0) > 0:
                 recommendations.append(
-                    f"💡 Try adding {best_single_food['name']} - it's packed with "
+                    f"💡 Alternative option: Try adding {best_single_food['name']} - it's packed with "
                     f"{best_single_food[nutrient]:.0f}g of {deficit_info['label']}."
                 )
 
@@ -1528,7 +1535,7 @@ Created with Personal Nutrition Coach 🍽️
 
     # NEW: Enhanced Visualization Dashboard
     with col1:
-        st.subheader("Today’s Fuel Mix")
+        st.subheader("Today's Fuel Mix")
         fig_macros = go.Figure()
         
         macros = ['Protein', 'Carbohydrates', 'Fat']
@@ -1545,7 +1552,7 @@ Created with Personal Nutrition Coach 🍽️
         
         fig_macros.update_layout(
             title_text='Macronutrient Comparison', barmode='group',
-            yaxis_title='Grams', height=350, showlegend=True,
+            yaxis_title='Grams', height=400, showlegend=True,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=10, r=10, t=40, b=10)
         )
@@ -1569,7 +1576,7 @@ Created with Personal Nutrition Coach 🍽️
             
             fig_pie.update_layout(
                 title=f'Total: {totals["calories"]:.0f} kcal',
-                height=350
+                height=400
             )
             
             st.plotly_chart(fig_pie, use_container_width=True)
