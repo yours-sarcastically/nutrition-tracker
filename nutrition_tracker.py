@@ -1294,7 +1294,7 @@ for config in metrics_config:
 with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "The Big Three to Win At Nutrition 🏆", "Level Up Your Progress Tracking 📊",
-        "Mindset Is Everything 🧠", "🧗 Sweat Smart: Your Ticket to Feeling Awesome", "The Science Behind the Magic 🔬"
+        "Mindset Is Everything 🧠", "🧗 Own Your Energy", "The Science Behind the Magic 🔬"
     ])
 
     with tab1:
