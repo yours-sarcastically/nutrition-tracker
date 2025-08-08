@@ -155,19 +155,15 @@ CONFIG = {
     'form_fields': {
         'age': {'type': 'number', 'label': 'Age (in years)',
                 'min': 16, 'max': 80, 'step': 1,
-                'caption': 'Another year wiser! How many trips around the sun have you taken?',
                 'placeholder': 'e.g., 26', 'required': True},
         'height_cm': {'type': 'number', 'label': 'Height (in centimeters)',
                       'min': 140, 'max': 220, 'step': 1,
-                      'caption': 'Stand tall and tell us your height',
                       'placeholder': 'e.g., 180', 'required': True},
         'weight_kg': {'type': 'number', 'label': 'Weight (in kilograms)',
                       'min': 40.0, 'max': 150.0, 'step': 0.5,
-                      'caption': 'What does the scale say today?',
                       'placeholder': 'e.g., 57.5', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Biological Sex',
                 'options': ["Male", "Female"], 'required': True,
-                'caption': "Please select your biological sex:"},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level',
                            'options': [
                                ("Sedentary", "sedentary"),
@@ -176,14 +172,12 @@ CONFIG = {
                                ("Very Active", "very_active"),
                                ("Extremely Active", "extremely_active")
                            ], 'required': True,
-                           'caption': "Pick what sounds most like your typical week"},
         'goal': {'type': 'selectbox', 'label': 'Your Goal',
                  'options': [
                      ("Weight Loss", "weight_loss"),
                      ("Weight Maintenance", "weight_maintenance"),
                      ("Weight Gain", "weight_gain")
                  ], 'required': True,
-                 'caption': "What are we working toward?"},
         'protein_per_kg': {'type': 'number',
                            'label': 'Protein Goal (g/kg)',
                            'min': 1.2, 'max': 3.0, 'step': 0.1,
@@ -753,7 +747,7 @@ Here's a quick breakdown of what these levels really mean:
 * **🏋️ Very Active**: You might actually be part treadmill
 * **🤸 Extremely Active**: You live in the gym and sweat is your second skin
 
-💡 **Pro tip**: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.
+💡 *If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.
     """)
 
 # ------ Process Final Values ------
