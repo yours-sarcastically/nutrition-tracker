@@ -1409,21 +1409,19 @@ st.header("Track Your Daily Intake 🥗")
 
 # Food search functionality
 search_col, reset_col = st.columns([3, 1])
+
 with search_col:
     search_term = st.text_input(
-        "🔍 Search for foods",
-        value=st.session_state.food_search,
-        placeholder="Type food name to filter results...",
-        key="food_search_input"
+        "Search for foods",  # The label is still needed for Streamlit's backend
+        placeholder="🔍 Type food name to filter results...", # Visual text is here
+        key="food_search_input",
+        label_visibility="collapsed"  # This hides the label from the UI
     )
     st.session_state.food_search = search_term
 
 with reset_col:
-    st.write("")  # Spacer - pushes content down
-    st.write("")  # Spacer - pushes content down further
-    if st.button("🔄 Clear Search", key="clear_search", use_container_width=True):
-        st.session_state.food_search = ""
-        st.rerun()
+    # No spacers are needed here at all
+    if st.button("🔄 Clear Search", key="clear_search"):
         st.session_state.food_search = ""
         st.rerun()
 
