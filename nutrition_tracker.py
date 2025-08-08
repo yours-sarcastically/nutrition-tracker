@@ -1,3 +1,5 @@
+Here's the complete, updated script with all your requested changes:
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -1154,7 +1156,6 @@ if uploaded_file is not None:
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
     st.markdown("##### Your Activity Level Decoded")
-    st.markdown("---")
     st.markdown("""
 * **🧑‍💻 Sedentary**: You're basically married to your desk chair
 * **🏃 Lightly Active**: You squeeze in walks or workouts one to three times a week
