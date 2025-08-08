@@ -483,6 +483,9 @@ def create_progress_tracking(totals, targets, foods):
         'fat': 'for hormone production and overall health'
     }
 
+    deficits = {}
+    
+    # First pass: create progress bars and collect deficits
     for nutrient, config in CONFIG['nutrient_configs'].items():
         actual = totals[nutrient]
         target = targets[config['target_key']] if targets[config['target_key']] > 0 else 1
@@ -499,20 +502,90 @@ def create_progress_tracking(totals, targets, foods):
 
         if actual < target:
             deficit = target - actual
-            purpose = purpose_map.get(nutrient, 'for optimal nutrition')
-            base_rec = (
-                f"You've got {deficit:.0f} more {config['unit']} of "
-                f"{config['label'].lower()} to go {purpose}."
+            deficits[nutrient] = {
+                'amount': deficit,
+                'unit': config['unit'],
+                'label': config['label'].lower(),
+                'purpose': purpose_map.get(nutrient, 'for optimal nutrition')
+            }
+
+    # Second pass: create combined recommendations
+    if deficits:
+        # Find the best multi-nutrient food suggestion
+        all_foods = [item for sublist in foods.values() for item in sublist]
+        best_overall_food = None
+        best_coverage_score = 0
+        
+        for food in all_foods:
+            coverage_score = 0
+            nutrients_helped = []
+            
+            for nutrient, deficit_info in deficits.items():
+                if nutrient != 'calories' and food[nutrient] > 0:
+                    # Calculate how much this food helps with this deficit
+                    help_percentage = min(food[nutrient] / deficit_info['amount'], 1.0)
+                    if help_percentage > 0.1:  # Only consider if it helps by at least 10%
+                        coverage_score += help_percentage
+                        nutrients_helped.append(nutrient)
+            
+            if coverage_score > best_coverage_score and len(nutrients_helped) > 1:
+                best_coverage_score = coverage_score
+                best_overall_food = {
+                    'food': food,
+                    'nutrients_helped': nutrients_helped,
+                    'score': coverage_score
+                }
+
+        # Create summary message
+        deficit_summary = []
+        for nutrient, deficit_info in deficits.items():
+            deficit_summary.append(
+                f"{deficit_info['amount']:.0f}g more {deficit_info['label']} "
+                f"{deficit_info['purpose']}"
             )
-
-            if nutrient in ['protein', 'carbs', 'fat']:
-                food_suggestion = find_best_food_for_nutrient(
-                    nutrient, deficit, foods
+        
+        if len(deficit_summary) > 1:
+            summary_text = "You still need: " + ", ".join(deficit_summary[:-1]) + f", and {deficit_summary[-1]}."
+        else:
+            summary_text = f"You still need: {deficit_summary[0]}."
+        
+        recommendations.append(summary_text)
+        
+        # Add smart food suggestion if we found a good multi-nutrient option
+        if best_overall_food:
+            food = best_overall_food['food']
+            nutrients_helped = best_overall_food['nutrients_helped']
+            
+            nutrient_benefits = []
+            for nutrient in nutrients_helped:
+                amount = food[nutrient]
+                nutrient_benefits.append(f"{amount:.0f}g {nutrient}")
+            
+            if len(nutrient_benefits) > 1:
+                benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
+            else:
+                benefits_text = nutrient_benefits[0]
+                
+            recommendations.append(
+                f"🎯 Smart pick: One serving of {food['name']} would give you {benefits_text}, "
+                f"knocking out multiple targets at once!"
+            )
+        else:
+            # Fallback to individual suggestions for the biggest deficit
+            biggest_deficit = max(deficits.items(), key=lambda x: x[1]['amount'])
+            nutrient, deficit_info = biggest_deficit
+            
+            best_single_food = max(
+                all_foods, 
+                key=lambda x: x[nutrient] if x[nutrient] > 0 else 0,
+                default=None
+            )
+            
+            if best_single_food and best_single_food[nutrient] > 0:
+                recommendations.append(
+                    f"💡 Try adding {best_single_food['name']} - it's packed with "
+                    f"{best_single_food[nutrient]:.0f}g of {deficit_info['label']}."
                 )
-                if food_suggestion:
-                    base_rec += f" Looking for a suggestion? {food_suggestion}"
-
-            recommendations.append(base_rec)
 
     return recommendations
 
