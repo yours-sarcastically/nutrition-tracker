@@ -163,7 +163,7 @@ CONFIG = {
                       'min': 40.0, 'max': 150.0, 'step': 0.5,
                       'placeholder': 'e.g., 57.5', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Biological Sex',
-                'options': ["Male", "Female"], 'required': True,
+                'options': ["Male", "Female"], 'required': True},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level',
                            'options': [
                                ("Sedentary", "sedentary"),
