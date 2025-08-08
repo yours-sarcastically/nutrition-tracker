@@ -1,5 +1,3 @@
-Here's the complete, updated script with all your requested changes:
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
