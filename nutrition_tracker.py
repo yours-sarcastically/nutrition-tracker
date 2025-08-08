@@ -1,3 +1,5 @@
+Sonnet Thinking
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -588,111 +590,153 @@ def create_sidebar_summary(totals, targets):
 
 
 # ---------------------------------------------------------------------------
-# Cell 5: Enhanced Nutritional Calculation Functions
-# ---------------------------------------------------------------------------
-
-def calculate_bmr(age, height_cm, weight_kg, sex='male'):
-    """Calculates the Basal Metabolic Rate using the Mifflin-St Jeor equation."""
-    base_calc = (10 * weight_kg) + (6.25 * height_cm) - (5 * age)
-    return base_calc + (5 if sex.lower() == 'male' else -161)
-
-
-def calculate_tdee(bmr, activity_level):
-    """Calculates Total Daily Energy Expenditure based on activity level."""
-    multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
-    return bmr * multiplier
-
-
-def calculate_estimated_weekly_change(daily_caloric_adjustment):
-    """Calculates the estimated weekly weight change from a caloric adjustment."""
-    return (daily_caloric_adjustment * 7) / 7700
-
-
-def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
-                                   activity_level='moderately_active',
-                                   goal='weight_gain', protein_per_kg=None,
-                                   fat_percentage=None):
-    """Calculates personalized daily nutritional targets with edge case handling."""
-    bmr = calculate_bmr(age, height_cm, weight_kg, sex)
-    tdee = calculate_tdee(bmr, activity_level)
-    goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['weight_gain'])
-    caloric_adjustment = tdee * goal_config['caloric_adjustment']
-    total_calories = max(tdee + caloric_adjustment, 1200)  # Minimum safety check
-
-    protein_per_kg_final = (
-        protein_per_kg if protein_per_kg is not None
-        else goal_config['protein_per_kg']
-    )
-    fat_percentage_final = (
-        fat_percentage if fat_percentage is not None
-        else goal_config['fat_percentage']
-    )
-
-    protein_g = protein_per_kg_final * weight_kg
-    protein_calories = protein_g * 4
-    fat_calories = total_calories * fat_percentage_final
-    fat_g = fat_calories / 9
-    carb_calories = max(total_calories - protein_calories - fat_calories, 0)
-    carb_g = carb_calories / 4
-    estimated_weekly_change = calculate_estimated_weekly_change(caloric_adjustment)
-
-    targets = {
-        'bmr': round(bmr), 'tdee': round(tdee),
-        'total_calories': round(total_calories),
-        'caloric_adjustment': round(caloric_adjustment),
-        'protein_g': round(protein_g), 'protein_calories': round(protein_calories),
-        'fat_g': round(fat_g), 'fat_calories': round(fat_calories),
-        'carb_g': round(carb_g), 'carb_calories': round(carb_calories),
-        'estimated_weekly_change': round(estimated_weekly_change, 3),
-        'goal': goal
-    }
-
-    # Handle division by zero for percentage calculations
-    if targets['total_calories'] > 0:
-        targets['protein_percent'] = (targets['protein_calories'] / targets['total_calories']) * 100
-        targets['carb_percent'] = (targets['carb_calories'] / targets['total_calories']) * 100
-        targets['fat_percent'] = (targets['fat_calories'] / targets['total_calories']) * 100
-    else:
-        targets['protein_percent'] = 0
-        targets['carb_percent'] = 0
-        targets['fat_percent'] = 0
-
-    return targets
-
-
-# ---------------------------------------------------------------------------
-# Cell 6: Enhanced Food Database Processing Functions
+# Cell 5: Core Calculation and Data Processing Functions
 # ---------------------------------------------------------------------------
 
 @st.cache_data
-def load_food_database(file_path):
-    """Loads the vegetarian food database from a specified CSV file."""
-    df = pd.read_csv(file_path)
-    foods = {cat: [] for cat in df['category'].unique()}
+def load_food_database(filename):
+    """Loads and processes the nutrition database from CSV file."""
+    try:
+        df = pd.read_csv(filename)
+        
+        # Expected columns in the CSV
+        required_cols = ['Food', 'Category', 'Calories_per_serving', 
+                        'Protein_g_per_serving', 'Carbs_g_per_serving', 
+                        'Fat_g_per_serving']
+        
+        # Check if required columns exist
+        if not all(col in df.columns for col in required_cols):
+            st.error(f"❌ Missing required columns in {filename}. Expected: {required_cols}")
+            return {}
+        
+        foods = {}
+        for _, row in df.iterrows():
+            category = row['Category']
+            if category not in foods:
+                foods[category] = []
+                
+            food_item = {
+                'name': row['Food'],
+                'calories': float(row['Calories_per_serving']),
+                'protein': float(row['Protein_g_per_serving']),
+                'carbs': float(row['Carbs_g_per_serving']),
+                'fat': float(row['Fat_g_per_serving'])
+            }
+            foods[category].append(food_item)
+        
+        return foods
+        
+    except FileNotFoundError:
+        st.error(f"❌ File '{filename}' not found. Please ensure the CSV file is in the correct location.")
+        return {}
+    except Exception as e:
+        st.error(f"❌ Error loading database: {str(e)}")
+        return {}
 
-    for _, row in df.iterrows():
-        category = row['category']
-        if category in foods:
-            foods[category].append({
-                'name': f"{row['name']} ({row['serving_unit']})",
-                'calories': row['calories'], 'protein': row['protein'],
-                'carbs': row['carbs'], 'fat': row['fat']
-            })
-    return foods
+
+def calculate_bmr(weight_kg, height_cm, age, sex):
+    """
+    Calculates Basal Metabolic Rate using the Mifflin-St Jeor Equation.
+    This is the gold standard equation recommended by nutritionists.
+    """
+    if sex.lower() == "male":
+        bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
+    else:
+        bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
+    
+    return round(bmr)
+
+
+def calculate_tdee(bmr, activity_level):
+    """
+    Calculates Total Daily Energy Expenditure by applying activity multiplier to BMR.
+    """
+    multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
+    return round(bmr * multiplier)
+
+
+def calculate_personalized_targets(weight_kg, height_cm, age, sex, activity_level, 
+                                 goal, protein_per_kg=None, fat_percentage=None, **kwargs):
+    """
+    Calculates personalized daily nutrition targets based on user inputs and goals.
+    """
+    # Calculate BMR and TDEE
+    bmr = calculate_bmr(weight_kg, height_cm, age, sex)
+    tdee = calculate_tdee(bmr, activity_level)
+    
+    # Apply goal-specific adjustments
+    goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['weight_gain'])
+    
+    # Use provided values or fall back to goal defaults
+    if protein_per_kg is None:
+        protein_per_kg = goal_config['protein_per_kg']
+    if fat_percentage is None:
+        fat_percentage = goal_config['fat_percentage']
+    
+    # Calculate caloric adjustment
+    caloric_adjustment_percent = goal_config['caloric_adjustment']
+    caloric_adjustment = tdee * caloric_adjustment_percent
+    total_calories = round(tdee + caloric_adjustment)
+    
+    # Calculate macronutrient targets
+    protein_g = round(weight_kg * protein_per_kg)
+    protein_calories = protein_g * 4
+    
+    fat_calories = round(total_calories * fat_percentage)
+    fat_g = round(fat_calories / 9)
+    
+    remaining_calories = total_calories - protein_calories - fat_calories
+    carb_g = round(remaining_calories / 4)
+    
+    # Calculate percentages for display
+    protein_percent = (protein_calories / total_calories) * 100
+    fat_percent = (fat_calories / total_calories) * 100
+    carb_percent = (remaining_calories / total_calories) * 100
+    
+    # Estimate weekly weight change (rough approximation)
+    weekly_calorie_difference = caloric_adjustment * 7
+    estimated_weekly_change = weekly_calorie_difference / 7700  # ~7700 kcal per kg
+    
+    return {
+        'bmr': bmr,
+        'tdee': tdee,
+        'caloric_adjustment': round(caloric_adjustment),
+        'total_calories': total_calories,
+        'protein_g': protein_g,
+        'carb_g': carb_g,
+        'fat_g': fat_g,
+        'protein_percent': protein_percent,
+        'carb_percent': carb_percent,
+        'fat_percent': fat_percent,
+        'estimated_weekly_change': estimated_weekly_change,
+        'goal': goal
+    }
 
 
 @st.cache_data
 def assign_food_emojis(foods):
-    """Assigns emojis to foods based on a unified ranking system - now cached."""
-    top_foods = {'protein': [], 'carbs': [], 'fat': [], 'calories': {}}
-
+    """
+    Assigns emojis to foods based on their nutritional profile and calorie density.
+    Uses caching to improve performance.
+    """
+    if not foods:
+        return {}
+    
+    # Find top foods for each category
+    top_foods = {
+        'protein': [], 'carbs': [], 'fat': [],
+        'calories': {}
+    }
+    
     for category, items in foods.items():
         if not items:
             continue
-
+            
+        # Sort by calories (highest first)
         sorted_by_calories = sorted(items, key=lambda x: x['calories'], reverse=True)
         top_foods['calories'][category] = [food['name'] for food in sorted_by_calories[:3]]
 
+        # Map categories to their primary nutrients
         map_info = CONFIG['nutrient_map'].get(category)
         if map_info:
             sorted_by_nutrient = sorted(
@@ -702,15 +746,18 @@ def assign_food_emojis(foods):
                 food['name'] for food in sorted_by_nutrient[:3]
             ]
 
+    # Collect all top nutrient foods
     all_top_nutrient_foods = {
         food for key in ['protein', 'carbs', 'fat'] for food in top_foods[key]
     }
 
+    # Define emoji mapping
     emoji_mapping = {
         'high_cal_nutrient': '🥇', 'high_calorie': '🔥',
         'protein': '💪', 'carbs': '🍚', 'fat': '🥑'
     }
 
+    # Assign emojis based on criteria
     for category, items in foods.items():
         for food in items:
             food_name = food['name']
@@ -729,6 +776,7 @@ def assign_food_emojis(foods):
                 food['emoji'] = emoji_mapping['fat']
             else:
                 food['emoji'] = ''
+    
     return foods
 
 
