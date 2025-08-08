@@ -1340,7 +1340,7 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         for tip in TIPS_CONTENT['weight_gain_stalls']:
             st.markdown(f"* {tip}")
 
-        st.markdown("--- \n ###### Pace Your Protein")
+        st.markdown("--- \n ##### Pace Your Protein")
         for tip in TIPS_CONTENT['protein_pacing']:
             st.markdown(f"* {tip}")
 
