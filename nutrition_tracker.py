@@ -1420,8 +1420,7 @@ with search_col:
     st.session_state.food_search = search_term
 
 with reset_col:
-    # No spacers are needed here at all
-    if st.button("🔄 Clear Search", key="clear_search"):
+    if st.button("🔄 Clear Search", key="clear_search", type="primary"):
         st.session_state.food_search = ""
         st.rerun()
 
@@ -1438,7 +1437,7 @@ with st.expander("💡 Need a hand with food choices? Check out the emoji guide 
         description = ':'.join(tooltip.split(':')[1:]).strip()
         st.markdown(f"* **{emoji} {label}**: {description}")
 
-if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary", key="reset_foods"):
+if st.button("🔄 Start Fresh: Reset All Food Selections", type="primary", key="reset_foods"):
     st.session_state.food_selections = {}
     st.rerun()
 
