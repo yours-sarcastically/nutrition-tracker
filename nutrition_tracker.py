@@ -512,115 +512,12 @@ def render_progress_bars(totals, targets):
         )
 
 
-def create_progress_tracking(totals, targets, foods):
-    """Creates progress bars and recommendations for nutritional targets."""
-    recommendations = []
+def create_progress_tracking(totals, targets):
+    """Renders the daily dashboard with progress bars for nutritional targets."""
     st.subheader("Your Daily Dashboard 🎯")
     
     # Call the dedicated function to render progress bars
     render_progress_bars(totals, targets)
-
-    purpose_map = {
-        'calories': 'to reach your target',
-        'protein': 'for muscle preservation and building',
-        'carbs': 'for energy and performance',
-        'fat': 'for hormone production and overall health'
-    }
-
-    deficits = {}
-    
-    # Collect deficits
-    for nutrient, config in CONFIG['nutrient_configs'].items():
-        actual = totals[nutrient]
-        target = targets[config['target_key']]
-        if actual < target:
-            deficit = target - actual
-            deficits[nutrient] = {
-                'amount': deficit,
-                'unit': config['unit'],
-                'label': config['label'].lower(),
-                'purpose': purpose_map.get(nutrient, 'for optimal nutrition')
-            }
-
-    # Create combined recommendations with multiple suggestions
-    if deficits:
-        all_foods = [item for sublist in foods.values() for item in sublist]
-        food_suggestions = []
-        
-        for food in all_foods:
-            coverage_score = 0
-            nutrients_helped = []
-            
-            for nutrient, deficit_info in deficits.items():
-                if nutrient != 'calories' and food[nutrient] > 0:
-                    help_percentage = min(food[nutrient] / deficit_info['amount'], 1.0)
-                    if help_percentage > 0.1:
-                        coverage_score += help_percentage
-                        nutrients_helped.append(nutrient)
-            
-            if coverage_score > 0 and len(nutrients_helped) > 1:
-                food_suggestions.append({
-                    'food': food,
-                    'nutrients_helped': nutrients_helped,
-                    'score': coverage_score
-                })
-        
-        food_suggestions.sort(key=lambda x: x['score'], reverse=True)
-        top_suggestions = food_suggestions[:3]
-
-        deficit_summary = []
-        for nutrient, deficit_info in deficits.items():
-            deficit_summary.append(
-                f"{deficit_info['amount']:.0f}g more {deficit_info['label']} "
-                f"{deficit_info['purpose']}"
-            )
-        
-        if len(deficit_summary) > 1:
-            summary_text = "You still need: " + ", ".join(deficit_summary[:-1]) + f", and {deficit_summary[-1]}."
-        else:
-            summary_text = f"You still need: {deficit_summary[0]}."
-        
-        recommendations.append(summary_text)
-        
-        if top_suggestions:
-            for i, suggestion in enumerate(top_suggestions):
-                food = suggestion['food']
-                nutrients_helped = suggestion['nutrients_helped']
-                
-                nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
-                
-                if len(nutrient_benefits) > 1:
-                    benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
-                else:
-                    benefits_text = nutrient_benefits[0]
-                
-                if i == 0:
-                    recommendations.append(
-                        f"🎯 Smart pick: One serving of {food['name']} would give you {benefits_text}, "
-                        f"knocking out multiple targets at once!"
-                    )
-                else:
-                    recommendations.append(
-                        f"💡 Alternative option: {food['name']} provides {benefits_text}, "
-                        f"another great way to hit multiple goals!"
-                    )
-        else:
-            biggest_deficit = max(deficits.items(), key=lambda x: x[1]['amount'])
-            nutrient, deficit_info = biggest_deficit
-            
-            best_single_food = max(
-                all_foods, 
-                key=lambda x: x.get(nutrient, 0),
-                default=None
-            )
-            
-            if best_single_food and best_single_food.get(nutrient, 0) > 0:
-                recommendations.append(
-                    f"💡 Try adding {best_single_food['name']} - it's packed with "
-                    f"{best_single_food[nutrient]:.0f}g of {deficit_info['label']}."
-                )
-
-    return recommendations
 
 
 def calculate_daily_totals(food_selections, foods):
@@ -1456,7 +1353,7 @@ totals, selected_foods = calculate_daily_totals(
 )
 
 if selected_foods:
-    recommendations = create_progress_tracking(totals, targets, foods)
+    create_progress_tracking(totals, targets)
     
     # Export functionality
     st.subheader("📥 Export Your Summary")
@@ -1516,11 +1413,6 @@ if selected_foods:
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.caption("Please select foods to see the macronutrient split.")
-
-    if recommendations:
-        st.subheader("Personalized Recommendations for Today")
-        for rec in recommendations:
-            st.info(rec)
 
     with st.expander("Your Food Choices Today"):
         st.subheader("What You've Logged")
