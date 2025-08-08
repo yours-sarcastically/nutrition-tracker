@@ -1152,6 +1152,7 @@ if uploaded_file is not None:
     st.rerun()
 
 # ------ Activity Level Guide in Sidebar ------
+st.sidebar.divider()
 with st.sidebar.container(border=True):
     st.markdown("##### Your Activity Level Decoded")
     st.markdown("""
