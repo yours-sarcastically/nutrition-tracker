@@ -119,7 +119,7 @@ ACTIVITY_DESCRIPTIONS = {
     'moderately_active': "Moderate exercise three to five days per week",
     'very_active': "Heavy exercise six to seven days per week",
     'extremely_active': "Very heavy exercise, a physical job, or "
-                        "two times per day training"
+                      "two times per day training"
 }
 
 # ------ Goal-Specific Targets Based on an Evidence-Based Guide ------
@@ -615,54 +615,6 @@ def calculate_daily_totals(food_selections, foods):
     return totals, selected_foods
 
 
-def generate_personalized_recommendations(totals, targets, final_values):
-    """Generates personalized tips based on current intake and goals."""
-    recommendations = []
-    goal = final_values['goal']
-
-    if goal == 'weight_loss':
-        recommendations.extend([
-            "The Shocking Truth: Getting less than 7 hours of sleep can torpedo your fat loss by a more than half.",
-            "Daily Goal: Shoot for 7-9 hours and try to keep a consistent schedule.",
-            "Set the Scene: Keep your cave dark, cool (18-20°C), and screen-free for at least an hour before lights out.",
-            "Morning Ritual: Weigh yourself first thing after using the bathroom, before eating or drinking, in minimal clothing",
-            "Look for Trends, Not Blips: Watch your weekly average instead of getting hung up on daily fluctuations. Your weight can swing 2-3 pounds daily.",
-            "Hold the Line: Don't tweak your plan too soon. Wait for two or more weeks of stalled progress before making changes.",
-            "Leaf Your Hunger Behind: Load your plate with low-calorie, high-volume foods like leafy greens, cucumbers, and berries. They're light on calories but big on satisfaction."
-        ])
-    elif goal == 'weight_gain':
-        recommendations.extend([
-            "Drink Your Calories: Liquid calories from smoothies, milk, and protein shakes go down way easier than another full meal",
-            "Fat is Fuel: Load up healthy fats like nuts, oils, and avocados.",
-            "Push Your Limits: Give your body a reason to grow! Make sure you're consistently challenging yourself in the gym.",
-            "Turn Up the Heat: If you've been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again."
-        ])
-    else:  # This handles the 'weight_maintenance' goal
-        recommendations.extend([
-            "⚖️ **Flexible Tracking:** Monitor your intake five days per week "
-            "instead of seven for a more sustainable and flexible approach "
-            "to maintenance.",
-            "📅 **Regular Check-ins:** Weigh yourself weekly and take body "
-            "measurements monthly to catch any significant changes early.",
-            "🎯 **The 80/20 Balance:** Aim for 80 percent of your diet to "
-            "consist of nutrient-dense foods, with 20 percent flexibility "
-            "for social situations."
-        ])
-
-    protein_per_meal = targets['protein_g'] / 4
-    recommendations.append(
-        "Spread the Love: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal."
-    )
-    recommendations.append(
-        "Frame Your Fitness: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout."
-    )
-    recommendations.append(
-        "The Night Shift: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze"
-    )
-
-    return recommendations
-
-
 def save_progress_to_json(food_selections, user_inputs):
     """Save current progress to JSON."""
     progress_data = {
@@ -801,27 +753,23 @@ def calculate_estimated_weekly_change(daily_caloric_adjustment):
 
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
                                    activity_level='moderately_active',
-                                   goal='weight_gain', protein_per_kg=None,
-                                   fat_percentage=None):
-    """Calculates personalized daily nutritional targets."""
+                                   goal='weight_gain', protein_per_kg=2.0,
+                                   fat_percentage=0.25):
+    """
+    Calculates personalized daily nutritional targets.
+    Note: Assumes `protein_per_kg` and `fat_percentage` are finalized by `get_final_values`.
+    """
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
     goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['weight_gain'])
     caloric_adjustment = tdee * goal_config['caloric_adjustment']
     total_calories = tdee + caloric_adjustment
 
-    protein_per_kg_final = (
-        protein_per_kg if protein_per_kg is not None
-        else goal_config['protein_per_kg']
-    )
-    fat_percentage_final = (
-        fat_percentage if fat_percentage is not None
-        else goal_config['fat_percentage']
-    )
-
-    protein_g = protein_per_kg_final * weight_kg
+    # The get_final_values function is now the single source of truth for these parameters.
+    # The redundant logic has been removed from this function.
+    protein_g = protein_per_kg * weight_kg
     protein_calories = protein_g * 4
-    fat_calories = total_calories * fat_percentage_final
+    fat_calories = total_calories * fat_percentage
     fat_g = fat_calories / 9
     carb_calories = total_calories - protein_calories - fat_calories
     carb_g = carb_calories / 4
@@ -1162,7 +1110,7 @@ with st.sidebar.container(border=True):
 * **🏋️ Very Active**: You might actually be part treadmill
 * **🤸 Extremely Active**: You live in the gym and sweat is your second skin
 
-💡 If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
+*💡 If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
     """)
 
 # ------ Dynamic Sidebar Summary ------
@@ -1392,17 +1340,9 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         """)
 
 # ---------------------------------------------------------------------------
-# Cell 12: Personalized Recommendations System
+# Cell 12: (This cell was removed to eliminate redundant recommendations)
 # ---------------------------------------------------------------------------
 
-if user_has_entered_info:
-    st.header("Your Personalized Action Steps 🎯")
-    totals, _ = calculate_daily_totals(st.session_state.food_selections, foods)
-    recommendations = generate_personalized_recommendations(
-        totals, targets, final_values
-    )
-    for rec in recommendations:
-        st.info(rec)
 
 # ---------------------------------------------------------------------------
 # Cell 13: Food Selection Interface
@@ -1431,15 +1371,6 @@ with reset_col:
 st.markdown(
     "Pick how many servings of each food you're having to see how your choices stack up against your daily targets."
 )
-
-with st.expander("💡 Need a hand with food choices? Check out the emoji guide below!"):
-    st.markdown("""
-    * **🥇 Gold Medal**: A nutritional all-star! High in its target nutrient and very calorie-efficient.
-    * **🔥 High Calorie**: One of the more calorie-dense options in its group.
-    * **💪 High Protein**: A true protein powerhouse.
-    * **🍚 High Carb**: A carbohydrate champion.
-    * **🥑 High Fat**: A healthy fat hero.
-    """)
 
 if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary", key="reset_foods"):
     st.session_state.food_selections = {}
@@ -1477,9 +1408,10 @@ totals, selected_foods = calculate_daily_totals(
     st.session_state.food_selections, foods
 )
 
+# Display progress tracking universally. It will show 0% if `totals` are all zero.
+recommendations = create_progress_tracking(totals, targets, foods)
+
 if selected_foods:
-    recommendations = create_progress_tracking(totals, targets, foods)
-    
     # Export functionality
     st.subheader("📥 Export Your Summary")
     col1, col2 = st.columns(2)
@@ -1563,16 +1495,6 @@ else:
     st.info(
         "Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!"
     )
-    st.subheader("Progress Snapshot")
-    for nutrient, config in CONFIG['nutrient_configs'].items():
-        target = targets[config['target_key']] if targets[config['target_key']] > 0 else 1
-        st.progress(
-            0.0,
-            text=(
-                f"🔴 {config['label']}: 0% of daily target ({target:.0f} "
-                f"{config['unit']})"
-            )
-        )
 
 # ---------------------------------------------------------------------------
 # Cell 15: User Feedback Section
