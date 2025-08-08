@@ -1553,7 +1553,7 @@ Created with Personal Nutrition Coach 🍽️
             )])
             
             fig_pie.update_layout(
-                title=f'Calorie Distribution<br>Total: {totals["calories"]:.0f} kcal',
+                title=f'Total: {totals["calories"]:.0f} kcal',
                 height=400
             )
             
