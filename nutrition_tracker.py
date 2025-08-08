@@ -1320,9 +1320,9 @@ for config in metrics_config:
 # ---------------------------------------------------------------------------
 
 with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "The Big Three to Win At Nutrition 🏆", "Level Up Your Progress Tracking 📊",
-        "Mindset Is Everything 🧠", "The Science Behind the Magic 🔬"
+        "Mindset Is Everything 🧠", "🧗 Sweat Smart: Your Ticket to Feeling Awesome", "The Science Behind the Magic 🔬"
     ])
 
     with tab1:
@@ -1370,6 +1370,28 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         for tip in TIPS_CONTENT['protein_pacing']:
             st.markdown(f"* {tip}")
 
+    with tab3:
+        st.subheader("🧗 Sweat Smart: Your Ticket to Feeling Awesome")
+        st.markdown("""
+    
+        **Build Your Foundation with Resistance Training**
+    
+        This is your non-negotiable, no matter your goal. Lifting weights (or using your bodyweight!) tells your body to build or hold onto precious muscle, which is the engine of your metabolism.
+    
+        * **🎯 For Fat Loss**: More muscle means you burn more calories even while you're chilling on the couch. It's the secret to keeping the weight off for good.
+        * **💪 For Bulking Up**: Exercise tells your body where to send all that protein you're eating. Without it, you’re just a shaky tent in a windstorm.
+        * **💡 The Game Plan:**: A good starting point is **2-3 sessions of 20-40 minutes** a week. Push, pull, squat—make those muscles sing!
+        * **❤️ Find What You Love**: If it feels like torture, switch it up. Fitness should spark joy, not dread! Dance, bike, chase your dog. Pick whatever makes you grin!     
+    
+        **NEAT: Your Sneaky Fitness Piggy Bank**
+    
+        NEAT stands for Non-Exercise Activity Thermogenesis. It's a fancy term for all the calories you burn just by living your life.
+    
+        * Adding just **10-20 minutes of walking** to your day can be the difference between a plateau and progress. It's low-stress and the results add up big time.
+    
+        Pro Tip: The best workout is the one you’ll actually do. Make it fun, and you’re golden!
+        """)
+      
     with tab4:
         st.subheader("Understanding Your Metabolism")
         st.markdown("""
