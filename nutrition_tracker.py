@@ -1164,9 +1164,9 @@ if uploaded_file is not None:
     st.rerun()
 
 # ------ Activity Level Guide in Sidebar ------
-st.sidebar.divider()
 with st.sidebar.container(border=True):
     st.markdown("##### Your Activity Level Decoded")
+    st.markdown("---")
     st.markdown("""
 * **🧑‍💻 Sedentary**: You're basically married to your desk chair
 * **🏃 Lightly Active**: You squeeze in walks or workouts one to three times a week
@@ -1540,20 +1540,24 @@ Created with Personal Nutrition Coach 🍽️
     with col2:
         st.subheader("Your Macronutrient Split")
         macro_values = [totals['protein'], totals['carbs'], totals['fat']]
-        if sum(macro_values) > 0:
-            fig = go.Figure(go.Pie(
-                labels=['Protein', 'Carbs', 'Fat'],
-                values=macro_values,
-                hole=.4,
-                marker_colors=['#ff6b6b', '#feca57', '#48dbfb'],
-                textinfo='label+percent',
-                insidetextorientation='radial'
-            ))
-            fig.update_layout(
-                title_text='Split by Grams', showlegend=False,
-                margin=dict(l=10, r=10, t=40, b=10), height=300
+        if totals['calories'] > 0:
+            fig_pie = go.Figure(data=[go.Pie(
+                labels=['Protein', 'Carbohydrates', 'Fat'],
+                values=[
+                    totals['protein'] * 4,  # Protein calories
+                    totals['carbs'] * 4,    # Carb calories
+                    totals['fat'] * 9       # Fat calories
+                ],
+                hole=0.4,
+                marker_colors=['#ff6b6b', '#4ecdc4', '#45b7d1']
+            )])
+            
+            fig_pie.update_layout(
+                title=f'Calorie Distribution<br>Total: {totals["calories"]:.0f} kcal',
+                height=400
             )
-            st.plotly_chart(fig, use_container_width=True)
+            
+            st.plotly_chart(fig_pie, use_container_width=True)
         else:
             st.caption("Please select foods to see the macronutrient split.")
 
