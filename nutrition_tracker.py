@@ -1513,7 +1513,7 @@ Created with Personal Nutrition Coach 🍽️
 
     # NEW: Enhanced Visualization Dashboard
     with col1:
-        st.subheader("Actual vs. Target (g)")
+        st.subheader("Today’s Fuel Mix")
         fig_macros = go.Figure()
         
         macros = ['Protein', 'Carbohydrates', 'Fat']
