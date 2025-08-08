@@ -302,8 +302,9 @@ def format_height(height_cm, units):
 
 def initialize_session_state():
     """Initializes all required session state variables."""
+    # INTEGRATION: Added 'form_errors' for better validation handling
     session_vars = (
-        ['food_selections', 'form_submitted', 'show_motivational_message', 'food_search'] +
+        ['food_selections', 'form_submitted', 'show_motivational_message', 'food_search', 'form_errors'] +
         [f'user_{field}' for field in CONFIG['form_fields'].keys()] +
         ['user_units']
     )
@@ -316,6 +317,8 @@ def initialize_session_state():
                 st.session_state[var] = 'metric'
             elif var in ['form_submitted', 'show_motivational_message']:
                 st.session_state[var] = False
+            elif var == 'form_errors':
+                st.session_state[var] = [] # INTEGRATION: Initialize error list
             elif var == 'food_search':
                 st.session_state[var] = ""
             else:
@@ -494,7 +497,11 @@ def get_progress_color(percent):
 
 
 def render_progress_bars(totals, targets):
-    """Renders a set of progress bars for all nutrients."""
+    """
+    INTEGRATION: Renders enhanced progress bars with color coding.
+    This function is updated to provide a clearer, more visual representation
+    of progress, inspired by Program 2's design.
+    """
     for nutrient, config in CONFIG['nutrient_configs'].items():
         actual = totals.get(nutrient, 0)
         target = targets.get(config['target_key'], 1)
@@ -503,13 +510,17 @@ def render_progress_bars(totals, targets):
         percent = min((actual / target) * 100, 100)
         color_indicator = get_progress_color(percent)
 
-        st.progress(
-            percent / 100,
-            text=(
-                f"{color_indicator} {config['label']}: {percent:.0f}% of your daily target "
-                f"({target:.0f} {config['unit']})"
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.progress(
+                percent / 100,
+                text=(
+                    f"{config['label']}: {actual:.0f}/{target:.0f} {config['unit']} "
+                    f"({percent:.0f}%)"
+                )
             )
-        )
+        with col2:
+            st.markdown(f"### {color_indicator}")
 
 
 def create_progress_tracking(totals, targets, foods):
@@ -1114,16 +1125,23 @@ for field_name, field_config in advanced_fields.items():
         value = field_config['convert'](value)
     all_inputs[field_name] = value
 
-# Calculate button with validation
+# INTEGRATION: Enhanced form validation and error handling
 if st.sidebar.button("🧮 Calculate My Targets", type="primary", key="calculate_button"):
     validation_errors = validate_user_inputs(all_inputs)
     if validation_errors:
-        for error in validation_errors:
-            st.sidebar.error(error)
+        st.session_state.form_errors = validation_errors
+        st.session_state.form_submitted = False
     else:
+        st.session_state.form_errors = []
         st.session_state.form_submitted = True
         st.session_state.show_motivational_message = True
-        st.rerun()
+    st.rerun()
+
+# INTEGRATION: Display all validation errors together
+if st.session_state.form_errors:
+    st.sidebar.error("Please fix the following issues:")
+    for error in st.session_state.form_errors:
+        st.sidebar.error(f"• {error}")
 
 # Save/Load Progress - Save button first, then Load JSON section below
 st.sidebar.divider()
@@ -1196,7 +1214,7 @@ if st.session_state.form_submitted:
 final_values = get_final_values(all_inputs)
 
 # ------ Check for User Input ------
-user_has_entered_info = st.session_state.form_submitted
+user_has_entered_info = st.session_state.form_submitted and not st.session_state.form_errors
 
 # ------ Calculate Personalized Targets ------
 targets = calculate_personalized_targets(**final_values)
@@ -1458,46 +1476,87 @@ totals, selected_foods = calculate_daily_totals(
 if selected_foods:
     recommendations = create_progress_tracking(totals, targets, foods)
     
-    # Export functionality
+    # INTEGRATION: Share Progress and Enhanced Visualization
     st.subheader("📥 Export Your Summary")
-    col1, col2 = st.columns(2)
+    
+    # Using 3 columns for better layout with the new Share button
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📄 Download PDF Report", key="export_pdf"):
-            pdf_buffer = create_pdf_summary(totals, targets, selected_foods, final_values)
-            st.download_button(
-                "📥 Download PDF",
-                data=pdf_buffer,
-                file_name=f"nutrition_summary_{datetime.now().strftime('%Y%m%d')}.pdf",
-                mime="application/pdf",
-                key="download_pdf_button"
-            )
+        pdf_buffer = create_pdf_summary(totals, targets, selected_foods, final_values)
+        st.download_button(
+            "📄 Download PDF Report",
+            data=pdf_buffer,
+            file_name=f"nutrition_summary_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf",
+            key="download_pdf_button",
+            use_container_width=True
+        )
     
     with col2:
-        if st.button("📊 Download CSV Data", key="export_csv"):
-            csv_data = create_csv_summary(totals, targets, selected_foods)
-            st.download_button(
-                "📥 Download CSV",
-                data=csv_data,
-                file_name=f"nutrition_data_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv",
-                key="download_csv_button"
-            )
+        csv_data = create_csv_summary(totals, targets, selected_foods)
+        st.download_button(
+            "📊 Download CSV Data",
+            data=csv_data,
+            file_name=f"nutrition_data_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            key="download_csv_button",
+            use_container_width=True
+        )
+
+    with col3:
+        # INTEGRATION: Share Progress Button
+        if st.button("📱 Share Progress", key="share_progress", use_container_width=True):
+            share_text = f"""
+🍽️ My Nutrition Progress - {datetime.now().strftime('%Y-%m-%d')}
+
+📊 Today's Intake:
+- Calories: {totals['calories']:.0f} / {targets['total_calories']:.0f} kcal
+- Protein: {totals['protein']:.0f} / {targets['protein_g']:.0f} g
+- Carbs: {totals['carbs']:.0f} / {targets['carb_g']:.0f} g
+- Fat: {totals['fat']:.0f} / {targets['fat_g']:.0f} g
+
+Created with Personal Nutrition Coach 🍽️
+            """
+            st.session_state.share_text = share_text
     
-    col1, col2 = st.columns([1, 1])
+    if 'share_text' in st.session_state:
+        st.text_area("Copy this summary to share:", st.session_state.share_text, height=200)
+        if st.button("Close", key="close_share"):
+             del st.session_state.share_text
+             st.rerun()
 
-    with col1:
-        st.subheader("Today's Nutrition Snapshot")
-        summary_metrics = [
-            ("Calories Consumed", f"{totals['calories']:.0f} kcal"),
-            ("Protein Intake", f"{totals['protein']:.0f} g"),
-            ("Carbohydrates", f"{totals['carbs']:.0f} g"),
-            ("Fat Intake", f"{totals['fat']:.0f} g")
-        ]
-        display_metrics_grid(summary_metrics, 2)
+    st.divider()
 
-    with col2:
-        st.subheader("Your Macronutrient Split (in grams)")
+    # INTEGRATION: Enhanced Visualization Dashboard
+    viz_col1, viz_col2 = st.columns([1, 1])
+
+    with viz_col1:
+        st.subheader("Actual vs. Target (g)")
+        fig_macros = go.Figure()
+        
+        macros = ['Protein', 'Carbohydrates', 'Fat']
+        actual_values = [totals['protein'], totals['carbs'], totals['fat']]
+        target_values = [targets['protein_g'], targets['carb_g'], targets['fat_g']]
+        
+        fig_macros.add_trace(go.Bar(
+            name='Actual Intake', x=macros, y=actual_values, marker_color='#ff6b6b'
+        ))
+        fig_macros.add_trace(go.Bar(
+            name='Target Goal', x=macros, y=target_values, marker_color='#4ecdc4'
+        ))
+        
+        fig_macros.update_layout(
+            barmode='group',
+            yaxis_title='Grams',
+            height=300,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            margin=dict(l=10, r=10, t=40, b=10)
+        )
+        st.plotly_chart(fig_macros, use_container_width=True)
+
+    with viz_col2:
+        st.subheader("Your Macronutrient Split")
         macro_values = [totals['protein'], totals['carbs'], totals['fat']]
         if sum(macro_values) > 0:
             fig = go.Figure(go.Pie(
@@ -1511,32 +1570,37 @@ if selected_foods:
             fig.update_layout(
                 showlegend=False,
                 margin=dict(l=10, r=10, t=10, b=10),
-                height=250
+                height=300
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.caption("Please select foods to see the macronutrient split.")
+            st.caption("Select foods to see the macronutrient split.")
 
     if recommendations:
         st.subheader("Personalized Recommendations for Today")
         for rec in recommendations:
             st.info(rec)
 
-    with st.expander("Your Food Choices Today"):
-        st.subheader("What You've Logged")
+    # INTEGRATION: Food Selection Summary Table
+    with st.expander("View Your Full Food Log", expanded=True):
+        st.subheader("What You've Logged Today")
+        
+        summary_data = []
         for item in selected_foods:
             food = item['food']
             servings = item['servings']
-            total_cals = food['calories'] * servings
-            total_protein = food['protein'] * servings
-            total_carbs = food['carbs'] * servings
-            total_fat = food['fat'] * servings
+            summary_data.append({
+                'Food': food['name'],
+                'Servings': f"{servings:.1f}",
+                'Calories (kcal)': f"{food['calories'] * servings:.0f}",
+                'Protein (g)': f"{food['protein'] * servings:.1f}",
+                'Carbs (g)': f"{food['carbs'] * servings:.1f}",
+                'Fat (g)': f"{food['fat'] * servings:.1f}"
+            })
+        
+        df_summary = pd.DataFrame(summary_data)
+        st.dataframe(df_summary, use_container_width=True, hide_index=True)
 
-            st.write(f"**{food['name']}** - {servings} serving(s)")
-            st.write(
-                f"→ {total_cals:.0f} kcal | {total_protein:.1f}g protein | "
-                f"{total_carbs:.1f}g carbs | {total_fat:.1f}g fat"
-            )
 else:
     st.info(
         "Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!"
