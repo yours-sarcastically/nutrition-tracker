@@ -494,191 +494,231 @@ def get_progress_color(percent):
 
 
 def render_progress_bars(totals, targets):
-    """Renders a set of progress bars for all nutrients."""
-    for nutrient, config in CONFIG['nutrient_configs'].items():
-        actual = totals.get(nutrient, 0)
-        target = targets.get(config['target_key'], 1)
-        target = target if target > 0 else 1  # Avoid division by zero
-
-        percent = min((actual / target) * 100, 100)
-        color_indicator = get_progress_color(percent)
-
-        st.progress(
-            percent / 100,
-            text=(
-                f"{color_indicator} {config['label']}: {percent:.0f}% of your daily target "
-                f"({target:.0f} {config['unit']})"
-            )
-        )
+    """
+    Renders progress bars for each nutritional target.
+    
+    Creates visual progress indicators showing current intake versus target
+    goals for calories, protein, carbohydrates, and fat. Each progress bar
+    is accompanied by metric displays showing actual values, targets, and
+    completion percentages.
+    
+    Args:
+        totals (dict): Dictionary containing current nutritional totals
+        targets (dict): Dictionary containing target nutritional goals
+    """
+    nutrients = ['calories', 'protein', 'carbs', 'fat']
+    labels = ['Calories', 'Protein (g)', 'Carbs (g)', 'Fat (g)']
+    target_keys = ['total_calories', 'protein_g', 'carb_g', 'fat_g']
+    
+    for nutrient, label, target_key in zip(nutrients, labels, target_keys):
+        actual = totals[nutrient]
+        target = targets[target_key]
+        percentage = min(actual / target * 100, 100) if target > 0 else 0
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.progress(percentage / 100)
+        with col2:
+            st.metric(label, f"{actual:.0f}/{target:.0f}", f"{percentage:.0f}%")
 
 
 def create_progress_tracking(totals, targets, foods):
-    """Creates progress bars and recommendations for nutritional targets."""
+    """
+    Creates personalized recommendations based on current progress.
+    
+    Analyzes remaining nutritional needs and generates targeted food
+    recommendations using a scoring system that identifies foods capable
+    of addressing multiple nutritional deficits. Recommendations are
+    presented in an engaging gaming-themed format.
+    
+    Args:
+        totals (dict): Dictionary containing current nutritional totals
+        targets (dict): Dictionary containing target nutritional goals
+        foods (dict): Dictionary of available foods organized by category
+        
+    Returns:
+        list: List of recommendation strings formatted for display
+    """
     recommendations = []
-    st.subheader("Your Daily Dashboard 🎯")
     
-    # Call the dedicated function to render progress bars
-    render_progress_bars(totals, targets)
-
-    purpose_map = {
-        'calories': 'to reach your target',
-        'protein': 'for muscle preservation and building',
-        'carbs': 'for energy and performance',
-        'fat': 'for hormone production and overall health'
+    # ------ Calculate Remaining Nutritional Needs ------
+    remaining = {
+        'calories': max(0, targets['total_calories'] - totals['calories']),
+        'protein': max(0, targets['protein_g'] - totals['protein']),
+        'carbs': max(0, targets['carb_g'] - totals['carbs']),
+        'fat': max(0, targets['fat_g'] - totals['fat'])
     }
-
-    deficits = {}
     
-    # Collect deficits
-    for nutrient, config in CONFIG['nutrient_configs'].items():
-        actual = totals[nutrient]
-        target = targets[config['target_key']]
-        if actual < target:
-            deficit = target - actual
-            deficits[nutrient] = {
-                'amount': deficit,
-                'unit': config['unit'],
-                'label': config['label'].lower(),
-                'purpose': purpose_map.get(nutrient, 'for optimal nutrition')
-            }
-
-    # Create combined recommendations with multiple suggestions
-    if deficits:
-        all_foods = [item for sublist in foods.values() for item in sublist]
-        food_suggestions = []
-        
-        for food in all_foods:
-            coverage_score = 0
-            nutrients_helped = []
+    # ------ Check If Targets Are Nearly Met ------
+    total_remaining = sum(remaining.values())
+    if total_remaining < 50:
+        recommendations.append(
+            "🎉 You are meeting your targets today! "
+            "Keep up the momentum! 🎉"
+        )
+        return recommendations
+    
+    # ------ Find Foods That Address Multiple Deficits ------
+    multi_target_foods = []
+    
+    for category, items in foods.items():
+        for food in items:
+            # Calculate how well this food addresses multiple needs
+            score = 0
+            targets_hit = []
             
-            for nutrient, deficit_info in deficits.items():
-                if nutrient != 'calories' and food[nutrient] > 0:
-                    help_percentage = min(food[nutrient] / deficit_info['amount'], 1.0)
-                    if help_percentage > 0.1:
-                        coverage_score += help_percentage
-                        nutrients_helped.append(nutrient)
+            # Check if food contributes to remaining needs
+            if remaining['protein'] > 10 and food['protein'] >= 15:
+                score += food['protein'] / remaining['protein'] * 100
+                targets_hit.append('protein')
             
-            if coverage_score > 0 and len(nutrients_helped) > 1:
-                food_suggestions.append({
+            if remaining['carbs'] > 20 and food['carbs'] >= 20:
+                score += food['carbs'] / remaining['carbs'] * 100
+                targets_hit.append('carbs')
+            
+            if remaining['fat'] > 10 and food['fat'] >= 10:
+                score += food['fat'] / remaining['fat'] * 100
+                targets_hit.append('fat')
+            
+            # Only consider foods that hit multiple targets
+            if len(targets_hit) >= 2 and score > 50:
+                multi_target_foods.append({
                     'food': food,
-                    'nutrients_helped': nutrients_helped,
-                    'score': coverage_score
+                    'score': score,
+                    'targets_hit': targets_hit
                 })
+    
+    # ------ Sort and Select Top Recommendations ------
+    multi_target_foods.sort(key=lambda x: x['score'], reverse=True)
+    top_foods = multi_target_foods[:3]
+    
+    if top_foods:
+        # Gaming-style fighter themes
+        fighter_themes = [
+            {
+                "title": "The Balanced Warrior",
+                "emoji": "⚔️",
+                "action": "Deals",
+                "suffix": "damage, {} carb energy, {} fat power!"
+            },
+            {
+                "title": "The Fiber Mage",
+                "emoji": "🌟",
+                "action": "Casts",
+                "suffix": "protein, {} carb, {} fat spell combo!"
+            },
+            {
+                "title": "The Fat Crusher",
+                "emoji": "💪",
+                "action": "Unleashes",
+                "suffix": "protein, {} carb, {} fat attack!"
+            },
+            {
+                "title": "The Protein Paladin",
+                "emoji": "🛡️",
+                "action": "Channels",
+                "suffix": "protein holy power, {} carb blessing, {} fat shield!"
+            },
+            {
+                "title": "The Carb Conjurer",
+                "emoji": "🔮",
+                "action": "Summons",
+                "suffix": "protein spirits, {} carb energy waves, {} fat force!"
+            }
+        ]
         
-        food_suggestions.sort(key=lambda x: x['score'], reverse=True)
-        top_suggestions = food_suggestions[:3]
-
-        deficit_summary = []
-        for nutrient, deficit_info in deficits.items():
-            deficit_summary.append(
-                f"{deficit_info['amount']:.0f}g more {deficit_info['label']} "
-                f"{deficit_info['purpose']}"
-            )
+        # ------ Build Gaming-Style Recommendation ------
+        game_rec = "🎮 **Choose Your Nutritional Fighter!**\n\n"
         
-        if len(deficit_summary) > 1:
-            summary_text = "You still need: " + ", ".join(deficit_summary[:-1]) + f", and {deficit_summary[-1]}."
-        else:
-            summary_text = f"You still need: {deficit_summary[0]}."
-        
-        recommendations.append(summary_text)
-        
-        if top_suggestions:
-            for i, suggestion in enumerate(top_suggestions):
-                food = suggestion['food']
-                nutrients_helped = suggestion['nutrients_helped']
-                
-                nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
-                
-                if len(nutrient_benefits) > 1:
-                    benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
-                else:
-                    benefits_text = nutrient_benefits[0]
-                
-                if i == 0:
-                    recommendations.append(
-                        f"🎯 Smart pick: One serving of {food['name']} would give you {benefits_text}, "
-                        f"knocking out multiple targets at once! 🎯"
-                    )
-                else:
-                    recommendations.append(
-                        f"💡 Alternative option: {food['name']} provides {benefits_text}, "
-                        f"another great way to hit multiple goals! 💡"
-                    )
-        else:
-            biggest_deficit = max(deficits.items(), key=lambda x: x[1]['amount'])
-            nutrient, deficit_info = biggest_deficit
+        for i, item in enumerate(top_foods):
+            food = item['food']
+            theme = fighter_themes[i % len(fighter_themes)]
             
-            best_single_food = max(
-                all_foods, 
-                key=lambda x: x.get(nutrient, 0),
-                default=None
-            )
-            
-            if best_single_food and best_single_food.get(nutrient, 0) > 0:
-                recommendations.append(
-                    f"💡 Try adding {best_single_food['name']} - it's packed with "
-                    f"{best_single_food[nutrient]:.0f}g of {deficit_info['label']}."
+            # Format the action text with proper grammar
+            if 'protein' in theme['suffix']:
+                action_text = theme['suffix'].format(
+                    f"{food['carbs']:.0f}",
+                    f"{food['fat']:.0f}"
                 )
-
+            else:
+                action_text = theme['suffix'].format(
+                    f"{food['carbs']:.0f}",
+                    f"{food['fat']:.0f}"
+                )
+            
+            game_rec += (
+                f"{theme['emoji']} **{theme['title']}**: {food['name']} - "
+                f"{theme['action']} {food['protein']:.0f} protein "
+                f"{action_text}\n"
+            )
+        
+        game_rec += "\nWhich fighter will you summon to defeat your macro deficits? 🏆"
+        
+        recommendations.append(game_rec)
+    
+    # ------ Add Specific Nutrient Recommendations ------
+    if remaining['protein'] > 15:
+        recommendations.append(
+            f"💪 **Protein Power-Up Needed!** You are "
+            f"{remaining['protein']:.0f}g short of your protein target. "
+            "Time to fuel those muscles! 🔥"
+        )
+    
+    if remaining['calories'] > 300:
+        recommendations.append(
+            f"⚡ **Energy Boost Required!** You need "
+            f"{remaining['calories']:.0f} more calories to hit your target. "
+            "Your body is ready for more fuel! 🚀"
+        )
+    
     return recommendations
 
 
-def calculate_daily_totals(food_selections, foods):
-    """Calculates the total daily nutrition from all selected foods."""
-    totals = {nutrient: 0 for nutrient in CONFIG['nutrient_configs'].keys()}
-    selected_foods = []
-
-    for category, items in foods.items():
-        for food in items:
-            servings = food_selections.get(food['name'], 0)
-            if servings > 0:
-                for nutrient in totals:
-                    totals[nutrient] += food[nutrient] * servings
-                selected_foods.append({'food': food, 'servings': servings})
-
-    return totals, selected_foods
-
-
-def save_progress_to_json(food_selections, user_inputs):
-    """Save current progress to JSON."""
-    progress_data = {
-        'timestamp': datetime.now().isoformat(),
-        'food_selections': food_selections,
-        'user_inputs': user_inputs
-    }
-    return json.dumps(progress_data, indent=2)
-
-
-def load_progress_from_json(json_data):
-    """Load progress from JSON data."""
-    try:
-        data = json.loads(json_data)
-        return data.get('food_selections', {}), data.get('user_inputs', {})
-    except json.JSONDecodeError:
-        return {}, {}
-
-
 def prepare_summary_data(totals, targets, selected_foods):
-    """Prepares a standardized summary data structure for exports."""
+    """
+    Prepare structured data for summary exports.
+    
+    Creates a comprehensive data structure containing nutritional summary
+    information and consumed foods data formatted for export to various
+    formats such as CSV, JSON, or PDF reports.
+    
+    Args:
+        totals (dict): Dictionary containing current nutritional totals
+        targets (dict): Dictionary containing target nutritional goals
+        selected_foods (list): List of foods consumed by the user
+        
+    Returns:
+        dict: Structured summary data containing date, nutrition summary,
+              and consumed foods information
+    """
     summary_data = {
+        'date': datetime.now().strftime('%Y-%m-%d'),
         'nutrition_summary': [],
         'consumed_foods': []
     }
-
-    # Prepare nutrition summary
-    for nutrient, config in CONFIG['nutrient_configs'].items():
-        actual = totals[nutrient]
-        target = targets[config['target_key']]
+    
+    # ------ Nutrition Summary Data ------
+    nutrients = [
+        ('Calories', 'calories', 'total_calories', 'kcal'),
+        ('Protein', 'protein', 'protein_g', 'g'),
+        ('Carbohydrates', 'carbs', 'carb_g', 'g'),
+        ('Fat', 'fat', 'fat_g', 'g')
+    ]
+    
+    for label, total_key, target_key, unit in nutrients:
+        actual = totals[total_key]
+        target = targets[target_key]
         percent = (actual / target * 100) if target > 0 else 0
+        
         summary_data['nutrition_summary'].append({
-            'label': config['label'],
+            'label': label,
             'actual': actual,
             'target': target,
-            'unit': config['unit'],
-            'percent': percent
+            'percent': percent,
+            'unit': unit
         })
-
-    # Prepare consumed foods list
+    
+    # ------ Consumed Foods Data ------
     for item in selected_foods:
         food = item['food']
         servings = item['servings']
