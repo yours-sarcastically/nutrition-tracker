@@ -131,7 +131,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,    # 0% from TDEE
+        'caloric_adjustment': 0.0,   # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -793,17 +793,6 @@ def create_csv_summary(totals, targets, selected_foods):
     return df.to_csv(index=False)
 
 
-def render_tips_section(title, content_key, header_level="subheader"):
-    """Renders a titled section of tips from the TIPS_CONTENT dictionary."""
-    if header_level == "subheader":
-        st.subheader(title)
-    else:
-        st.markdown(f"##### {title}")  # For smaller headers
-
-    for tip in TIPS_CONTENT.get(content_key, []):
-        st.markdown(f"* {tip}")
-
-
 # ---------------------------------------------------------------------------
 # Cell 6: Nutritional Calculation Functions
 # ---------------------------------------------------------------------------
@@ -1307,12 +1296,22 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
     ])
 
     with tab1:
-        render_tips_section("💧 Master Your Hydration Game", "hydration")
-        render_tips_section("😴 Sleep Like Your Goals Depend on It", "sleep")
-        render_tips_section("📅 Follow Your Wins", "tracking_wins")
+        st.subheader("💧 Master Your Hydration Game")
+        for tip in TIPS_CONTENT['hydration']:
+            st.markdown(f"* {tip}")
+
+        st.subheader("😴 Sleep Like Your Goals Depend on It")
+        for tip in TIPS_CONTENT['sleep']:
+            st.markdown(f"* {tip}")
+
+        st.subheader("📅 Follow Your Wins")
+        for tip in TIPS_CONTENT['tracking_wins']:
+            st.markdown(f"* {tip}")
 
     with tab2:
-        render_tips_section("Go Beyond the Scale 📸", "beyond_the_scale")
+        st.subheader("Go Beyond the Scale 📸")
+        for tip in TIPS_CONTENT['beyond_the_scale']:
+            st.markdown(f"* {tip}")
 
     with tab3:
         st.subheader("Mindset Is Everything 🧠")
@@ -1329,11 +1328,17 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         **When Progress Stalls** 🔄
         """)
         
-        render_tips_section("Hit a Weight Loss Plateau?", "weight_loss_plateau", header_level="markdown")
-        render_tips_section("Struggling to Gain Weight?", "weight_gain_stalls", header_level="markdown")
-        
-        st.markdown("---")
-        render_tips_section("Pace Your Protein", "protein_pacing", header_level="markdown")
+        st.markdown("##### Hit a Weight Loss Plateau?")
+        for tip in TIPS_CONTENT['weight_loss_plateau']:
+            st.markdown(f"* {tip}")
+            
+        st.markdown("##### Struggling to Gain Weight?")
+        for tip in TIPS_CONTENT['weight_gain_stalls']:
+            st.markdown(f"* {tip}")
+            
+        st.markdown("--- \n ##### Pace Your Protein")
+        for tip in TIPS_CONTENT['protein_pacing']:
+            st.markdown(f"* {tip}")
 
     with tab4:
         st.subheader("Understanding Your Metabolism")
