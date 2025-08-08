@@ -493,32 +493,30 @@ def get_progress_color(percent):
         return "🔴"  # Red
 
 
-def render_progress_bars(totals, targets):
-    """Renders a set of progress bars for all nutrients."""
-    for nutrient, config in CONFIG['nutrient_configs'].items():
-        actual = totals.get(nutrient, 0)
-        target = targets.get(config['target_key'], 1)
-        target = target if target > 0 else 1  # Avoid division by zero
+def find_best_food_for_nutrient(nutrient, deficit, foods):
+    """Finds a food that is a good source for a needed nutrient."""
+    best_food = None
+    highest_nutrient_val = 0
 
-        percent = min((actual / target) * 100, 100)
-        color_indicator = get_progress_color(percent)
+    all_foods = [item for sublist in foods.values() for item in sublist]
 
-        st.progress(
-            percent / 100,
-            text=(
-                f"{color_indicator} {config['label']}: {percent:.0f}% of your daily target "
-                f"({target:.0f} {config['unit']})"
-            )
+    for food in all_foods:
+        if food[nutrient] > highest_nutrient_val:
+            highest_nutrient_val = food[nutrient]
+            best_food = food
+
+    if best_food and highest_nutrient_val > 0:
+        suggestion_servings = 1
+        return (
+            f"Adding just {suggestion_servings} serving of {best_food['name']} will give you a solid {best_food[nutrient]:.0f} grams of {nutrient}."
         )
+    return None
 
 
 def create_progress_tracking(totals, targets, foods):
     """Creates progress bars and recommendations for nutritional targets."""
     recommendations = []
     st.subheader("Your Daily Dashboard 🎯")
-    
-    # Call the dedicated function to render progress bars
-    render_progress_bars(totals, targets)
 
     purpose_map = {
         'calories': 'to reach your target',
@@ -529,10 +527,21 @@ def create_progress_tracking(totals, targets, foods):
 
     deficits = {}
     
-    # Collect deficits
+    # First pass: create progress bars and collect deficits
     for nutrient, config in CONFIG['nutrient_configs'].items():
         actual = totals[nutrient]
-        target = targets[config['target_key']]
+        target = targets[config['target_key']] if targets[config['target_key']] > 0 else 1
+        percent = min(actual / target * 100, 100)
+        color_indicator = get_progress_color(percent)
+
+        st.progress(
+            percent / 100,
+            text=(
+                f"{color_indicator} {config['label']}: {percent:.0f}% of your daily target "
+                f"({target:.0f} {config['unit']})"
+            )
+        )
+
         if actual < target:
             deficit = target - actual
             deficits[nutrient] = {
@@ -542,8 +551,9 @@ def create_progress_tracking(totals, targets, foods):
                 'purpose': purpose_map.get(nutrient, 'for optimal nutrition')
             }
 
-    # Create combined recommendations with multiple suggestions
+    # Second pass: create combined recommendations with multiple suggestions
     if deficits:
+        # Find the best multi-nutrient food suggestions
         all_foods = [item for sublist in foods.values() for item in sublist]
         food_suggestions = []
         
@@ -553,8 +563,9 @@ def create_progress_tracking(totals, targets, foods):
             
             for nutrient, deficit_info in deficits.items():
                 if nutrient != 'calories' and food[nutrient] > 0:
+                    # Calculate how much this food helps with this deficit
                     help_percentage = min(food[nutrient] / deficit_info['amount'], 1.0)
-                    if help_percentage > 0.1:
+                    if help_percentage > 0.1:  # Only consider if it helps by at least 10%
                         coverage_score += help_percentage
                         nutrients_helped.append(nutrient)
             
@@ -565,9 +576,11 @@ def create_progress_tracking(totals, targets, foods):
                     'score': coverage_score
                 })
         
+        # Sort by coverage score and take top suggestions
         food_suggestions.sort(key=lambda x: x['score'], reverse=True)
-        top_suggestions = food_suggestions[:3]
+        top_suggestions = food_suggestions[:3]  # Get top 3 suggestions
 
+        # Create summary message
         deficit_summary = []
         for nutrient, deficit_info in deficits.items():
             deficit_summary.append(
@@ -582,12 +595,16 @@ def create_progress_tracking(totals, targets, foods):
         
         recommendations.append(summary_text)
         
+        # Add multiple smart food suggestions
         if top_suggestions:
             for i, suggestion in enumerate(top_suggestions):
                 food = suggestion['food']
                 nutrients_helped = suggestion['nutrients_helped']
                 
-                nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
+                nutrient_benefits = []
+                for nutrient in nutrients_helped:
+                    amount = food[nutrient]
+                    nutrient_benefits.append(f"{amount:.0f}g {nutrient}")
                 
                 if len(nutrient_benefits) > 1:
                     benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
@@ -605,16 +622,17 @@ def create_progress_tracking(totals, targets, foods):
                         f"another great way to hit multiple goals!"
                     )
         else:
+            # Fallback to individual suggestions for the biggest deficit
             biggest_deficit = max(deficits.items(), key=lambda x: x[1]['amount'])
             nutrient, deficit_info = biggest_deficit
             
             best_single_food = max(
                 all_foods, 
-                key=lambda x: x.get(nutrient, 0),
+                key=lambda x: x[nutrient] if x[nutrient] > 0 else 0,
                 default=None
             )
             
-            if best_single_food and best_single_food.get(nutrient, 0) > 0:
+            if best_single_food and best_single_food[nutrient] > 0:
                 recommendations.append(
                     f"💡 Try adding {best_single_food['name']} - it's packed with "
                     f"{best_single_food[nutrient]:.0f}g of {deficit_info['label']}."
@@ -1542,7 +1560,15 @@ else:
         "Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!"
     )
     st.subheader("Progress Snapshot")
-    render_progress_bars(totals, targets)
+    for nutrient, config in CONFIG['nutrient_configs'].items():
+        target = targets[config['target_key']] if targets[config['target_key']] > 0 else 1
+        st.progress(
+            0.0,
+            text=(
+                f"🔴 {config['label']}: 0% of daily target ({target:.0f} "
+                f"{config['unit']})"
+            )
+        )
 
 # ---------------------------------------------------------------------------
 # Cell 15: User Feedback Section
