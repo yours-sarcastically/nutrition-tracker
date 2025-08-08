@@ -112,15 +112,16 @@ ACTIVITY_MULTIPLIERS = {
     'extremely_active': 1.9
 }
 
-# ------ Activity Level Descriptions ------
+# ------ Activity Level Descriptions (Refactored) ------
+# Updated to be the single source of truth for the sidebar guide
 ACTIVITY_DESCRIPTIONS = {
-    'sedentary': "Little to no exercise, desk job",
-    'lightly_active': "Light exercise one to three days per week",
-    'moderately_active': "Moderate exercise three to five days per week",
-    'very_active': "Heavy exercise six to seven days per week",
-    'extremely_active': "Very heavy exercise, a physical job, or "
-                      "two times per day training"
+    'sedentary': "🧑‍💻 **Sedentary**: You're basically married to your desk chair.",
+    'lightly_active': "🏃 **Lightly Active**: You squeeze in walks or workouts one to three times a week.",
+    'moderately_active': "🚴 **Moderately Active**: You're sweating it out three to five days a week.",
+    'very_active': "🏋️ **Very Active**: You might actually be part treadmill.",
+    'extremely_active': "🤸 **Extremely Active**: You live in the gym and sweat is your second skin."
 }
+
 
 # ------ Goal-Specific Targets Based on an Evidence-Based Guide ------
 GOAL_TARGETS = {
@@ -783,13 +784,6 @@ def create_csv_summary(totals, targets, selected_foods):
     return df.to_csv(index=False)
 
 
-def render_tips_section(title, tips_list):
-    """Renders a subheader and a list of tips."""
-    st.subheader(title)
-    for tip in tips_list:
-        st.markdown(f"* {tip}")
-
-
 # ---------------------------------------------------------------------------
 # Cell 6: Nutritional Calculation Functions
 # ---------------------------------------------------------------------------
@@ -1170,17 +1164,17 @@ if uploaded_file is not None:
     st.sidebar.success("Progress loaded successfully!")
     st.rerun()
 
-# ------ Activity Level Guide in Sidebar ------
+# ------ Activity Level Guide in Sidebar (Refactored) ------
 with st.sidebar.container(border=True):
     st.markdown("##### Your Activity Level Decoded")
-    st.markdown("""
-* **🧑‍💻 Sedentary**: You're basically married to your desk chair
-* **🏃 Lightly Active**: You squeeze in walks or workouts one to three times a week
-* **🚴 Moderately Active**: You're sweating it out three to five days a week
-* **🏋️ Very Active**: You might actually be part treadmill
-* **🤸 Extremely Active**: You live in the gym and sweat is your second skin
+    
+    # Dynamically generate the list from the updated dictionary
+    for key in ACTIVITY_MULTIPLIERS:  # Iterate in a consistent order
+        description = ACTIVITY_DESCRIPTIONS.get(key, "")
+        st.markdown(f"* {description}")
 
-💡 *If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
+    st.markdown("""
+    💡 *If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
     """)
 
 # ------ Dynamic Sidebar Summary ------
@@ -1310,12 +1304,22 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
     ])
 
     with tab1:
-        render_tips_section("💧 Master Your Hydration Game", TIPS_CONTENT['hydration'])
-        render_tips_section("😴 Sleep Like Your Goals Depend on It", TIPS_CONTENT['sleep'])
-        render_tips_section("📅 Follow Your Wins", TIPS_CONTENT['tracking_wins'])
+        st.subheader("💧 Master Your Hydration Game")
+        for tip in TIPS_CONTENT['hydration']:
+            st.markdown(f"* {tip}")
+
+        st.subheader("😴 Sleep Like Your Goals Depend on It")
+        for tip in TIPS_CONTENT['sleep']:
+            st.markdown(f"* {tip}")
+
+        st.subheader("📅 Follow Your Wins")
+        for tip in TIPS_CONTENT['tracking_wins']:
+            st.markdown(f"* {tip}")
 
     with tab2:
-        render_tips_section("Go Beyond the Scale 📸", TIPS_CONTENT['beyond_the_scale'])
+        st.subheader("Go Beyond the Scale 📸")
+        for tip in TIPS_CONTENT['beyond_the_scale']:
+            st.markdown(f"* {tip}")
 
     with tab3:
         st.subheader("Mindset Is Everything 🧠")
@@ -1332,11 +1336,17 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         **When Progress Stalls** 🔄
         """)
         
-        render_tips_section("Hit a Weight Loss Plateau?", TIPS_CONTENT['weight_loss_plateau'])
-        render_tips_section("Struggling to Gain Weight?", TIPS_CONTENT['weight_gain_stalls'])
-        
-        st.markdown("---")
-        render_tips_section("Pace Your Protein", TIPS_CONTENT['protein_pacing'])
+        st.markdown("##### Hit a Weight Loss Plateau?")
+        for tip in TIPS_CONTENT['weight_loss_plateau']:
+            st.markdown(f"* {tip}")
+            
+        st.markdown("##### Struggling to Gain Weight?")
+        for tip in TIPS_CONTENT['weight_gain_stalls']:
+            st.markdown(f"* {tip}")
+            
+        st.markdown("--- \n ##### Pace Your Protein")
+        for tip in TIPS_CONTENT['protein_pacing']:
+            st.markdown(f"* {tip}")
 
     with tab4:
         st.subheader("Understanding Your Metabolism")
@@ -1408,14 +1418,14 @@ st.markdown(
     "Pick how many servings of each food you're having to see how your choices stack up against your daily targets."
 )
 
+# Refactored Emoji Guide
 with st.expander("💡 Need a hand with food choices? Check out the emoji guide below!"):
-    st.markdown("""
-    * **🥇 Gold Medal**: A nutritional all-star! High in its target nutrient and very calorie-efficient.
-    * **🔥 High Calorie**: One of the more calorie-dense options in its group.
-    * **💪 High Protein**: A true protein powerhouse.
-    * **🍚 High Carb**: A carbohydrate champion.
-    * **🥑 High Fat**: A healthy fat hero.
-    """)
+    # Dynamically generate the guide from the EMOJI_TOOLTIPS dictionary
+    for emoji, tooltip in EMOJI_TOOLTIPS.items():
+        # The tooltip often includes a label like "Gold Medal:", so we extract it
+        label = tooltip.split(':')[0]
+        description = ':'.join(tooltip.split(':')[1:]).strip()
+        st.markdown(f"* **{emoji} {label}**: {description}")
 
 if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary", key="reset_foods"):
     st.session_state.food_selections = {}
@@ -1556,35 +1566,27 @@ Created with Personal Nutrition Coach 🍽️
         for rec in recommendations:
             st.info(rec)
 
-    # REFACTORED: Food Selection Summary Table
+    # NEW: Food Selection Summary Table (Refactored)
     with st.expander("Your Food Choices Today", expanded=True):
         st.subheader("What You've Logged")
-        
-        # Reuse the existing function to get the base data
+
+        # Reuse the existing helper function to get calculated food data
         prepared_data = prepare_summary_data(totals, targets, selected_foods)
         consumed_foods_list = prepared_data['consumed_foods']
-        
-        # Create the DataFrame and format it
-        if consumed_foods_list:
-            df_summary = pd.DataFrame(consumed_foods_list)
-            
-            # Format and rename columns for display
-            df_summary = df_summary.rename(columns={
-                'name': 'Food',
-                'servings': 'Servings',
-                'calories': 'Calories (kcal)',
-                'protein': 'Protein (g)',
-                'carbs': 'Carbs (g)',
-                'fat': 'Fat (g)'
-            })
-            
-            # Apply string formatting to match original output
-            df_summary['Servings'] = df_summary['Servings'].map('{:.1f}'.format)
-            df_summary['Calories (kcal)'] = df_summary['Calories (kcal)'].map('{:.0f}'.format)
-            df_summary['Protein (g)'] = df_summary['Protein (g)'].map('{:.1f}'.format)
-            df_summary['Carbs (g)'] = df_summary['Carbs (g)'].map('{:.1f}'.format)
-            df_summary['Fat (g)'] = df_summary['Fat (g)'].map('{:.1f}'.format)
 
+        # Reformat the data for display in the DataFrame
+        if consumed_foods_list:
+            display_data = [
+                {
+                    'Food': item['name'],
+                    'Servings': f"{item['servings']:.1f}",
+                    'Calories (kcal)': f"{item['calories']:.0f}",
+                    'Protein (g)': f"{item['protein']:.1f}",
+                    'Carbs (g)': f"{item['carbs']:.1f}",
+                    'Fat (g)': f"{item['fat']:.1f}"
+                } for item in consumed_foods_list
+            ]
+            df_summary = pd.DataFrame(display_data)
             st.dataframe(df_summary, use_container_width=True, hide_index=True)
         else:
             st.caption("No foods logged yet.")
