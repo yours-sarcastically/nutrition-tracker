@@ -112,15 +112,16 @@ ACTIVITY_MULTIPLIERS = {
     'extremely_active': 1.9
 }
 
-# ------ Activity Level Descriptions ------
+# ------ Activity Level Descriptions (Refactored) ------
+# Updated to be the single source of truth for the sidebar guide
 ACTIVITY_DESCRIPTIONS = {
-    'sedentary': "Little to no exercise, desk job",
-    'lightly_active': "Light exercise one to three days per week",
-    'moderately_active': "Moderate exercise three to five days per week",
-    'very_active': "Heavy exercise six to seven days per week",
-    'extremely_active': "Very heavy exercise, a physical job, or "
-                      "two times per day training"
+    'sedentary': "🧑‍💻 **Sedentary**: You're basically married to your desk chair.",
+    'lightly_active': "🏃 **Lightly Active**: You squeeze in walks or workouts one to three times a week.",
+    'moderately_active': "🚴 **Moderately Active**: You're sweating it out three to five days a week.",
+    'very_active': "🏋️ **Very Active**: You might actually be part treadmill.",
+    'extremely_active': "🤸 **Extremely Active**: You live in the gym and sweat is your second skin."
 }
+
 
 # ------ Goal-Specific Targets Based on an Evidence-Based Guide ------
 GOAL_TARGETS = {
@@ -130,7 +131,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,  # 0% from TDEE
+        'caloric_adjustment': 0.0,   # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -1163,17 +1164,17 @@ if uploaded_file is not None:
     st.sidebar.success("Progress loaded successfully!")
     st.rerun()
 
-# ------ Activity Level Guide in Sidebar ------
+# ------ Activity Level Guide in Sidebar (Refactored) ------
 with st.sidebar.container(border=True):
     st.markdown("##### Your Activity Level Decoded")
-    st.markdown("""
-* **🧑‍💻 Sedentary**: You're basically married to your desk chair
-* **🏃 Lightly Active**: You squeeze in walks or workouts one to three times a week
-* **🚴 Moderately Active**: You're sweating it out three to five days a week
-* **🏋️ Very Active**: You might actually be part treadmill
-* **🤸 Extremely Active**: You live in the gym and sweat is your second skin
+    
+    # Dynamically generate the list from the updated dictionary
+    for key in ACTIVITY_MULTIPLIERS:  # Iterate in a consistent order
+        description = ACTIVITY_DESCRIPTIONS.get(key, "")
+        st.markdown(f"* {description}")
 
-💡 *If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
+    st.markdown("""
+    💡 *If you're torn between two levels, pick the lower one. It's better to underestimate your burn than to overeat and stall.*
     """)
 
 # ------ Dynamic Sidebar Summary ------
@@ -1417,14 +1418,14 @@ st.markdown(
     "Pick how many servings of each food you're having to see how your choices stack up against your daily targets."
 )
 
+# Refactored Emoji Guide
 with st.expander("💡 Need a hand with food choices? Check out the emoji guide below!"):
-    st.markdown("""
-    * **🥇 Gold Medal**: A nutritional all-star! High in its target nutrient and very calorie-efficient.
-    * **🔥 High Calorie**: One of the more calorie-dense options in its group.
-    * **💪 High Protein**: A true protein powerhouse.
-    * **🍚 High Carb**: A carbohydrate champion.
-    * **🥑 High Fat**: A healthy fat hero.
-    """)
+    # Dynamically generate the guide from the EMOJI_TOOLTIPS dictionary
+    for emoji, tooltip in EMOJI_TOOLTIPS.items():
+        # The tooltip often includes a label like "Gold Medal:", so we extract it
+        label = tooltip.split(':')[0]
+        description = ':'.join(tooltip.split(':')[1:]).strip()
+        st.markdown(f"* **{emoji} {label}**: {description}")
 
 if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary", key="reset_foods"):
     st.session_state.food_selections = {}
@@ -1565,24 +1566,30 @@ Created with Personal Nutrition Coach 🍽️
         for rec in recommendations:
             st.info(rec)
 
-    # NEW: Food Selection Summary Table
+    # NEW: Food Selection Summary Table (Refactored)
     with st.expander("Your Food Choices Today", expanded=True):
         st.subheader("What You've Logged")
-        summary_data = []
-        for item in selected_foods:
-            food = item['food']
-            servings = item['servings']
-            summary_data.append({
-                'Food': food['name'],
-                'Servings': f"{servings:.1f}",
-                'Calories (kcal)': f"{food['calories'] * servings:.0f}",
-                'Protein (g)': f"{food['protein'] * servings:.1f}",
-                'Carbs (g)': f"{food['carbs'] * servings:.1f}",
-                'Fat (g)': f"{food['fat'] * servings:.1f}"
-            })
-        
-        df_summary = pd.DataFrame(summary_data)
-        st.dataframe(df_summary, use_container_width=True, hide_index=True)
+
+        # Reuse the existing helper function to get calculated food data
+        prepared_data = prepare_summary_data(totals, targets, selected_foods)
+        consumed_foods_list = prepared_data['consumed_foods']
+
+        # Reformat the data for display in the DataFrame
+        if consumed_foods_list:
+            display_data = [
+                {
+                    'Food': item['name'],
+                    'Servings': f"{item['servings']:.1f}",
+                    'Calories (kcal)': f"{item['calories']:.0f}",
+                    'Protein (g)': f"{item['protein']:.1f}",
+                    'Carbs (g)': f"{item['carbs']:.1f}",
+                    'Fat (g)': f"{item['fat']:.1f}"
+                } for item in consumed_foods_list
+            ]
+            df_summary = pd.DataFrame(display_data)
+            st.dataframe(df_summary, use_container_width=True, hide_index=True)
+        else:
+            st.caption("No foods logged yet.")
 
 else:
     st.info(
