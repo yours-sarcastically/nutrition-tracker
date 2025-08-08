@@ -1419,6 +1419,7 @@ with search_col:
     st.session_state.food_search = search_term
 
 with reset_col:
+    st.write("")  # Spacer - pushes content dow
     if st.button("🔄 Clear Search", key="clear_search", use_container_width=True):
         st.session_state.food_search = ""
         st.rerun()
