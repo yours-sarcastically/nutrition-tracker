@@ -1247,11 +1247,12 @@ hydration_ml = calculate_hydration_needs(
 units_display = st.session_state.get('user_units', 'metric')
 weight_display = format_weight(final_values['weight_kg'], units_display)
 
-# Updated metrics config - removed height from Metabolic Information
+# Updated metrics config - weight added to Metabolic Information, 5 columns maintained
 metrics_config = [
     {
-        'title': 'Metabolic Information', 'columns': 4,
+        'title': 'Metabolic Information', 'columns': 5,
         'metrics': [
+            ("Weight", weight_display),
             ("BMR", f"{targets['bmr']} kcal"),
             ("TDEE", f"{targets['tdee']} kcal"),
             ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal"),
