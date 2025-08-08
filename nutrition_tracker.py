@@ -1330,17 +1330,17 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
 
         """)
 
-        st.markdown("#### When Progress Stalls** 🔄")
+        st.markdown("##### When Progress Stalls 🔄")
 
-        st.markdown("##### Hit a Weight Loss Plateau?")
+        st.markdown("###### Hit a Weight Loss Plateau?")
         for tip in TIPS_CONTENT['weight_loss_plateau']:
             st.markdown(f"* {tip}")
 
-        st.markdown("##### Struggling to Gain Weight?")
+        st.markdown("###### Struggling to Gain Weight?")
         for tip in TIPS_CONTENT['weight_gain_stalls']:
             st.markdown(f"* {tip}")
 
-        st.markdown("--- \n ##### Pace Your Protein")
+        st.markdown("--- \n ###### Pace Your Protein")
         for tip in TIPS_CONTENT['protein_pacing']:
             st.markdown(f"* {tip}")
 
