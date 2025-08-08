@@ -155,19 +155,15 @@ CONFIG = {
     'form_fields': {
         'age': {'type': 'number', 'label': 'Age (in years)',
                 'min': 16, 'max': 80, 'step': 1,
-                'caption': 'Another year wiser! How many trips around the sun have you taken?',
-                'placeholder': 'e.g., 26', 'required': True},
+                'placeholder': 'Enter your age in years', 'required': True},
         'height_cm': {'type': 'number', 'label': 'Height (in centimeters)',
                       'min': 140, 'max': 220, 'step': 1,
-                      'caption': 'Stand tall and tell us your height',
-                      'placeholder': 'e.g., 180', 'required': True},
+                      'placeholder': 'Enter your height in cm', 'required': True},
         'weight_kg': {'type': 'number', 'label': 'Weight (in kilograms)',
                       'min': 40.0, 'max': 150.0, 'step': 0.5,
-                      'caption': 'What does the scale say today?',
-                      'placeholder': 'e.g., 57.5', 'required': True},
+                      'placeholder': 'Enter your weight in kg', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Biological Sex',
-                'options': ["Male", "Female"], 'required': True,
-                'caption': "Please select your biological sex:"},
+                'options': ["Male", "Female"], 'required': True},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level',
                            'options': [
                                ("Sedentary", "sedentary"),
@@ -175,15 +171,13 @@ CONFIG = {
                                ("Moderately Active", "moderately_active"),
                                ("Very Active", "very_active"),
                                ("Extremely Active", "extremely_active")
-                           ], 'required': True,
-                           'caption': "Pick what sounds most like your typical week"},
+                           ], 'required': True},
         'goal': {'type': 'selectbox', 'label': 'Your Goal',
                  'options': [
                      ("Weight Loss", "weight_loss"),
                      ("Weight Maintenance", "weight_maintenance"),
                      ("Weight Gain", "weight_gain")
-                 ], 'required': True,
-                 'caption': "What are we working toward?"},
+                 ], 'required': True},
         'protein_per_kg': {'type': 'number',
                            'label': 'Protein Goal (g/kg)',
                            'min': 1.2, 'max': 3.0, 'step': 0.1,
@@ -219,9 +213,6 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
     """Creates an input widget based on a unified configuration."""
     session_key = f'user_{field_name}'
 
-    if field_config.get('caption'):
-        container.caption(field_config['caption'])
-
     if field_config['type'] == 'number':
         if field_config.get('advanced'):
             default_val = DEFAULTS.get(field_name, 0)
@@ -247,9 +238,10 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
         current_value = st.session_state[session_key]
         if field_name in ['activity_level', 'goal']:
             options = field_config['options']
+            # Find the index of the current value, default to 0 if not found
             index = next(
                 (i for i, (_, val) in enumerate(options) if val == current_value),
-                0
+                next((i for i, (_, val) in enumerate(options) if val == DEFAULTS[field_name]), 0)
             )
             selection = container.selectbox(
                 field_config['label'],
@@ -744,16 +736,15 @@ for field_name, field_config in advanced_fields.items():
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
     st.markdown("##### Your Activity Level Decoded")
+    st.markdown("---")
     st.markdown("""
-Here's a quick breakdown of what these levels really mean:
-
 * **🧑‍💻 Sedentary**: You're basically married to your desk chair
 * **🏃 Lightly Active**: You squeeze in walks or workouts one to three times a week
 * **🚴 Moderately Active**: You're sweating it out three to five days a week
 * **🏋️ Very Active**: You might actually be part treadmill
 * **🤸 Extremely Active**: You live in the gym and sweat is your second skin
 
-💡 **Pro tip**: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.
+*💡 If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.*
     """)
 
 # ------ Process Final Values ------
@@ -815,13 +806,10 @@ metrics_config = [
     {
         'title': 'Metabolic Information', 'columns': 5,
         'metrics': [
-            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal per day"),
-            ("Total Daily Energy Expenditure (TDEE)",
-             f"{targets['tdee']} kcal per day"),
-            ("Daily Caloric Adjustment",
-             f"{targets['caloric_adjustment']:+} kcal per day"),
-            ("Estimated Weekly Weight Change",
-             f"{targets['estimated_weekly_change']:+.2f} kg per week"),
+            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal"),
+            ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal"),
+            ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal"),
+            ("Estimated Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg"),
             ("", "")
         ]
     },
