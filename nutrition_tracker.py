@@ -69,8 +69,6 @@ import math
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import io
 
 # ---------------------------------------------------------------------------
 # Cell 2: Page Configuration and Initial Setup
@@ -89,49 +87,47 @@ st.set_page_config(
 
 # ------ Default Parameter Values Based on Published Research ------
 DEFAULTS = {
-    'name': None,
     'age': 26,
     'height_cm': 180,
     'weight_kg': 57.5,
     'sex': "Male",
-    'activity_level': "moderately_active",
-    'climate': "temperate",
-    'goal': "weight_gain",
+    'activity_level': "Moderately Active",
+    'goal': "Weight Gain",
     'protein_per_kg': 2.0,
     'fat_percentage': 0.25
 }
 
 # ------ Activity Level Multipliers for TDEE Calculation ------
 ACTIVITY_MULTIPLIERS = {
-    'sedentary': 1.2,
-    'lightly_active': 1.375,
-    'moderately_active': 1.55,
-    'very_active': 1.725,
-    'extremely_active': 1.9
+    'Sedentary': 1.2,
+    'Lightly Active': 1.375,
+    'Moderately Active': 1.55,
+    'Very Active': 1.725,
+    'Extremely Active': 1.9
 }
 
 # ------ Activity Level Descriptions ------
 ACTIVITY_DESCRIPTIONS = {
-    'sedentary': "🧑‍💻 Sedentary: You're basically married to your desk chair",
-    'lightly_active': "🏃 Lightly Active: You squeeze in walks or workouts one to three times a week",
-    'moderately_active': "🚴 Moderately Active: You're sweating it out three to five days a week",
-    'very_active': "🏋️ Very Active: You might actually be part treadmill",
-    'extremely_active': "🤸 Extremely Active: You live in the gym and sweat is your second skin"
+    'Sedentary': "You're basically married to your desk chair",
+    'Lightly Active': "You squeeze in walks or workouts one to three times a week",
+    'Moderately Active': "You're sweating it out three to five days a week",
+    'Very Active': "You might actually be part treadmill",
+    'Extremely Active': "You live in the gym and sweat is your second skin"
 }
 
 # ------ Goal-Specific Targets Based on an Evidence-Based Guide ------
 GOAL_TARGETS = {
-    'weight_loss': {
+    'Weight Loss': {
         'caloric_adjustment': -0.20,  # -20% from TDEE
         'protein_per_kg': 1.8,
         'fat_percentage': 0.25
     },
-    'weight_maintenance': {
+    'Weight Maintenance': {
         'caloric_adjustment': 0.0,  # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
-    'weight_gain': {
+    'Weight Gain': {
         'caloric_adjustment': 0.10,  # +10% over TDEE
         'protein_per_kg': 2.0,
         'fat_percentage': 0.25
@@ -156,42 +152,33 @@ CONFIG = {
         'fat': {'unit': 'g', 'label': 'Fat', 'target_key': 'fat_g'}
     },
     'form_fields': {
-        'name': {'type': 'text', 'label': 'Your Name',
-                 'placeholder': 'Enter your name (optional)', 'required': False},
-        'age': {'type': 'number', 'label': 'Age (in Years)',
+        'age': {'type': 'number', 'label': 'Age (in years)',
                 'min': 16, 'max': 80, 'step': 1,
                 'placeholder': 'Another year wiser! How many trips around the sun have you taken?', 'required': True},
-        'height_cm': {'type': 'number', 'label': 'Height (in Centimeters)',
+        'height_cm': {'type': 'number', 'label': 'Height (in centimeters)',
                       'min': 140, 'max': 220, 'step': 1,
                       'placeholder': 'Stand tall and tell us your height', 'required': True},
-        'weight_kg': {'type': 'number', 'label': 'Weight (in Kilograms)',
+        'weight_kg': {'type': 'number', 'label': 'Weight (in kilograms)',
                       'min': 40.0, 'max': 150.0, 'step': 0.5,
                       'placeholder': 'What does the scale say today?', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Sex',
-                'options': ["Please Select Your Biological Sex:", "Male", "Female"],
-                'required': True, 'placeholder': "Please Select Your Biological Sex:"},
+                'options': ["Please select your biological sex:", "Male", "Female"],
+                'required': True, 'placeholder': "Please select your biological sex:"},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level',
                            'options': [
-                               ("Pick What Sounds Most Like Your Typical Week", None),
-                               ("Sedentary", "sedentary"),
-                               ("Lightly Active", "lightly_active"),
-                               ("Moderately Active", "moderately_active"),
-                               ("Very Active", "very_active"),
-                               ("Extremely Active", "extremely_active")
+                               ("Pick what sounds most like your typical week", None),
+                               ("Sedentary", "Sedentary"),
+                               ("Lightly Active", "Lightly Active"),
+                               ("Moderately Active", "Moderately Active"),
+                               ("Very Active", "Very Active"),
+                               ("Extremely Active", "Extremely Active")
                            ], 'required': True, 'placeholder': None},
-        'climate': {'type': 'selectbox', 'label': 'Climate',
-                    'options': [
-                        ("Temperate", "temperate"),
-                        ("Cold", "cold"),
-                        ("Hot", "hot"),
-                        ("Very Hot", "very_hot")
-                    ], 'required': False, 'placeholder': None},
         'goal': {'type': 'selectbox', 'label': 'Your Goal',
                  'options': [
-                     ("What Are We Working Toward?", None),
-                     ("Weight Loss", "weight_loss"),
-                     ("Weight Maintenance", "weight_maintenance"),
-                     ("Weight Gain", "weight_gain")
+                     ("What are we working toward?", None),
+                     ("Weight Loss", "Weight Loss"),
+                     ("Weight Maintenance", "Weight Maintenance"),
+                     ("Weight Gain", "Weight Gain")
                  ], 'required': True, 'placeholder': None},
         'protein_per_kg': {'type': 'number',
                            'label': 'Protein Goal',
@@ -199,7 +186,7 @@ CONFIG = {
                            'help': 'Define your daily protein target in grams per kilogram of body weight',
                            'advanced': True, 'required': False},
         'fat_percentage': {'type': 'number',
-                           'label': 'Fat Intake (in Percentage of Total Calories)',
+                           'label': 'Fat Intake (in percentage of total calories)',
                            'min': 15, 'max': 40, 'step': 1,
                            'help': 'Set the share of your daily calories that should come from healthy fats',
                            'convert': lambda x: x / 100 if x else None,
@@ -214,31 +201,19 @@ CONFIG = {
 def initialize_session_state():
     """Initializes all required session state variables."""
     session_vars = (
-        ['food_selections', 'progress_history'] +
+        ['food_selections'] +
         [f'user_{field}' for field in CONFIG['form_fields'].keys()]
     )
 
     for var in session_vars:
         if var not in st.session_state:
-            if var == 'food_selections':
-                st.session_state[var] = {}
-            elif var == 'progress_history':
-                st.session_state[var] = {}
-            else:
-                st.session_state[var] = None
-
+            st.session_state[var] = {} if var == 'food_selections' else None
 
 def create_unified_input(field_name, field_config, container=st.sidebar):
     """Creates an input widget based on a unified configuration."""
     session_key = f'user_{field_name}'
 
-    if field_config['type'] == 'text':
-        value = container.text_input(
-            field_config['label'],
-            value=st.session_state.get(session_key, ""),
-            placeholder=field_config.get('placeholder')
-        )
-    elif field_config['type'] == 'number':
+    if field_config['type'] == 'number':
         if field_config.get('advanced'):
             default_val = DEFAULTS.get(field_name, 0)
             display_val = (
@@ -252,19 +227,19 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
 
         value = container.number_input(
             field_config['label'],
-            min_value=field_config.get('min'),
-            max_value=field_config.get('max'),
-            value=st.session_state.get(session_key),
-            step=field_config.get('step'),
+            min_value=field_config['min'],
+            max_value=field_config['max'],
+            value=st.session_state[session_key],
+            step=field_config['step'],
             placeholder=placeholder,
             help=field_config.get('help')
         )
     elif field_config['type'] == 'selectbox':
-        current_value = st.session_state.get(session_key)
-        if field_name in ['activity_level', 'goal', 'climate']:
+        current_value = st.session_state[session_key]
+        if field_name in ['activity_level', 'goal']:
             options = field_config['options']
             index = next(
-                (i for i, (label, val) in enumerate(options) if val == current_value),
+                (i for i, (_, val) in enumerate(options) if val == current_value),
                 0
             )
             selection = container.selectbox(
@@ -273,7 +248,7 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
                 index=index,
                 format_func=lambda x: x[0]
             )
-            value = selection[1] if selection else None
+            value = selection[1]
         else:
             options = field_config['options']
             index = options.index(current_value) if current_value in options else 0
@@ -286,18 +261,17 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
     st.session_state[session_key] = value
     return value
 
-
 def get_final_values(user_inputs):
     """Processes all user inputs and applies default values where needed."""
     final_values = {}
 
     for field, value in user_inputs.items():
         if field == 'sex':
-            final_values[field] = value if value != "Please Select Your Biological Sex:" else DEFAULTS[field]
-        elif field in ['activity_level', 'goal', 'climate']:
-            final_values[field] = value if value is not None else DEFAULTS.get(field, None)
+            final_values[field] = value if value != "Please select your biological sex:" else DEFAULTS[field]
+        elif field in ['activity_level', 'goal']:
+            final_values[field] = value if value is not None else DEFAULTS[field]
         else:
-            final_values[field] = value if value is not None else DEFAULTS.get(field, None)
+            final_values[field] = value if value is not None else DEFAULTS[field]
 
     # Apply goal-specific defaults for advanced settings if they are not set
     goal = final_values['goal']
@@ -310,17 +284,16 @@ def get_final_values(user_inputs):
 
     return final_values
 
-
 def calculate_hydration_needs(weight_kg, activity_level, climate='temperate'):
     """Calculates daily fluid needs based on body weight and activity."""
     base_needs = weight_kg * 35  # Baseline is 35 milliliters per kilogram
 
     activity_bonus = {
-        'sedentary': 0,
-        'lightly_active': 300,
-        'moderately_active': 500,
-        'very_active': 700,
-        'extremely_active': 1000
+        'Sedentary': 0,
+        'Lightly Active': 300,
+        'Moderately Active': 500,
+        'Very Active': 700,
+        'Extremely Active': 1000
     }
 
     climate_multiplier = {
@@ -336,12 +309,6 @@ def calculate_hydration_needs(weight_kg, activity_level, climate='temperate'):
     )
     return round(total_ml)
 
-
-def display_hydration(hydration_ml):
-    """Unified function to display hydration information."""
-    return f"💧 Your Estimated Daily Hydration Goal: {hydration_ml} ml. That's roughly {hydration_ml/250:.1f} cups of water throughout the day."
-
-
 def display_metrics_grid(metrics_data, num_columns=4):
     """Displays a grid of metrics in a configurable column layout."""
     columns = st.columns(num_columns)
@@ -355,8 +322,7 @@ def display_metrics_grid(metrics_data, num_columns=4):
                 label, value, delta = metric_info
                 st.metric(label, value, delta)
 
-
-def find_best_food_for_nutrient(nutrient, deficit, foods, always_suggest=False):
+def find_best_food_for_nutrient(nutrient, deficit, foods):
     """Finds a food that is a good source for a needed nutrient."""
     best_food = None
     highest_nutrient_val = 0
@@ -368,13 +334,12 @@ def find_best_food_for_nutrient(nutrient, deficit, foods, always_suggest=False):
             highest_nutrient_val = food[nutrient]
             best_food = food
 
-    if best_food and highest_nutrient_val > 0 and (always_suggest or deficit > 0):
-        suggestion_servings = math.ceil(deficit / highest_nutrient_val) if deficit > 0 else 1
+    if best_food and highest_nutrient_val > 0:
+        suggestion_servings = 1
         return (
             f"Looking for a suggestion? Adding just {suggestion_servings} serving of {best_food['name']} will give you a solid {best_food[nutrient]:.0f} grams of {nutrient}."
         )
     return None
-
 
 def create_progress_tracking(totals, targets, foods):
     """Creates progress bars and recommendations for nutritional targets."""
@@ -393,34 +358,36 @@ def create_progress_tracking(totals, targets, foods):
         target = targets[config['target_key']]
         percent = min(actual / target * 100, 100) if target > 0 else 0
 
-        # Color-code progress bars
-        if percent > 80:
-            color = "green"
-        elif percent >= 50:
-            color = "yellow"
-        else:
-            color = "red"
-        st.markdown(f'<div style="background-color:{color}; height: 20px; width: {percent}%;"></div>', unsafe_allow_html=True)
-        st.text(f"{config['label']}: {percent:.0f}% of your daily target ({target:.0f} {config['unit']})")
-
-        deficit = target - actual
-        purpose = purpose_map.get(nutrient, 'for optimal nutrition')
-        if deficit <= 0:
-            base_rec = f"You're on track! / You've hit your goal!"
-        else:
-            base_rec = f"You've got {deficit:.0f} more {config['unit']} of {config['label'].lower()} to go {purpose}."
-
-        if nutrient in ['protein', 'carbs', 'fat']:
-            food_suggestion = find_best_food_for_nutrient(
-                nutrient, deficit, foods, always_suggest=True
+        st.progress(
+            percent / 100,
+            text=(
+                f"{config['label']}: {percent:.0f}% of your daily target "
+                f"({target:.0f} {config['unit']})"
             )
-            if food_suggestion:
-                base_rec += f" {food_suggestion}"
+        )
 
-        recommendations.append(base_rec)
+        if actual < target:
+            deficit = target - actual
+            purpose = purpose_map.get(nutrient, 'for optimal nutrition')
+            base_rec = (
+                f"You've got {deficit:.0f} more {config['unit']} of "
+                f"{config['label'].lower()} to go {purpose}."
+            )
+
+            if nutrient in ['protein', 'carbs', 'fat']:
+                food_suggestion = find_best_food_for_nutrient(
+                    nutrient, deficit, foods
+                )
+                if food_suggestion:
+                    base_rec += f" {food_suggestion}"
+
+            recommendations.append(base_rec)
+        elif actual == target:
+            recommendations.append("You've hit your goal!")
+        else:
+            recommendations.append("You're on track!")
 
     return recommendations
-
 
 def calculate_daily_totals(food_selections, foods):
     """Calculates the total daily nutrition from all selected foods."""
@@ -437,33 +404,34 @@ def calculate_daily_totals(food_selections, foods):
 
     return totals, selected_foods
 
+# ---------------------------------------------------------------------------
+# Cell 5: Nutritional Calculation Functions
+# ---------------------------------------------------------------------------
 
 def calculate_bmr(age, height_cm, weight_kg, sex='male'):
     """Calculates the Basal Metabolic Rate using the Mifflin-St Jeor equation."""
     base_calc = (10 * weight_kg) + (6.25 * height_cm) - (5 * age)
     return base_calc + (5 if sex.lower() == 'male' else -161)
 
-
 def calculate_tdee(bmr, activity_level):
     """Calculates Total Daily Energy Expenditure based on activity level."""
     multiplier = ACTIVITY_MULTIPLIERS.get(activity_level, 1.55)
     return bmr * multiplier
 
-
 def calculate_estimated_weekly_change(daily_caloric_adjustment):
     """Calculates the estimated weekly weight change from a caloric adjustment."""
+    # This is based on the approximation that one kilogram of body fat
+    # contains approximately 7,700 kilocalories.
     return (daily_caloric_adjustment * 7) / 7700
 
-
 def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
-                                   activity_level='moderately_active',
-                                   climate='temperate',
-                                   goal='weight_gain', protein_per_kg=None,
+                                   activity_level='Moderately Active',
+                                   goal='Weight Gain', protein_per_kg=None,
                                    fat_percentage=None):
     """Calculates personalized daily nutritional targets."""
     bmr = calculate_bmr(age, height_cm, weight_kg, sex)
     tdee = calculate_tdee(bmr, activity_level)
-    goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['weight_gain'])
+    goal_config = GOAL_TARGETS.get(goal, GOAL_TARGETS['Weight Gain'])
     caloric_adjustment = tdee * goal_config['caloric_adjustment']
     total_calories = tdee + caloric_adjustment
 
@@ -514,7 +482,6 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
 
     return targets
 
-
 # ---------------------------------------------------------------------------
 # Cell 6: Food Database Processing Functions
 # ---------------------------------------------------------------------------
@@ -534,7 +501,6 @@ def load_food_database(file_path):
                 'carbs': row['carbs'], 'fat': row['fat']
             })
     return foods
-
 
 def assign_food_emojis(foods):
     """Assigns emojis to foods based on a unified ranking system."""
@@ -589,7 +555,6 @@ def assign_food_emojis(foods):
                 food['emoji'] = ''
     return foods
 
-
 def render_food_item(food, category):
     """Renders a single food item with its interaction controls."""
     with st.container(border=True):
@@ -626,8 +591,8 @@ def render_food_item(food, category):
         if custom_serving != current_serving:
             if custom_serving > 0:
                 st.session_state.food_selections[food['name']] = custom_serving
-            else:
-                st.session_state.food_selections.pop(food['name'], None)
+            elif food['name'] in st.session_state.food_selections:
+                del st.session_state.food_selections[food['name']]
             st.rerun()
 
         caption_text = (
@@ -635,7 +600,6 @@ def render_food_item(food, category):
             f"{food['carbs']}g carbs | {food['fat']}g fat"
         )
         st.caption(caption_text)
-
 
 def render_food_grid(items, category, columns=2):
     """Renders a grid of food items for a given category."""
@@ -645,54 +609,6 @@ def render_food_grid(items, category, columns=2):
             if i + j < len(items):
                 with cols[j]:
                     render_food_item(items[i + j], category)
-
-
-def export_daily_summary(totals, selected_foods):
-    """Exports daily summary to CSV."""
-    data = {
-        'Nutrient': ['Calories', 'Protein', 'Carbs', 'Fat'],
-        'Total': [totals['calories'], totals['protein'], totals['carbs'], totals['fat']]
-    }
-    df_totals = pd.DataFrame(data)
-
-    selected_data = []
-    for item in selected_foods:
-        food = item['food']
-        servings = item['servings']
-        selected_data.append({
-            'Food': food['name'],
-            'Servings': servings,
-            'Calories': food['calories'] * servings,
-            'Protein': food['protein'] * servings,
-            'Carbs': food['carbs'] * servings,
-            'Fat': food['fat'] * servings
-        })
-    df_selected = pd.DataFrame(selected_data)
-
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_totals.to_excel(writer, sheet_name='Totals', index=False)
-        df_selected.to_excel(writer, sheet_name='Selected Foods', index=False)
-    output.seek(0)
-    return output
-
-
-def save_progress_history(totals):
-    """Saves current day's totals to history."""
-    today = datetime.now().date().isoformat()
-    st.session_state.progress_history[today] = totals
-
-
-def display_progress_history():
-    """Displays progress history."""
-    if st.session_state.progress_history:
-        st.subheader("Progress History")
-        history_df = pd.DataFrame.from_dict(st.session_state.progress_history, orient='index')
-        history_df.index.name = 'Date'
-        st.dataframe(history_df)
-    else:
-        st.info("No progress history available yet.")
-
 
 # ---------------------------------------------------------------------------
 # Cell 7: Initialize Application
@@ -719,11 +635,9 @@ st.markdown("""
 # Cell 8: Application Title and Unified Input Interface
 # ---------------------------------------------------------------------------
 
-user_name = st.session_state.get('user_name')
-greeting = f"Hey there, {user_name}! " if user_name else ""
 st.title("Your Personal Nutrition Coach 🍽️")
-st.markdown(f"""
-{greeting}A Smart, Evidence-Based Nutrition Tracker That Actually Gets You
+st.markdown("""
+A Smart, Evidence-Based Nutrition Tracker That Actually Gets You 
 
 Welcome aboard!
 
@@ -743,117 +657,83 @@ advanced_fields = {
     k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')
 }
 
-for field_name, field_config in standard_fields.items():
-    value = create_unified_input(field_name, field_config, container=st.sidebar)
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
+for field, config in standard_fields.items():
+    all_inputs[field] = create_unified_input(field, config)
 
-advanced_expander = st.sidebar.expander("Fine-Tune Your Settings ⚙️")
-for field_name, field_config in advanced_fields.items():
-    value = create_unified_input(
-        field_name, field_config, container=advanced_expander
-    )
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
+advanced_expander = st.sidebar.expander("Fine-Tune Your Settings ⚙️", expanded=False)
+for field, config in advanced_fields.items():
+    all_inputs[field] = create_unified_input(field, config, container=advanced_expander)
 
-# ------ Activity Level Guide in Sidebar ------
-with st.sidebar.container(border=True):
-    st.markdown("""
-    Your Activity Level Decoded
+# ------ Process User Inputs and Check for Completion ------
+user_inputs = {k: v for k, v in all_inputs.items() if v is not None}
+required_fields = [k for k, v in CONFIG['form_fields'].items() if v.get('required')]
+user_has_entered_info = all(
+    all_inputs.get(field) is not None for field in required_fields
+)
 
-    Here's a quick breakdown of what these levels really mean:
-
-    🧑‍💻 Sedentary: You're basically married to your desk chair
-
-    🏃 Lightly Active: You squeeze in walks or workouts one to three times a week
-
-    🚴 Moderately Active: You're sweating it out three to five days a week
-
-    🏋️ Very Active: You might actually be part treadmill
-
-    🤸 Extremely Active: You live in the gym and sweat is your second skin
-
-    💡 Pro tip: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.
-
-    👈 Pop your details into the sidebar to get your personalized daily targets.
-    """)
-
-# ------ Process Final Values ------
 final_values = get_final_values(all_inputs)
 
-# ------ Check for User Input ------
-required_fields = [
-    field for field, config in CONFIG['form_fields'].items()
-    if config.get('required')
-]
-user_has_entered_info = all(
-    (all_inputs.get(field) is not None and
-     all_inputs.get(field) != CONFIG['form_fields'][field].get('placeholder'))
-    for field in required_fields
-)
+# ------ Sidebar Activity Level Guide ------
+st.sidebar.markdown("### Your Activity Level Decoded")
+st.sidebar.markdown("Here's a quick breakdown of what these levels really mean:")
+for level, desc in ACTIVITY_DESCRIPTIONS.items():
+    emoji = {
+        'Sedentary': '🧑‍💻',
+        'Lightly Active': '🏃',
+        'Moderately Active': '🚴',
+        'Very Active': '🏋️',
+        'Extremely Active': '🤸'
+    }.get(level, '')
+    st.sidebar.markdown(f"{emoji} **{level}**: {desc}")
 
-# ------ Calculate Personalized Targets ------
-targets = calculate_personalized_targets(**final_values)
+st.sidebar.markdown("💡 Pro tip: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.")
+st.sidebar.markdown("👈 Pop your details into the sidebar to get your personalized daily targets.")
 
 # ---------------------------------------------------------------------------
-# Cell 9: Unified Target Display System
+# Cell 9: Calculate Personalized Targets
 # ---------------------------------------------------------------------------
 
-if not user_has_entered_info:
-    st.info(
-        "👈 Pop your details into the sidebar to get your personalized daily targets."
+if user_has_entered_info:
+    targets = calculate_personalized_targets(**final_values)
+    hydration_ml = calculate_hydration_needs(
+        final_values['weight_kg'], final_values['activity_level']
     )
-    st.header("Sample Daily Targets for Reference 🎯")
-    st.caption(
-        "These are example targets. Please enter your information in the "
-        "sidebar for personalized calculations."
-    )
+    goal_label = final_values['goal']
+    estimated_weekly_change = targets['estimated_weekly_change']
+    weekly_change_sign = '+' if estimated_weekly_change > 0 else ''
+    estimated_change_str = f"{weekly_change_sign}{estimated_weekly_change:.2f} kg/week"
 else:
-    goal_labels = {
-        'weight_loss': 'Weight Loss',
-        'weight_maintenance': 'Weight Maintenance',
-        'weight_gain': 'Weight Gain'
+    # Use sample targets for demonstration purposes
+    targets = {
+        'total_calories': 2500, 'protein_g': 150, 'carb_g': 300,
+        'fat_g': 80, 'protein_percent': 24, 'carb_percent': 48,
+        'fat_percent': 28
     }
-    goal_label = goal_labels.get(targets['goal'], 'Weight Gain')
-    st.header(f"Your Custom Daily Nutrition Roadmap for {goal_label} 🎯")
-
-hydration_ml = calculate_hydration_needs(
-    final_values['weight_kg'], final_values['activity_level'], final_values['climate']
-)
-st.info(display_hydration(hydration_ml))
-
-st.info(
-    "🎯 The 80/20 Rule: Try to hit your targets about 80% of the time. This gives you wiggle room for birthday cake, date nights, and those inevitable moments when life throws you a curveball. Flexibility builds consistency and helps you avoid the dreaded yo-yo diet trap."
-)
-
-# ------ Unified Metrics Display Configuration ------
-metrics_config = [
-    {
-        'title': 'Your Daily Nutrition Targets', 'columns': 5,
-        'metrics': [
-            ("Total Calories", f"{targets['total_calories']} kcal"),
-            ("Protein", f"{targets['protein_g']} g",
-             f"{targets['protein_percent']:.0f}% of your calories"),
-            ("Carbohydrates", f"{targets['carb_g']} g",
-             f"{targets['carb_percent']:.0f}% of your calories"),
-            ("Fat", f"{targets['fat_g']} g",
-             f"{targets['fat_percent']:.0f}% of your calories"),
-            ("Water", f"{hydration_ml} ml",
-             f"~{hydration_ml/250:.1f} cups")
-        ]
-    }
-]
-
-# ------ Display All Metric Sections ------
-for config in metrics_config:
-    st.subheader(config['title'])
-    display_metrics_grid(config['metrics'], config['columns'])
-    st.divider()
+    hydration_ml = 2500
+    goal_label = "Weight Gain"
+    estimated_change_str = "+0.25 kg/week"
 
 # ---------------------------------------------------------------------------
-# Cell 10: Enhanced Evidence-Based Tips and Context
+# Cell 10: Main Content Display
+# ---------------------------------------------------------------------------
+
+if user_has_entered_info:
+    st.header(f"Your Custom Daily Nutrition Roadmap for {goal_label} 🎯")
+    st.markdown("🎯 The 80/20 Rule: Try to hit your targets about 80% of the time. This gives you wiggle room for birthday cake, date nights, and those inevitable moments when life throws you a curveball. Flexibility builds consistency and helps you avoid the dreaded yo-yo diet trap.")
+
+    # Display metrics in a grid
+    metrics_data = [
+        ("Total Calories", f"{targets['total_calories']} kcal"),
+        ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}% of your calories)"),
+        ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}% of your calories)"),
+        ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}% of your calories)"),
+        ("Water", f"{hydration_ml} ml (~{hydration_ml/250:.1f} cups)"),
+    ]
+    st.subheader("Your Daily Nutrition Targets")
+    display_metrics_grid(metrics_data, num_columns=3)
+
+# ---------------------------------------------------------------------------
+# Cell 11: Evidence-Based Tips Tabs
 # ---------------------------------------------------------------------------
 
 st.header("Your Evidence-Based Game Plan 📚")
@@ -861,7 +741,7 @@ st.header("Your Evidence-Based Game Plan 📚")
 tab1, tab2, tab3, tab4 = st.tabs([
     "The Big Three to Win At Nutrition 🏆",
     "Level Up Your Progress Tracking 📊",
-    "When Progress Stalls 🔄",
+    "Pace Your Protein",
     "The Science Behind the Magic 🔬"
 ])
 
@@ -901,10 +781,9 @@ with tab2:
     Weeks 1–2: Your only job is to focus on hitting your calorie targets. Don’t worry about anything else!
     Weeks 3–4: Once calories feel like second nature, start layering in protein tracking
     Week 5 and Beyond: With calories and protein in the bag, you can now fine-tune your carb and fat intake
-    """)
 
-with tab3:
-    st.markdown("""
+    When Progress Stalls 🔄
+
     Hit a Weight Loss Plateau?
 
     Guess Less, Stress Less: Before you do anything else, double-check how accurately you’re logging your food. Little things can add up!
@@ -919,9 +798,10 @@ with tab3:
     Fat is Fuel: Load up healthy fats like nuts, oils, and avocados. 
     Push Your Limits: Give your body a reason to grow! Make sure you’re consistently challenging yourself in the gym.
     Turn Up the Heat: If you've been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again.
+    """)
 
-    Pace Your Protein
-
+with tab3:
+    st.markdown("""
     Spread the Love: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal.
     Frame Your Fitness: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout.
     The Night Shift: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze
@@ -964,25 +844,19 @@ with tab4:
     """)
 
 # ---------------------------------------------------------------------------
-# Cell 11: Food Selection Interface
+# Cell 12: Food Selection and Tracking
 # ---------------------------------------------------------------------------
 
 st.header("Track Your Daily Intake 🥗")
+st.markdown("Pick how many servings of each food you’re having to see how your choices stack up against your daily targets.")
+st.markdown("💡 Need a hand with food choices? Check out the emoji guide below!")
 
-st.markdown(
-    "Pick how many servings of each food you’re having to see how your choices stack up against your daily targets."
-)
-
-with st.expander("💡 Need a hand with food choices? Check out the emoji guide below!"):
+with st.expander("Emoji Guide", expanded=False):
     st.markdown("""
     🥇 Gold Medal: A nutritional all-star! High in its target nutrient and very calorie-efficient.
-
     🔥 High Calorie: One of the more calorie-dense options in its group.
-
     💪 High Protein: A true protein powerhouse.
-
     🍚 High Carb: A carbohydrate champion.
-
     🥑 High Fat: A healthy fat hero.
     """)
 
@@ -990,149 +864,85 @@ if st.button("🔄 Start Fresh: Reset All Food Selections", type="secondary"):
     st.session_state.food_selections = {}
     st.rerun()
 
-# ------ Search Functionality ------
-search_query = st.text_input("Search for foods by name or nutrient")
-
-filtered_foods = {}
-for category, items in foods.items():
-    filtered_items = [
-        food for food in items
-        if search_query.lower() in food['name'].lower() or
-           any(search_query.lower() in str(food[nut]).lower() for nut in ['protein', 'carbs', 'fat'])
-    ]
-    if filtered_items:
-        filtered_foods[category] = filtered_items
-
-available_categories = [
-    cat for cat, items in sorted(filtered_foods.items()) if items
-]
-tabs = st.tabs(available_categories)
-
-for i, category in enumerate(available_categories):
-    items = filtered_foods[category]
-    sorted_items_in_category = sorted(
-        items,
-        key=lambda x: (
-            CONFIG['emoji_order'].get(x.get('emoji', ''), 4), -x['calories']
+# Render food categories in tabs
+food_tabs = st.tabs(list(foods.keys()))
+for idx, (category, items) in enumerate(foods.items()):
+    with food_tabs[idx]:
+        sorted_items = sorted(
+            items,
+            key=lambda x: CONFIG['emoji_order'].get(x.get('emoji', ''), 4)
         )
-    )
-    with tabs[i]:
-        render_food_grid(sorted_items_in_category, category, columns=2)
+        render_food_grid(sorted_items, category)
 
 # ---------------------------------------------------------------------------
-# Cell 12: Daily Summary and Progress Tracking
+# Cell 13: Daily Summary and Visualizations
 # ---------------------------------------------------------------------------
+
+totals, selected_foods = calculate_daily_totals(st.session_state.food_selections, foods)
 
 st.header("Today’s Scorecard 📊")
-totals, selected_foods = calculate_daily_totals(
-    st.session_state.food_selections, foods
-)
 
-save_progress_history(totals)
+# Progress Bars
+create_progress_tracking(totals, targets, foods)
 
-if selected_foods:
-    recommendations = create_progress_tracking(totals, targets, foods)
-    col1, col2 = st.columns([1, 1])
+# Nutrition Summary and Pie Chart
+col1, col2 = st.columns([1, 1])
 
-    with col1:
-        st.subheader("Today's Nutrition Snapshot")
-        summary_metrics = [
-            ("Calories Consumed", f"{totals['calories']:.0f} kcal"),
-            ("Protein Intake", f"{totals['protein']:.0f} g"),
-            ("Carbohydrates", f"{totals['carbs']:.0f} g"),
-            ("Fat Intake", f"{totals['fat']:.0f} g")
-        ]
-        display_metrics_grid(summary_metrics, 2)
+with col1:
+    st.subheader("Today's Nutrition Snapshot")
+    st.markdown(f"Calories Consumed: {totals['calories']:.0f} kcal")
+    st.markdown(f"Protein Intake: {totals['protein']:.0f} g")
+    st.markdown(f"Carbohydrates: {totals['carbs']:.0f} g")
+    st.markdown(f"Fat Intake: {totals['fat']:.0f} g")
 
-    with col2:
-        st.subheader("Your Macronutrient Split (in grams)")
-        macro_values = [totals['protein'], totals['carbs'], totals['fat']]
-        macro_labels = ['Protein', 'Carbs', 'Fat']
-        if sum(macro_values) > 0:
-            values = macro_values
-        else:
-            values = [targets['protein_g'], targets['carb_g'], targets['fat_g']]
-            st.caption("Sample based on your targets (no foods selected yet)")
-        fig = go.Figure(go.Pie(
-            labels=macro_labels,
-            values=values,
-            hole=.4,
-            marker_colors=['#ff6b6b', '#feca57', '#48dbfb'],
-            textinfo='label+percent',
-            insidetextorientation='radial'
-        ))
+with col2:
+    macro_values = [totals['protein'], totals['carbs'], totals['fat']]
+    if sum(macro_values) > 0:
+        fig = go.Figure(data=[go.Pie(
+            labels=['Protein', 'Carbs', 'Fat'],
+            values=macro_values,
+            hole=0.3,
+            marker_colors=['#FF6384', '#36A2EB', '#FFCE56']
+        )])
         fig.update_layout(
-            showlegend=False,
-            margin=dict(l=10, r=10, t=10, b=10),
-            height=250
+            title_text="Your Macronutrient Split (in grams)",
+            annotations=[dict(text='Macros', x=0.5, y=0.5, font_size=20, showarrow=False)]
         )
         st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.caption("Your Macronutrient Split (in grams)\nProtein | Carbs | Fat")
 
-    if recommendations:
-        for rec in recommendations:
-            st.info(rec)
+# Selected Foods List
+st.subheader("Your Food Choices Today")
+st.markdown("What You've Logged:")
 
-    with st.expander("Your Food Choices Today"):
-        st.subheader("What You've Logged:")
-        for item in selected_foods:
-            food = item['food']
-            servings = item['servings']
-            total_cals = food['calories'] * servings
-            total_protein = food['protein'] * servings
-            total_carbs = food['carbs'] * servings
-            total_fat = food['fat'] * servings
-
-            st.write(f"**{food['name']}** - {servings} serving(s)")
-            st.write(
-                f"→ {total_cals:.0f} kcal | {total_protein:.1f}g protein | "
-                f"{total_carbs:.1f}g carbs | {total_fat:.1f}g fat"
-            )
-
-    # Export button
-    output = export_daily_summary(totals, selected_foods)
-    st.download_button(
-        label="Export Daily Summary",
-        data=output,
-        file_name="daily_summary.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+if selected_foods:
+    for item in selected_foods:
+        food = item['food']
+        servings = item['servings']
+        total_cals = food['calories'] * servings
+        total_protein = food['protein'] * servings
+        total_carbs = food['carbs'] * servings
+        total_fat = food['fat'] * servings
+        st.markdown(f"{food['name']} - {servings} serving(s)\n→ {total_cals:.0f} kcal | {total_protein:.1f}g protein | {total_carbs:.1f}g carbs | {total_fat:.1f}g fat")
 else:
-    st.info(
-        "Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!"
-    )
-    create_progress_tracking({'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0}, targets, foods)
-
-# Display progress history
-display_progress_history()
+    st.markdown("Haven't picked any foods yet? No worries! Go ahead and add some items from the categories above to start tracking your intake!")
 
 # ---------------------------------------------------------------------------
-# Cell 13: Footer and Additional Resources
+# Cell 14: Footer with Scientific Basis and Disclaimer
 # ---------------------------------------------------------------------------
 
-st.divider()
+st.markdown("---")
 st.markdown("""
-The Science We Stand On 📚
+### The Science We Stand On 📚
 
 This tracker isn't built on guesswork—it's grounded in peer-reviewed research and evidence-based guidelines. We rely on the Mifflin-St Jeor equation to calculate your Basal Metabolic Rate (BMR). This method is widely regarded as the gold standard and is strongly endorsed by the Academy of Nutrition and Dietetics. To estimate your Total Daily Energy Expenditure (TDEE), we use well-established activity multipliers derived directly from exercise physiology research. For protein recommendations, our targets are based on official guidelines from the International Society of Sports Nutrition.
  
 When it comes to any calorie adjustments, we stick to conservative, sustainable rates that research has consistently shown lead to lasting, meaningful results.  We’re all about setting you up for success, one step at a time!
 
-The Fine Print ⚠️
+### The Fine Print ⚠️
 
 Think of this tool as your launchpad, but remember—everyone’s different. Your mileage may vary due to factors like genetics, health conditions, medications, and other factors that a calculator simply can't account for. It's always wise to consult a qualified healthcare provider before making any big dietary shifts. Above all, tune into your body—keep tabs on your energy levels, performance,and tweak things as needed. We’re here to help, but you know yourself best!
+
+You made it to the finish line! Thanks for sticking with us on this nutrition adventure. Remember, the sun doesn’t rush to rise, but it always shows up. Keep shining—you’ve got this! 🥳
 """)
-
-st.success(
-    "You made it to the finish line! Thanks for sticking with us on this nutrition adventure. Remember, the sun doesn’t rush to rise, but it always shows up. Keep shining—you’ve got this! 🥳"
-)
-
-# ---------------------------------------------------------------------------
-# Cell 14: Session State Management and Performance
-# ---------------------------------------------------------------------------
-
-# ------ Clean Up Session State to Prevent Memory Issues ------
-st.session_state.food_selections = {
-    k: v for k, v in st.session_state.food_selections.items() if v > 0
-}
-if len(st.session_state.food_selections) > 100:
-    st.session_state.food_selections = {}
