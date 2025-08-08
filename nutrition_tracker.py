@@ -131,7 +131,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,   # 0% from TDEE
+        'caloric_adjustment': 0.0,    # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -587,27 +587,42 @@ def create_progress_tracking(totals, targets, foods):
         recommendations.append(summary_text)
         
         if top_suggestions:
-            for i, suggestion in enumerate(top_suggestions):
-                food = suggestion['food']
-                nutrients_helped = suggestion['nutrients_helped']
+            # Handle the primary suggestion
+            primary_suggestion = top_suggestions[0]
+            food = primary_suggestion['food']
+            nutrients_helped = primary_suggestion['nutrients_helped']
+            
+            nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
+            
+            if len(nutrient_benefits) > 1:
+                benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
+            else:
+                benefits_text = nutrient_benefits[0]
+
+            recommendations.append(
+                f"🎯 **Smart pick**: One serving of **{food['name']}** would give you {benefits_text}, knocking out multiple targets at once!"
+            )
+
+            # Handle and consolidate alternative suggestions
+            alternative_suggestions = top_suggestions[1:]
+            if alternative_suggestions:
+                alt_texts = []
+                for suggestion in alternative_suggestions:
+                    food = suggestion['food']
+                    nutrients_helped = suggestion['nutrients_helped']
+                    nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
+                    
+                    if len(nutrient_benefits) > 1:
+                        benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
+                    else:
+                        benefits_text = nutrient_benefits[0]
+                    
+                    alt_texts.append(f"**{food['name']}** (provides {benefits_text})")
                 
-                nutrient_benefits = [f"{food[n]:.0f}g {n}" for n in nutrients_helped]
-                
-                if len(nutrient_benefits) > 1:
-                    benefits_text = ", ".join(nutrient_benefits[:-1]) + f", and {nutrient_benefits[-1]}"
-                else:
-                    benefits_text = nutrient_benefits[0]
-                
-                if i == 0:
-                    recommendations.append(
-                        f"🎯 Smart pick: One serving of {food['name']} would give you {benefits_text}, "
-                        f"knocking out multiple targets at once!"
-                    )
-                else:
-                    recommendations.append(
-                        f"💡 Alternative option: {food['name']} provides {benefits_text}, "
-                        f"another great way to hit multiple goals!"
-                    )
+                recommendations.append(
+                    f"💡 **Alternative options**: {'; '.join(alt_texts)}."
+                )
+
         else:
             biggest_deficit = max(deficits.items(), key=lambda x: x[1]['amount'])
             nutrient, deficit_info = biggest_deficit
@@ -1530,7 +1545,7 @@ Created with Personal Nutrition Coach 🍽️
         
         fig_macros.update_layout(
             title_text='Macronutrient Comparison', barmode='group',
-            yaxis_title='Grams', height=300, showlegend=True,
+            yaxis_title='Grams', height=350, showlegend=True,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=10, r=10, t=40, b=10)
         )
@@ -1554,7 +1569,7 @@ Created with Personal Nutrition Coach 🍽️
             
             fig_pie.update_layout(
                 title=f'Total: {totals["calories"]:.0f} kcal',
-                height=400
+                height=350
             )
             
             st.plotly_chart(fig_pie, use_container_width=True)
