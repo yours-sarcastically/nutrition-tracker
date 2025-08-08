@@ -1125,7 +1125,7 @@ if st.sidebar.button("🧮 Calculate My Targets", type="primary", key="calculate
 st.sidebar.divider()
 st.sidebar.subheader("💾 Save Your Progress")
 
-if st.sidebar.button("Save", key="save_progress"):
+if st.sidebar.button("Save", key="save_progress", type="primary"):
     progress_json = save_progress_to_json(st.session_state.food_selections, all_inputs)
     st.sidebar.download_button(
         "📥 Download",
