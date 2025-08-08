@@ -163,7 +163,8 @@ CONFIG = {
                       'help': 'What does the scale say today?', 'required': True},
         'sex': {'type': 'selectbox', 'label': 'Sex',
                 'options': ["Male", "Female"],
-                'help': "Please select your biological sex:", 'required': True},
+                'help': "Please select your biological sex:",
+                'required': True},
         'activity_level': {'type': 'selectbox', 'label': 'Activity Level',
                            'options': [
                                "Sedentary",
@@ -212,16 +213,13 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
     session_key = f'user_{field_name}'
 
     if field_config['type'] == 'number':
-        if field_config.get('advanced'):
-            default_val = DEFAULTS.get(field_name, 0)
-            display_val = (
-                int(default_val * 100)
-                if field_name == 'fat_percentage'
-                else default_val
-            )
-            placeholder = f"Default: {display_val}"
-        else:
-            placeholder = None
+        default_val = DEFAULTS.get(field_name, 0)
+        display_val = (
+            int(default_val * 100)
+            if field_name == 'fat_percentage'
+            else default_val
+        )
+        placeholder = f"Default: {display_val}" if field_config.get('advanced') else None
 
         value = container.number_input(
             field_config['label'],
@@ -233,7 +231,7 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
             help=field_config.get('help')
         )
     elif field_config['type'] == 'selectbox':
-        current_value = st.session_state[session_key] or DEFAULTS.get(field_name)
+        current_value = st.session_state[session_key]
         options = field_config['options']
         index = options.index(current_value) if current_value in options else 0
         value = container.selectbox(
@@ -251,10 +249,7 @@ def get_final_values(user_inputs):
     final_values = {}
 
     for field, value in user_inputs.items():
-        if value is not None:
-            final_values[field] = value
-        else:
-            final_values[field] = DEFAULTS[field]
+        final_values[field] = value if value is not None else DEFAULTS[field]
 
     # Apply goal-specific defaults for advanced settings if they are not set
     goal = final_values['goal']
@@ -629,8 +624,6 @@ Hey there! Welcome to your new nutrition buddy. This isn’t just another calori
 Let’s get rolling—your journey to feeling awesome starts now! 🚀
 """)
 
-st.markdown("👈 Pop your details into the sidebar to get your personalized daily targets.")
-
 # ------ Sidebar for User Input ------
 st.sidebar.header("Let’s Get Personal 📊")
 
@@ -659,8 +652,8 @@ user_has_entered_info = all(
 final_values = get_final_values(all_inputs)
 
 # ------ Sidebar Activity Level Guide ------
-activity_expander = st.sidebar.expander("Your Activity Level Decoded", expanded=True)
-with activity_expander:
+with st.sidebar.container(border=True):
+    st.markdown("### Your Activity Level Decoded")
     st.markdown("Here's a quick breakdown of what these levels really mean:")
     for level, desc in ACTIVITY_DESCRIPTIONS.items():
         emoji = {
@@ -671,7 +664,6 @@ with activity_expander:
             'Extremely Active': '🤸'
         }.get(level, '')
         st.markdown(f"{emoji} **{level}**: {desc}")
-
     st.markdown("💡 Pro tip: If you’re torn between two levels, pick the lower one. It’s better to underestimate your burn than to overeat and stall.")
 
 # ---------------------------------------------------------------------------
@@ -690,9 +682,11 @@ if user_has_entered_info:
 else:
     # Use sample targets for demonstration purposes
     targets = {
-        'total_calories': 2500, 'protein_g': 150, 'carb_g': 300,
+        'bmr': 1600, 'tdee': 2500,
+        'total_calories': 2500, 'caloric_adjustment': 0,
+        'protein_g': 150, 'carb_g': 300,
         'fat_g': 80, 'protein_percent': 24, 'carb_percent': 48,
-        'fat_percent': 28
+        'fat_percent': 28, 'estimated_weekly_change': 0
     }
     hydration_ml = 2500
     goal_label = "Weight Gain"
@@ -702,26 +696,42 @@ else:
 # Cell 10: Main Content Display
 # ---------------------------------------------------------------------------
 
-if user_has_entered_info:
-    st.header(f"Your Custom Daily Nutrition Roadmap for {goal_label} 🎯")
+if not user_has_entered_info:
+    st.info("👈 Pop your details into the sidebar to get your personalized daily targets.")
+    st.header("Sample Daily Targets for Reference 🎯")
+    st.caption("These are example targets. Please enter your information in the sidebar for personalized calculations.")
 else:
-    st.header(f"Sample Daily Targets for Reference")
+    st.header(f"Your Custom Daily Nutrition Roadmap for {goal_label} 🎯")
 
 st.markdown("🎯 The 80/20 Rule: Try to hit your targets about 80% of the time. This gives you wiggle room for birthday cake, date nights, and those inevitable moments when life throws you a curveball. Flexibility builds consistency and helps you avoid the dreaded yo-yo diet trap.")
 
-if not user_has_entered_info:
-    st.markdown("These are example targets. Please enter your information in the sidebar for personalized calculations.")
-
-# Display metrics in a grid
-metrics_data = [
-    ("Total Calories", f"{targets['total_calories']} kcal"),
-    ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}% of your calories)"),
-    ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}% of your calories)"),
-    ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}% of your calories)"),
-    ("Water", f"{hydration_ml} ml (~{hydration_ml/250:.1f} cups)"),
+# ------ Unified Metrics Display Configuration ------
+metrics_config = [
+    {
+        'title': 'Metabolic Information', 'columns': 4,
+        'metrics': [
+            ("Basal Metabolic Rate (BMR)", f"{targets['bmr']} kcal"),
+            ("Total Daily Energy Expenditure (TDEE)", f"{targets['tdee']} kcal"),
+            ("Daily Caloric Adjustment", f"{targets['caloric_adjustment']:+} kcal"),
+            ("Estimated Weekly Weight Change", f"{targets['estimated_weekly_change']:+.2f} kg")
+        ]
+    },
+    {
+        'title': 'Your Daily Nutrition Targets', 'columns': 3,
+        'metrics': [
+            ("Total Calories", f"{targets['total_calories']} kcal"),
+            ("Protein", f"{targets['protein_g']} g ({targets['protein_percent']:.0f}% of your calories)"),
+            ("Carbohydrates", f"{targets['carb_g']} g ({targets['carb_percent']:.0f}% of your calories)"),
+            ("Fat", f"{targets['fat_g']} g ({targets['fat_percent']:.0f}% of your calories)"),
+            ("Water", f"{hydration_ml} ml (~{hydration_ml/250:.1f} cups)"),
+        ]
+    }
 ]
-st.subheader("Your Daily Nutrition Targets")
-display_metrics_grid(metrics_data, num_columns=3)
+
+# ------ Display All Metric Sections ------
+for config in metrics_config:
+    st.subheader(config['title'])
+    display_metrics_grid(config['metrics'], config['columns'])
 
 # ---------------------------------------------------------------------------
 # Cell 11: Evidence-Based Tips Tabs
