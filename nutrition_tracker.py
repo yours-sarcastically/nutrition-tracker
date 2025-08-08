@@ -131,7 +131,7 @@ GOAL_TARGETS = {
         'fat_percentage': 0.25
     },
     'weight_maintenance': {
-        'caloric_adjustment': 0.0,   # 0% from TDEE
+        'caloric_adjustment': 0.0,    # 0% from TDEE
         'protein_per_kg': 1.6,
         'fat_percentage': 0.30
     },
@@ -408,6 +408,15 @@ def create_unified_input(field_name, field_config, container=st.sidebar):
 
     st.session_state[session_key] = value
     return value
+
+
+def populate_inputs(fields, container, all_inputs_dict):
+    """Iterates through fields, creates inputs, and populates the results."""
+    for field_name, field_config in fields.items():
+        value = create_unified_input(field_name, field_config, container=container)
+        if 'convert' in field_config:
+            value = field_config['convert'](value)
+        all_inputs_dict[field_name] = value
 
 
 def validate_user_inputs(user_inputs):
@@ -784,6 +793,17 @@ def create_csv_summary(totals, targets, selected_foods):
     return df.to_csv(index=False)
 
 
+def render_tips_section(title, content_key, header_level="subheader"):
+    """Renders a titled section of tips from the TIPS_CONTENT dictionary."""
+    if header_level == "subheader":
+        st.subheader(title)
+    else:
+        st.markdown(f"##### {title}")  # For smaller headers
+
+    for tip in TIPS_CONTENT.get(content_key, []):
+        st.markdown(f"* {tip}")
+
+
 # ---------------------------------------------------------------------------
 # Cell 6: Nutritional Calculation Functions
 # ---------------------------------------------------------------------------
@@ -818,18 +838,10 @@ def calculate_personalized_targets(age, height_cm, weight_kg, sex='male',
     caloric_adjustment = tdee * goal_config['caloric_adjustment']
     total_calories = tdee + caloric_adjustment
 
-    protein_per_kg_final = (
-        protein_per_kg if protein_per_kg is not None
-        else goal_config['protein_per_kg']
-    )
-    fat_percentage_final = (
-        fat_percentage if fat_percentage is not None
-        else goal_config['fat_percentage']
-    )
-
-    protein_g = protein_per_kg_final * weight_kg
+    # The conditional logic was removed as get_final_values already handles defaults.
+    protein_g = protein_per_kg * weight_kg
     protein_calories = protein_g * 4
-    fat_calories = total_calories * fat_percentage_final
+    fat_calories = total_calories * fat_percentage
     fat_g = fat_calories / 9
     carb_calories = total_calories - protein_calories - fat_calories
     carb_g = carb_calories / 4
@@ -1095,6 +1107,7 @@ units = st.sidebar.toggle(
 )
 st.session_state.user_units = 'imperial' if units else 'metric'
 
+# REFACTORED: Use the populate_inputs helper to create all form fields
 all_inputs = {}
 standard_fields = {
     k: v for k, v in CONFIG['form_fields'].items() if not v.get('advanced')
@@ -1103,20 +1116,10 @@ advanced_fields = {
     k: v for k, v in CONFIG['form_fields'].items() if v.get('advanced')
 }
 
-for field_name, field_config in standard_fields.items():
-    value = create_unified_input(field_name, field_config, container=st.sidebar)
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
-
-advanced_expander = st.sidebar.expander("Advanced Settings ⚙️")
-for field_name, field_config in advanced_fields.items():
-    value = create_unified_input(
-        field_name, field_config, container=advanced_expander
-    )
-    if 'convert' in field_config:
-        value = field_config['convert'](value)
-    all_inputs[field_name] = value
+# Populate standard and advanced inputs using the helper function
+populate_inputs(standard_fields, st.sidebar, all_inputs)
+with st.sidebar.expander("Advanced Settings ⚙️") as advanced_expander:
+    populate_inputs(advanced_fields, advanced_expander, all_inputs)
 
 # Calculate button with enhanced validation
 if st.sidebar.button("🧮 Calculate My Targets", type="primary", key="calculate_button"):
@@ -1304,22 +1307,12 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
     ])
 
     with tab1:
-        st.subheader("💧 Master Your Hydration Game")
-        for tip in TIPS_CONTENT['hydration']:
-            st.markdown(f"* {tip}")
-
-        st.subheader("😴 Sleep Like Your Goals Depend on It")
-        for tip in TIPS_CONTENT['sleep']:
-            st.markdown(f"* {tip}")
-
-        st.subheader("📅 Follow Your Wins")
-        for tip in TIPS_CONTENT['tracking_wins']:
-            st.markdown(f"* {tip}")
+        render_tips_section("💧 Master Your Hydration Game", "hydration")
+        render_tips_section("😴 Sleep Like Your Goals Depend on It", "sleep")
+        render_tips_section("📅 Follow Your Wins", "tracking_wins")
 
     with tab2:
-        st.subheader("Go Beyond the Scale 📸")
-        for tip in TIPS_CONTENT['beyond_the_scale']:
-            st.markdown(f"* {tip}")
+        render_tips_section("Go Beyond the Scale 📸", "beyond_the_scale")
 
     with tab3:
         st.subheader("Mindset Is Everything 🧠")
@@ -1336,17 +1329,11 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         **When Progress Stalls** 🔄
         """)
         
-        st.markdown("##### Hit a Weight Loss Plateau?")
-        for tip in TIPS_CONTENT['weight_loss_plateau']:
-            st.markdown(f"* {tip}")
-            
-        st.markdown("##### Struggling to Gain Weight?")
-        for tip in TIPS_CONTENT['weight_gain_stalls']:
-            st.markdown(f"* {tip}")
-            
-        st.markdown("--- \n ##### Pace Your Protein")
-        for tip in TIPS_CONTENT['protein_pacing']:
-            st.markdown(f"* {tip}")
+        render_tips_section("Hit a Weight Loss Plateau?", "weight_loss_plateau", header_level="markdown")
+        render_tips_section("Struggling to Gain Weight?", "weight_gain_stalls", header_level="markdown")
+        
+        st.markdown("---")
+        render_tips_section("Pace Your Protein", "protein_pacing", header_level="markdown")
 
     with tab4:
         st.subheader("Understanding Your Metabolism")
