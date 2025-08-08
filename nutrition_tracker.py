@@ -1160,7 +1160,7 @@ if uploaded_file is not None:
 
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
-    st.markdown("##### Your Activity Level Decoded")
+    st.markdown("#### Your Activity Level Decoded")
 
     # Dynamically generate the list from the updated dictionary
     for key in ACTIVITY_MULTIPLIERS:  # Iterate in a consistent order
