@@ -1353,7 +1353,7 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
             st.markdown(f"* {tip}")
 
     with tab4:
-        st.subheader("🧗 Sweat Smart: Your Ticket to Feeling Awesome")
+        st.subheader("On Your Energy 🧗")
         st.markdown("#### Build Your Foundation with Resistance Training")
         st.markdown("""
         This is your non-negotiable, no matter your goal. Lifting weights (or using your bodyweight!) tells your body to build or hold onto precious muscle, which is the engine of your metabolism.
