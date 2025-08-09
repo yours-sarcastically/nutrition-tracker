@@ -1124,21 +1124,23 @@ if st.session_state.get('form_errors'):
 st.sidebar.divider()
 
 # ------ Save and Load Progress ------
-
 st.sidebar.subheader("Save Your Progress 💾")
-if st.sidebar.button("Save", key="save_progress", type="primary"):
-    progress_json = save_progress_to_json(
-        st.session_state.food_selections, all_inputs
-    )
-    st.sidebar.download_button(
-        "Download 📥", data=progress_json,
-        file_name=f"nutrition_progress_{datetime.now():%Y%m%d_%H%M%S}.json",
-        mime="application/json", key="download_progress"
-    )
+progress_json = save_progress_to_json(
+    st.session_state.food_selections, all_inputs
+)
+st.sidebar.download_button(
+    "Download 📥",
+    data=progress_json,
+    file_name=f"nutrition_progress_{datetime.now():%Y%m%d_%H%M%S}.json",
+    mime="application/json",
+    key="download_progress",
+    type="primary"
+)
 
 # ------ Load Progress 📂 ------
+st.sidebar.subheader("Load Your Progress 📂")
 uploaded_file = st.sidebar.file_uploader(
-    "Load", type="json", key="upload_progress"
+    "Upload a progress file", type="json", key="upload_progress"
 )
 if uploaded_file is not None:
     if 'last_uploaded_file' not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
@@ -1151,6 +1153,8 @@ if uploaded_file is not None:
         st.session_state.last_uploaded_file = uploaded_file.name
         st.sidebar.success("Progress loaded successfully! 📂")
         st.rerun()
+
+st.sidebar.divider()
 
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
