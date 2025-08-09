@@ -1303,112 +1303,154 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
     ])
 
     with tab1:
-        st.subheader("💧 Master Your Hydration Game")
-        for tip in TIPS_CONTENT['hydration']:
-            st.markdown(f"- {tip}")
+        st.header("💧 Master Your Hydration Game")
+        st.markdown("""
+        * **Daily Goal**: Shot for about 35 ml per kilogram of your body weight daily.
+        * **Training Bonus**: Tack on an extra 500-750 ml per hour of sweat time.
+        * **Fat Loss Hack**: Chugging 500 ml of water before meals can boost fullness by by 13 percent. Your stomach will thank you, and so will your waistline.
+        """)
 
         st.divider()
 
-        st.subheader("😴 Sleep Like Your Goals Depend on It")
-        for tip in TIPS_CONTENT['sleep']:
-            st.markdown(f"- {tip}")
+        st.header("😴 Sleep Like Your Goals Depend on It")
+        st.markdown("""
+        * **The Shocking Truth**: Getting less than 7 hours of sleep can torpedo your fat loss by a more than half.
+        * **Daily Goal**: Shoot for 7-9 hours and try to keep a consistent schedule.
+        * **Set the Scene**: Keep your cave dark, cool (18-20°C), and screen-free for at least an hour before lights out.
+        """)
 
         st.divider()
 
-        st.subheader("📅 Follow Your Wins")
-        for tip in TIPS_CONTENT['tracking_wins']:
-            st.markdown(f"- {tip}")
+        st.header("📅 Follow Your Wins")
+        st.markdown("""
+        * **Morning Ritual**: Weigh yourself first thing after using the bathroom, before eating or drinking, in minimal clothing.
+        * **Look for Trends, Not Blips**: Watch your weekly average instead of getting hung up on daily fluctuations. Your weight can swing 2-3 pounds daily.
+        * **Hold the Line**: Do not tweak your plan too soon. Wait for two or more weeks of stalled progress before making changes.
+        """)
 
     with tab2:
-        st.subheader("📸 Go Beyond the Scale")
-        st.markdown(
-            "The scale only tells part of the story. Track these to see the full picture of your success:"
-        )
-        for tip in TIPS_CONTENT['beyond_the_scale']:
-            st.markdown(f"- {tip}")
+        st.header("📸 Go Beyond the Scale")
+        st.markdown("""
+        * **The Bigger Picture**: Snap a few pics every month. Use the same pose, lighting, and time of day. The mirror does not lie.
+        * **Size Up Your Wins**: Measure your waist, hips, arms, and thighs monthly.
+        * **The Quiet Victories**: Pay attention to how you feel. Your energy levels, sleep quality, gym performance, and hunger patterns tell a story numbers cannot.
+        """)
 
     with tab3:
-        st.subheader("The 80/20 Rule: Your Key to Consistency")
+        st.header("🧠 Mindset Is Everything")
         st.markdown("""
-        The 80/20 principle is your best defense against the perfectionist trap. It's about ditching the all-or-nothing mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually—you'll be far more likely to stick with them for the long haul.
+        The 80/20 principle is your best defense against the perfectionist trap. It is about ditching that mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually and you will be far more likely to stick with them for the long haul.
         """)
 
-        st.markdown("**Start Small, Win Big:**")
+        st.subheader("Start Small, Win Big:")
         st.markdown("""
-        - **Weeks 1–2**: Your only job is to focus on hitting your calorie targets. Don't worry about anything else!
-        - **Weeks 3–4**: Once calories feel like second nature, start layering in protein tracking.
-        - **Week 5 and Beyond**: With calories and protein in the bag, you can now fine-tune your carb and fat intake.
+        * **Weeks 1–2**: Your only job is to focus on hitting your calorie targets. Do not worry about anything else!
+        * **Weeks 3–4**: Once calories feel like second nature, start layering in protein tracking.
+        * **Week 5 and Beyond**: With calories and protein in the bag, you can now fine-tune your carb and fat intake.
         """)
+        
         st.divider()
 
-        st.subheader("When Progress Stalls")
-        st.markdown("**Hit a Weight Loss Plateau?**")
-        for tip in TIPS_CONTENT['weight_loss_plateau']:
-            st.markdown(f"- {tip}")
+        st.subheader("🔄 When Progress Stalls")
+        
+        st.markdown("#### Hit a Weight Loss Plateau?")
+        st.markdown("""
+        * **Guess Less, Stress Less**: Before you do anything else, double-check how accurately you are logging your food. Little things can add up!
+        * **Activity Audit**: Take a fresh look at your activity level. Has it shifted?
+        * **Walk it Off**: Try adding 10-15 minutes of walking to your daily routine before cutting calories further. It is a simple way to boost progress without tightening the belt just yet.
+        * **Step Back to Leap Forward**: Consider a diet break every 6-8 weeks. Eating at your maintenance calories for a week or two can give your metabolism and your mind a well-deserved reset.
+        * **Leaf Your Hunger Behind**: Load your plate with low-calorie, high-volume foods like leafy greens, cucumbers, and berries. They are light on calories but big on satisfaction.
+        """)
+        
+        st.markdown("#### Struggling to Gain Weight?")
+        st.markdown("""
+        * **Drink Your Calories**: Liquid calories from smoothies, milk, and protein shakes go down way easier than another full meal.
+        * **Fat is Fuel**: Load up healthy fats like nuts, oils, and avocados.
+        * **Push Your Limits**: Give your body a reason to grow! Make sure you are consistently challenging yourself in the gym.
+        * **Turn Up the Heat**: If you have been stuck for over two weeks, bump up your intake by 100-150 calories to get the ball rolling again.
+        """)
 
-        st.write("")  # Adds vertical space
-
-        st.markdown("**Struggling to Gain Weight?**")
-        for tip in TIPS_CONTENT['weight_gain_stalls']:
-            st.markdown(f"- {tip}")
         st.divider()
 
-        st.subheader("Pace Your Protein for Better Results")
-        for tip in TIPS_CONTENT['protein_pacing']:
-            st.markdown(f"- {tip}")
+        st.subheader("💪 Pace Your Protein")
+        st.markdown("""
+        * **Spread the Love**: Instead of cramming your protein into one or two giant meals, aim for 20-40 grams with each of your 3-4 daily meals. This works out to roughly 0.4-0.5 grams per kilogram of body weight per meal.
+        * **Frame Your Fitness**: Get some carbs and 20–40g protein before and within two hours of wrapping up your workout.
+        * **The Night Shift**: Try 20-30g of casein protein before bed for keeping your muscles fed while you snooze.
+        """)
 
     with tab4:
-        st.subheader("🧗 On Your Energy")
-        st.markdown("**Build Your Foundation with Resistance Training**")
+        st.header("🧗 Own Your Energy")
+        
+        st.subheader("💪 Build Your Foundation with Resistance Training")
         st.markdown("""
         This is your non-negotiable, no matter your goal. Lifting weights (or using your bodyweight!) tells your body to build or hold onto precious muscle, which is the engine of your metabolism.
-        - **🎯 For Fat Loss**: More muscle means you burn more calories even while you are chilling on the couch. It is the secret to keeping the weight off for good.
-        - **💪 For Bulking Up**: Exercise tells your body where to send all that protein you are eating. Without it, you are just a shaky tent in a windstorm.
-        - **💡 The Game Plan**: A good starting point is **2-3 sessions of 20-40 minutes** a week. Push, pull, squat—make those muscles sing!
-        - **❤️ Find What You Love**: If it feels like torture, switch it up. Fitness should spark joy, not dread! Dance, bike, chase your dog. Pick whatever makes you grin!
+        """)
+        
+        st.markdown("""
+        * **🎯 For Fat Loss**: More muscle means you burn more calories even while you are chilling on the couch. It is the secret to keeping the weight off for good.
+        * **💪 For Bulking Up**: Exercise tells your body where to send all that protein you are eating. Without it, you are just a shaky tent in a windstorm.
+        * **💡 The Game Plan**: A good starting point is **2-3 sessions of 20-40 minutes** a week. Push, pull, squat—make those muscles sing!
+        * **❤️ Find What You Love**: If it feels like torture, switch it up. Fitness should spark joy, not dread! Dance, bike, chase your dog. Pick whatever makes you grin!
         """)
 
         st.divider()
-
-        st.markdown("**NEAT: Your Sneaky Fitness Piggy Bank**")
+        
+        st.subheader("🏃 NEAT: Your Sneaky Fitness Piggy Bank")
         st.markdown("""
         NEAT stands for Non-Exercise Activity Thermogenesis. It is a fancy term for all the calories you burn just by living your life.
-        - Adding just **10-20 minutes of walking** to your day can be the difference between a plateau and progress. It is low-stress and the results add up big time.
-
-        *Pro Tip: The best workout is the one you will actually do. Make it fun, and you are golden!*
+        """)
+        
+        st.markdown("""
+        * Adding just **10-20 minutes of walking** to your day can be the difference between a plateau and progress. It is low-stress and the results add up big time.
+        """)
+        
+        st.markdown("""
+        **Pro Tip**: The best workout is the one you will actually do. Make it fun, and you are golden!
         """)
 
     with tab5:
-        st.subheader("🔬 Understanding Your Metabolism")
+        st.header("🔬 Understanding Your Metabolism")
         st.markdown("""
         Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
         """)
+
         st.divider()
 
         st.subheader("🍽️ The Smart Eater's Cheat Sheet")
         st.markdown("""
         Not all calories are created equal. Some foods fill you up, while others leave you rummaging through the pantry an hour later. Here is the pecking order:
-        - **Protein**: Protein is the undisputed king of fullness! It digests slowly, steadies blood sugar, and even burns a few extra calories in the process. Eggs, Greek yogurt, chicken, tofu, and lentils are all your hunger-busting best friends.
-        - **Fiber-Rich Carbohydrates**: Veggies, fruits, and whole grains are the unsung heroes of fullness. They fill you up, slow things down, and bulk up meals without blowing your calorie budget.
-        - **Healthy Fats**: Think of nuts, olive oil, and avocados as the smooth operators delivering steady, long-lasting energy that keeps you powered throughout the day.
-        - **Processed Stuff**: These foods promise the world but leave you hanging. They are fine for a cameo appearance, but you cannot build a winning strategy around them.
-
-        *As a great rule of thumb, aim for 14 grams of fiber for every 1,000 calories you consume, which usually lands between 25 and 38 grams daily. Ramp up gradually to avoid digestive drama.*
         """)
+        
+        st.markdown("""
+        * **Protein**: Protein is the undisputed king of fullness! It digests slowly, steadies blood sugar, and even burns a few extra calories in the process. Eggs, Greek yogurt, chicken, tofu, and lentils are all your hunger-busting best friends.
+        * **Fiber-Rich Carbohydrates**: Veggies, fruits, and whole grains are the unsung heroes of fullness. They fill you up, slow things down, and bulk up meals without blowing your calorie budget.
+        * **Healthy Fats**: Think of nuts, olive oil, and avocados as the smooth operators delivering steady, long-lasting energy that keeps you powered throughout the day.
+        * **Processed Stuff**: These foods promise the world but leave you hanging. They are fine for a cameo appearance, but you cannot build a winning strategy around them.
+        """)
+        
+        st.markdown("""
+        As a great rule of thumb, aim for 14 grams of fiber for every 1,000 calories you consume, which usually lands between 25 and 38 grams daily. Ramp up gradually to avoid digestive drama.
+        """)
+
         st.divider()
 
         st.subheader("🌱 Your Nutritional Supporting Cast")
         st.markdown("""
         Going plant-based? There are a few tiny but mighty micronutrients to keep an eye on. They may not get top billing, but they are essential for keeping the show running smoothly.
+        """)
 
-        **The Watch List:**
-        - **B₁₂**: B₁₂ keeps your cells and nerves firing like a well-oiled machine. It is almost exclusively found in animal products, so if you are running a plant-powered show, you will need reinforcements. A trusty supplement is often the easiest way to keep your levels topped up and your brain buzzing.
-        - **Iron**: Iron is the taxi service that shuttles oxygen all over your body. When it is running low, you will feel like a sloth on a Monday morning. Load up on leafy greens, lentils, and fortified grains, and team them with a hit of vitamin C—think bell peppers or citrus—to supercharge absorption.
-        - **Calcium**: This multitasker helps build bones, power muscles, and keeps your heart thumping to a steady beat. While dairy is the classic go-to, you can also get your fix from kale, almonds, tofu, and fortified plant milks.
-        - **Zinc**: Think of zinc as your immune system's personal security detail. You will find it hanging out in nuts, seeds, and whole grains. Keep your zinc levels up, and you will be dodging colds like a ninja.
-        - **Iodine**: Your thyroid is the command center for your metabolism, and iodine is its right-hand mineral. A pinch of iodized salt is usually all it takes.
-        - **Omega-3s (EPA/DHA)**: These healthy fats are premium fuel for your brain, heart, and emotional well-being. If fish is not on your plate, fortified foods or supplements can help you stay sharp and serene.
+        st.markdown("**The Watch List:**")
+        st.markdown("""
+        * **B₁₂**: B₁₂ keeps your cells and nerves firing like a well-oiled machine. It is almost exclusively found in animal products, so if you are running a plant-powered show, you will need reinforcements. A trusty supplement is often the easiest way to keep your levels topped up and your brain buzzing.
+        * **Iron**: Iron is the taxi service that shuttles oxygen all over your body. When it is running low, you will feel like a sloth on a Monday morning. Load up on leafy greens, lentils, and fortified grains, and team them with a hit of vitamin C—think bell peppers or citrus—to supercharge absorption.
+        * **Calcium**: This multitasker helps build bones, power muscles, and keeps your heart thumping to a steady beat. While dairy is the classic go-to, you can also get your fix from kale, almonds, tofu, and fortified plant milks.
+        * **Zinc**: Think of zinc as your immune system's personal security detail. You will find it hanging out in nuts, seeds, and whole grains. Keep your zinc levels up, and you will be dodging colds like a ninja.
+        * **Iodine**: Your thyroid is the command center for your metabolism, and iodine is its right-hand mineral. A pinch of iodized salt is usually all it takes.
+        * **Omega-3s (EPA/DHA)**: These healthy fats are premium fuel for your brain, heart, and emotional well-being. If fish is not on your plate, fortified foods or supplements can help you stay sharp and serene.
+        """)
 
+        st.markdown("""
         The good news? Fortified foods and targeted supplements have your back. Plant milks, cereals, and nutritional yeast are often spiked with B₁₂, calcium, or iodine. Supplements are a safety net, but do not overdo it. It is always best to chat with a doctor or dietitian to build a plan that is right for you.
         """)
 
