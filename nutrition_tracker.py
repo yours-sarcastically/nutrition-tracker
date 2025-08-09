@@ -1035,7 +1035,7 @@ foods = assign_food_emojis(foods)
 st.markdown("""
 <style>
 html {
-    font-size: 150%; /* Makes all text 10% larger */
+    font-size: 110%; /* Makes all text 10% larger */
 }
 
 [data-testid="InputInstructions"] { display: none; }
