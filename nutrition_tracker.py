@@ -1697,11 +1697,12 @@ Created with the Personal Nutrition Coach.
 
     # ------ Enhanced Visualization Dashboard ------
     with col1:
-        st.subheader("Today's Fuel Mix")
+        st.subheader("Your Daily Fuel Mix")
         fig_macros = go.Figure()
-        macros = ['Protein', 'Carbohydrates', 'Fat']
-        actual_values = [totals['protein'], totals['carbs'], totals['fat']]
-        target_values = [targets['protein_g'], targets['carb_g'], targets['fat_g']]
+        
+        macros = ['Protein (g)', 'Carbohydrates (g)', 'Fat (g)', 'Calories (kcal)']
+        actual_values = [totals['protein'], totals['carbs'], totals['fat'], totals['calories']]
+        target_values = [targets['protein_g'], targets['carb_g'], targets['fat_g'], targets['total_calories']]
 
         fig_macros.add_trace(go.Bar(
             name='Actual', x=macros, y=actual_values, marker_color='#ff6b6b'
@@ -1710,8 +1711,8 @@ Created with the Personal Nutrition Coach.
             name='Target', x=macros, y=target_values, marker_color='#4ecdc4'
         ))
         fig_macros.update_layout(
-            title_text='Macronutrient Comparison', barmode='group',
-            yaxis_title='Grams', height=400, showlegend=True,
+            title_text='Nutrition Report Card', barmode='group',
+            yaxis_title='Amount', height=400, showlegend=True,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=10, r=10, t=40, b=10)
         )
