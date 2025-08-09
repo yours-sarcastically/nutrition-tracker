@@ -1135,19 +1135,21 @@ if st.sidebar.button("Save", key="save_progress", type="primary"):
         mime="application/json", key="download_progress"
     )
 
-st.sidebar.subheader("Load Progress 📂")
+# ------ Load Progress 📂 ------
 uploaded_file = st.sidebar.file_uploader(
     "Load", type="json", key="upload_progress"
 )
 if uploaded_file is not None:
-    content = uploaded_file.read().decode()
-    food_selections, user_inputs = load_progress_from_json(content)
-    st.session_state.food_selections.update(food_selections)
-    for key, value in user_inputs.items():
-        if f'user_{key}' in st.session_state:
-            st.session_state[f'user_{key}'] = value
-    st.sidebar.success("Progress loaded successfully! 📂")
-    st.rerun()
+    if 'last_uploaded_file' not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
+        content = uploaded_file.read().decode()
+        food_selections, user_inputs = load_progress_from_json(content)
+        st.session_state.food_selections.update(food_selections)
+        for key, value in user_inputs.items():
+            if f'user_{key}' in st.session_state:
+                st.session_state[f'user_{key}'] = value
+        st.session_state.last_uploaded_file = uploaded_file.name
+        st.sidebar.success("Progress loaded successfully! 📂")
+        st.rerun()
 
 # ------ Activity Level Guide in Sidebar ------
 with st.sidebar.container(border=True):
