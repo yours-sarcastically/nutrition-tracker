@@ -1124,12 +1124,11 @@ if st.session_state.get('form_errors'):
 st.sidebar.divider()
 
 # ------ Save and Load Progress ------
-st.sidebar.subheader("Save Your Progress 💾")
 progress_json = save_progress_to_json(
     st.session_state.food_selections, all_inputs
 )
 st.sidebar.download_button(
-    label="Download 📥",
+    label="Save Your Progress 💾",
     data=progress_json,
     file_name=f"nutrition_progress_{datetime.now():%Y%m%d_%H%M%S}.json",
     mime="application/json",
