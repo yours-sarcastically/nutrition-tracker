@@ -963,11 +963,11 @@ def render_food_item(food, category):
         # Add emoji tooltip
         emoji_with_tooltip = food.get('emoji', '')
         if emoji_with_tooltip and emoji_with_tooltip in EMOJI_TOOLTIPS:
-            st.markdown(f"**{emoji_with_tooltip}** {food['name']}")
+            # Use st.subheader for consistency
+            st.subheader(f"{emoji_with_tooltip} {food['name']}")
             st.caption(EMOJI_TOOLTIPS[emoji_with_tooltip])
         else:
-            # Use st.markdown for consistency, making the title bold
-            st.markdown(f"**{food['name']}**") 
+            st.subheader(f"{emoji_with_tooltip} {food['name']}")
 
         key = f"{category}_{food['name']}"
         current_serving = st.session_state.food_selections.get(food['name'], 0.0)
