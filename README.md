@@ -1,83 +1,170 @@
-# Personalized Evidence-Based Nutrition Tracker
+# USDA Food Data Search & Nutrition Tracker
 
-This project is a complete, two-part system for generating a personalized, evidence-based nutrition plan. It consists of a data processing pipeline and an interactive user application.
+Welcome! This repository contains a complete, two-part system for evidence-based nutrition planning. It pairs a powerful food database tool with a personalized meal tracker to give you everything you need for a successful and sustainable nutrition journey.
 
-1.  USDA Data Client (Jupyter Notebook): A powerful tool for querying the USDA FoodData Central API. It searches for foods, applies advanced filters, intelligently selects serving sizes, and exports clean, standardized nutritional data to a CSV file.
-2.  Nutrition Tracker (Streamlit App): An interactive web application that uses the data from the notebook. It allows users to input their personal metrics, calculates their unique nutritional targets, and lets them log food intake to track their progress.
+## System Overview
+
+This project is built around two core components that work together seamlessly to provide a comprehensive nutrition planning solution:
+
+1.  **USDA Data Client** (Jupyter Notebook): Your personal data chef for fetching and preparing food information.
+2.  **Nutrition Tracker** (Streamlit App): An interactive dashboard for planning and tracking your daily meals.
 
 ## Project Structure
 
-The project is organized into a modular structure that separates the data pipeline from the user-facing application.
-
 ```
 nutrition_tracker/
-├── 📜 usda_food_data_client.ipynb
-├── 📂 core/
-│   ├── __init__.py
-│   ├── calculations.py
-│   ├── data.py
-│   └── models.py
+├── 📜 usda_food_data_client.ipynb    # USDA API client and data processor
+├── 📜 nutrition_tracker.py           # Streamlit nutrition tracking app
 ├── 📂 data/
-│   └── nutrition_results.csv
-├── 📂 ui/
-│   ├── __init__.py
-│   ├── components.py
-│   └── sidebar.py
-├── app.py
-├── config.py
+│   └── nutrition_results.csv         # Your processed, ready-to-use food database
 └── README.md
 ```
 
-## Component 1: USDA Data Client (Jupyter Notebook)
+## Component 1: USDA Food Data Central Client
 
-The `usda_food_data_client.ipynb` notebook is the starting point of the project. Its primary purpose is to search, filter, and process food nutrition data from the official USDA database, ultimately generating the `nutrition_results.csv` file that the Streamlit application depends on.
+Think of the `usda_food_data_client.ipynb` notebook as your powerhouse for data. It’s a sophisticated tool designed to connect to the official USDA FoodData Central API, where it intelligently queries, filters, and processes raw nutrition data into a clean, easy-to-use format.
 
 ### Key Features
 
-*   Interactive Food Search: Query multiple food items against the USDA database with support for both generic (Survey FNDDS) and branded food products.
-*   Advanced Filtering: Apply a chain of filters to refine results, including keyword matching, requiring search terms to be at the start of the description, and a strict filter for exact or comma-separated phrases.
-*   Serving Size Analysis: Automatically finds and selects the most logical household serving size for each food item (e.g., "1 cup" for milk, "1 medium" for an apple) and includes data validation to warn against unrealistic values.
-*   Detailed Nutrition Analysis & Export: Fetches key nutritional data (calories, protein, fat, carbs) for the selected serving size, cleans the food names for readability, and exports the final, processed data to `nutrition_results.csv`.
+**🔍 Advanced Food Search**
+*   Search for both generic foods and your favorite branded products.
+*   Zero in on the right items with smart keyword filtering and strict matching options.
+*   Use the interactive interface to explore the database and refine your queries.
 
-## Component 2: Personalized Nutrition Tracker (Streamlit App)
+**📏 Smart Serving Size Analysis**
+*   Automatically selects the most sensible household serving sizes instead of obscure gram amounts.
+*   Uses category-based preferences to pick the most logical units for different foods.
+*   Includes data validation warnings to help you spot unrealistic portion sizes.
 
-The `app.py` is the interactive web application that users will run. It provides a user-friendly interface for personalized nutrition planning and tracking.
+**🧹 Intelligent Food Name Cleaning**
+*   Strips away technical USDA descriptors and preparation methods for cleaner names.
+*   Standardizes food names so they're consistent and easy to read.
 
-### Key Improvements (Architectural)
+**📊 Comprehensive Data Export**
+*   Processes and exports your chosen foods into a tidy `nutrition_results.csv` file.
+*   Calculates calories, protein, fat, and carbohydrates for each serving.
+*   Categorizes foods by their primary nutrient source, making them easy to sort in the app.
 
-1.  Multi-File Structure: The application's logic is separated into distinct modules for better organization and maintainability.
-    *   `app.py`: The main application entry point.
-    *   `config.py`: Contains all static configuration and constants.
-    *   `core/`: Contains the core "business logic" and data models.
-    *   `ui/`: Contains modules for building the user interface.
-    *   `data/`: Directory for data files.
+## Component 2: Personalized Nutrition Tracker
 
-2.  Formalized Data Structures: Dictionaries have been replaced with Python `dataclasses` (`core/models.py`) for type safety, better IDE support, and more self-documenting code.
+The `nutrition_tracker.py` app is your interactive dashboard for personalized nutrition. It takes the prepared data from the notebook and turns it into a user-friendly platform for planning your meals and tracking your daily intake.
 
-## How to Run the Full System
+### Key Features
 
-Follow these two steps to get the entire system running.
+**🧮 Evidence-Based Calculations**
+*   Calculates your Basal Metabolic Rate (BMR) using the trusted Mifflin-St Jeor equation.
+*   Estimates your Total Daily Energy Expenditure (TDEE) with scientifically validated activity multipliers.
+*   Sets goal-specific calorie targets for weight loss, maintenance, or muscle gain.
+*   Employs a protein-first strategy for distributing your macronutrients.
 
-### Step 1: Generate the Food Database (Jupyter Notebook)
+**🎯 Personalized Goal Setting**
+*   Set custom daily nutrition targets based on your unique body metrics and goals.
+*   Full support for both metric and imperial units.
+*   Fine-tune your protein and fat intake with advanced settings.
+*   Calculates your ideal daily water intake based on weight and activity level.
 
-First, you must run the data client to create the food database.
+**📱 Interactive Food Logging**
+*   Browse your custom food database, complete with helpful categories and emoji indicators.
+*   Quickly log foods with pre-selected servings or enter your own custom portions.
+*   Watch your progress in real-time as you track against your daily targets.
+*   Find foods in a snap with a smart and speedy search bar.
 
-1.  Get a free API Key from the [USDA FoodData Central](https://fdc.nal.usda.gov/api-guide.html).
-2.  Open the Notebook: Launch `usda_food_data_client.ipynb` in a Jupyter Notebook environment.
-3.  Add Your API Key: In Cell 1, replace the placeholder string in the `api_key` variable with your actual key.
-4.  Configure Food List: In Cell 10, update the `EXAMPLE_ANALYSIS_FOOD_LIST` with the exact food descriptions you want in your database. You can use the interactive search tool in the notebook to find these descriptions.
-5.  Run the Analysis: Execute the `main_nutrition_analysis()` function (located in Cell 11). This will process your food list and save the results.
-6.  Move the File: A file named `nutrition_results.csv` will be created in the root `nutrition_tracker/` directory. You must move this file into the `data/` sub-directory.
+**📊 Comprehensive Progress Tracking**
+*   Dive deeper with interactive charts that compare your intake to your targets.
+*   Get personalized recommendations to help you meet your nutritional goals.
+*   Export your data to PDF reports or CSV files for sharing or further analysis.
 
-### Step 2: Run the Nutrition Tracker App (Streamlit)
+**💡 Educational Content & Guidance**
+*   Learn as you go with evidence-based nutrition tips and strategies.
+*   Get clear explanations on activity levels and your metabolism.
+*   Receive helpful advice for breaking through plateaus and staying motivated.
+*   Includes special micronutrient considerations for vegetarian diets.
 
-Once the `nutrition_results.csv` is in the `data/` folder, you can run the main application.
+## Getting Started
 
-1.  Navigate to the root `nutrition_tracker/` directory in your terminal.
-2.  Run the Streamlit command:
+### Prerequisites
 
-    ```sh
-    streamlit run app.py
-    ```
+First, make sure you have the necessary libraries installed.
 
-The application will open in your web browser, pre-loaded with the food data you generated.
+```bash
+pip install streamlit pandas plotly reportlab requests ipywidgets
+```
+
+### Step 1: Create Your Custom Food Database
+
+1.  **Get a USDA API Key**: Register for a free key at the [USDA FoodData Central website](https://fdc.nal.usda.gov/api-guide.html). It's quick and easy!
+
+2.  **Configure the Notebook**:
+    *   Open `usda_food_data_client.ipynb` in a Jupyter environment.
+    *   In Cell 1, paste your API key: `api_key = "your_key_here"`.
+    *   In Cell 10, update the `EXAMPLE_ANALYSIS_FOOD_LIST` with the foods you want in your database.
+
+3.  **Process Your Foods**:
+    *   Use the interactive search interface in the notebook to find the exact food descriptions you need.
+    *   Run the `main_nutrition_analysis()` function to process your list. The notebook will work its magic and generate a `nutrition_results.csv` file for you.
+
+### Step 2: Run the Nutrition Tracker
+
+With your food database ready, just run the following command in your terminal:
+
+```bash
+streamlit run nutrition_tracker.py
+```
+
+The app will open right in your browser, ready to go with your personalized food database!
+
+## Usage Examples
+
+### Interactive Food Search
+
+```python
+# In Cell 10, configure your search terms
+INTERACTIVE_FOOD_LIST_INPUT = ["banana", "lentils", "spinach"]
+
+# Then, use the interactive widgets to:
+# - Apply keyword and strict filtering
+# - Export the results as a ready-to-use Python list
+```
+
+### Nutrition Analysis
+
+```python
+# In Cell 10, define the exact foods for your database
+EXAMPLE_ANALYSIS_FOOD_LIST = [
+    'Banana, raw',
+    'Lentils, from canned',
+    'Spinach, frozen, cooked, no added fat'
+]
+
+# Run the analysis to generate your CSV
+main_nutrition_analysis()
+```
+
+## Scientific Foundation
+
+This system isn't based on guesswork. It's built on a foundation of established nutritional science and peer-reviewed research to ensure you get reliable, evidence-based guidance:
+
+*   **BMR Calculation**: Mifflin-St Jeor equation, endorsed by the Academy of Nutrition and Dietetics.
+*   **Activity Multipliers**: Validated coefficients from exercise physiology research.
+*   **Macronutrient Targets**: Based on guidelines from the International Society of Sports Nutrition.
+*   **Caloric Adjustments**: Uses conservative, sustainable rates for healthy body composition changes.
+
+## Key Improvements
+
+*   **Modular Design**: A clear separation between the data-processing backend and the user-facing app.
+*   **Smart Serving Sizes**: No more guessing—the system intelligently selects realistic, household portions.
+*   **Data Validation**: Built-in warnings help you catch and review potentially unrealistic nutritional values.
+*   **Flexible Exports**: Get your data in multiple formats for analysis, reporting, or sharing.
+*   **Integrated Education**: Learn about the science behind your nutrition plan with helpful tips and guidance.
+
+## Contributing
+
+Contributions are always welcome! If you have ideas for improvements, feel free to fork the repo and submit a pull request. Areas for enhancement could include:
+*   Adding more food database sources.
+*   Creating new and insightful data visualizations.
+*   Improving the mobile-responsive design.
+*   Integrating with popular fitness tracking APIs.
+
+---
+
+Built with scientific rigor for sustainable success. Happy tracking! 🍎
