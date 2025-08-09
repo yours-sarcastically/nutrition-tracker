@@ -992,7 +992,7 @@ def render_food_item(food, category):
             custom_serving = st.number_input(
                 "Custom",
                 min_value=0.0, max_value=20.0,  # Capped max servings
-                value=float(current_serving), step=0.1,
+                value=float(current_serving), step=0.5,
                 key=f"{key}_custom",
                 label_visibility="collapsed"
             )
