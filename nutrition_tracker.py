@@ -1302,28 +1302,29 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         "Mindset Is Everything 🧠", "🧗 Own Your Energy", "The Science Behind the Magic 🔬"
     ])
 
+    # --- Tab 1: Standardized and formatted correctly ---
     with tab1:
         st.subheader("💧 Master Your Hydration Game")
         for tip in TIPS_CONTENT['hydration']:
             st.markdown(f"* {tip}")
-
         st.divider()
 
         st.subheader("😴 Sleep Like Your Goals Depend on It")
         for tip in TIPS_CONTENT['sleep']:
             st.markdown(f"* {tip}")
-
         st.divider()
 
         st.subheader("📅 Follow Your Wins")
         for tip in TIPS_CONTENT['tracking_wins']:
             st.markdown(f"* {tip}")
 
+    # --- Tab 2: Standardized and formatted correctly ---
     with tab2:
         st.subheader("📸 Go Beyond the Scale")
         for tip in TIPS_CONTENT['beyond_the_scale']:
             st.markdown(f"* {tip}")
 
+    # --- Tab 3: Standardized and formatted correctly ---
     with tab3:
         st.subheader("🧠 Mindset Is Everything")
         st.markdown("""
@@ -1334,7 +1335,6 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         * **Weeks 3–4**: Once calories feel like second nature, start layering in protein tracking.
         * **Week 5 and Beyond**: With calories and protein in the bag, you can now fine-tune your carb and fat intake.
         """)
-        
         st.divider()
 
         st.subheader("🔄 When Progress Stalls")
@@ -1345,16 +1345,16 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         st.markdown("#### Struggling to Gain Weight?")
         for tip in TIPS_CONTENT['weight_gain_stalls']:
             st.markdown(f"* {tip}")
-
         st.divider()
 
         st.subheader("💪 Pace Your Protein")
         for tip in TIPS_CONTENT['protein_pacing']:
             st.markdown(f"* {tip}")
 
+    # --- Tab 4: UPDATED for consistent formatting ---
     with tab4:
-        st.subheader("On Your Energy 🧗")
-        st.markdown("#### Build Your Foundation with Resistance Training")
+        # UPDATED: Changed from markdown to subheader for consistency.
+        st.subheader("🧗 Build Your Foundation with Resistance Training")
         st.markdown("""
         This is your non-negotiable, no matter your goal. Lifting weights (or using your bodyweight!) tells your body to build or hold onto precious muscle, which is the engine of your metabolism.
         * **🎯 For Fat Loss**: More muscle means you burn more calories even while you are chilling on the couch. It is the secret to keeping the weight off for good.
@@ -1362,10 +1362,10 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         * **💡 The Game Plan:**: A good starting point is **2-3 sessions of 20-40 minutes** a week. Push, pull, squat—make those muscles sing!
         * **❤️ Find What You Love**: If it feels like torture, switch it up. Fitness should spark joy, not dread! Dance, bike, chase your dog. Pick whatever makes you grin!
         """)
-
         st.divider()
         
-        st.markdown("#### NEAT: Your Sneaky Fitness Piggy Bank")
+        # UPDATED: Changed from markdown to subheader for consistency.
+        st.subheader("🏦 NEAT: Your Sneaky Fitness Piggy Bank")
         st.markdown("""
         NEAT stands for Non-Exercise Activity Thermogenesis. It is a fancy term for all the calories you burn just by living your life.
         * Adding just **10-20 minutes of walking** to your day can be the difference between a plateau and progress. It is low-stress and the results add up big time.
@@ -1373,15 +1373,16 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         Pro Tip: The best workout is the one you will actually do. Make it fun, and you are golden!
         """)
 
+    # --- Tab 5: UPDATED for consistent formatting ---
     with tab5:
         st.subheader("🔬 Understanding Your Metabolism")
         st.markdown("""
         Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
         """)
-
         st.divider()
 
-        st.markdown("#### The Smart Eater's Cheat Sheet")
+        # UPDATED: Changed from markdown to subheader for consistency.
+        st.subheader("🧑‍🍳 The Smart Eater's Cheat Sheet")
         st.markdown("""
         Not all calories are created equal. Some foods fill you up, while others leave you rummaging through the pantry an hour later. Here is the pecking order:
         * **Protein**: Protein is the undisputed king of fullness! It digests slowly, steadies blood sugar, and even burns a few extra calories in the process. Eggs, Greek yogurt, chicken, tofu, and lentils are all your hunger-busting best friends.
@@ -1391,10 +1392,11 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         
         As a great rule of thumb, aim for 14 grams of fiber for every 1,000 calories you consume, which usually lands between 25 and 38 grams daily. Ramp up gradually to avoid digestive drama.
         """)
-
+        # ADDED: Divider for visual separation between sections.
         st.divider()
-
-        st.markdown("#### Your Nutritional Supporting Cast")
+        
+        # UPDATED: Changed from markdown to subheader for consistency.
+        st.subheader("🎭 Your Nutritional Supporting Cast")
         st.markdown("""
         Going plant-based? There are a few tiny but mighty micronutrients to keep an eye on. They may not get top billing, but they are essential for keeping the show running smoothly.
         
