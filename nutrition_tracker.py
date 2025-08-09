@@ -1034,6 +1034,10 @@ foods = assign_food_emojis(foods)
 # ------ Apply Custom CSS for Enhanced Styling ------
 st.markdown("""
 <style>
+html {
+    font-size: 150%; /* Makes all text 10% larger */
+}
+
 [data-testid="InputInstructions"] { display: none; }
 .stButton>button[kind="primary"] { 
     background-color: #ff6b6b; 
