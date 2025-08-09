@@ -1400,7 +1400,7 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
 
         * Adding just **10-20 minutes of walking** to your day can be the difference between a plateau and progress. It is low-stress and the results add up big time.
 
-        **Pro Tip**: The best workout is the one you will actually do. Make it fun, and you are golden!
+        **💡 Pro Tip**: The best workout is the one you will actually do. Make it fun, and you are golden!
         """)
 
     with tab5:
