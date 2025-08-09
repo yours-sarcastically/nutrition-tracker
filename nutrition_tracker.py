@@ -1129,10 +1129,10 @@ progress_json = save_progress_to_json(
     st.session_state.food_selections, all_inputs
 )
 st.sidebar.download_button(
-    "Download 📥",
+    "Download 📥", 
     data=progress_json,
     file_name=f"nutrition_progress_{datetime.now():%Y%m%d_%H%M%S}.json",
-    mime="application/json",
+    mime="application/json", 
     key="download_progress",
     type="primary"
 )
