@@ -1335,8 +1335,8 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         The 80/20 principle is your best defense against the perfectionist trap. It is about ditching that mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually and you will be far more likely to stick with them for the long haul.
         """)
         
+        st.markdown("**Start Small, Win Big:**")
         st.markdown("""
-        **Start Small, Win Big:**
         * **Weeks 1–2**: Your only job is to focus on hitting your calorie targets. Do not worry about anything else!
         * **Weeks 3–4**: Once calories feel like second nature, start layering in protein tracking.
         * **Week 5 and Beyond**: With calories and protein in the bag, you can now fine-tune your carb and fat intake.
@@ -1346,12 +1346,12 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
 
         st.subheader("🔄 When Progress Stalls")
         
-        st.markdown("#### Hit a Weight Loss Plateau?")
+        st.markdown("**Hit a Weight Loss Plateau?**")
         
         for tip in TIPS_CONTENT['weight_loss_plateau']:
             st.markdown(f"* {tip}")
         
-        st.markdown("#### Struggling to Gain Weight?")
+        st.markdown("**Struggling to Gain Weight?**")
         
         for tip in TIPS_CONTENT['weight_gain_stalls']:
             st.markdown(f"* {tip}")
@@ -1364,7 +1364,7 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
             st.markdown(f"* {tip}")
 
     with tab4:
-        st.header("🧗 On Your Energy")
+        st.header("🧗 Own Your Energy")
         
         st.subheader("💪 Build Your Foundation with Resistance Training")
         
@@ -1429,8 +1429,8 @@ with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
         Going plant-based? There are a few tiny but mighty micronutrients to keep an eye on. They may not get top billing, but they are essential for keeping the show running smoothly.
         """)
         
+        st.markdown("**The Watch List:**")
         st.markdown("""
-        **The Watch List:**
         * **B₁₂**: B₁₂ keeps your cells and nerves firing like a well-oiled machine. It is almost exclusively found in animal products, so if you are running a plant-powered show, you will need reinforcements. A trusty supplement is often the easiest way to keep your levels topped up and your brain buzzing.
         * **Iron**: Iron is the taxi service that shuttles oxygen all over your body. When it is running low, you will feel like a sloth on a Monday morning. Load up on leafy greens, lentils, and fortified grains, and team them with a hit of vitamin C—think bell peppers or citrus—to supercharge absorption.
         * **Calcium**: This multitasker helps build bones, power muscles, and keeps your heart thumping to a steady beat. While dairy is the classic go-to, you can also get your fix from kale, almonds, tofu, and fortified plant milks.
