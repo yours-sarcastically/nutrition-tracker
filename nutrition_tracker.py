@@ -263,11 +263,10 @@ METRIC_TOOLTIPS = {
     ),
     'Protein': 'Essential for building muscle, repair, and satiety',
     'Carbohydrates': (
-        'The body's preferred energy source for brain and muscle function'
+        'The body\'s preferred energy source for brain and muscle function'
     ),
     'Fat': 'Important for hormone production, nutrient absorption, and health'
 }
-
 
 # # --------------------------------------------------------------------------- # #
 # # Cell 4: Unit Conversion Functions                                             # #
