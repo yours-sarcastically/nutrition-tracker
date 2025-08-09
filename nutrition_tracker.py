@@ -1293,175 +1293,153 @@ for config in metrics_config:
     st.divider()
 
 # -----------------------------------------------------------------------------
-# Cell 11: Enhanced Evidence-Based Tips and Context
+# Cell 11: Evidence-Based Tips – Uniform Formatting
 # -----------------------------------------------------------------------------
 
+# ---- Small helpers for 100 % consistent typography --------------------------
+def h(text:str, level:int=2):
+    """
+    level 1  -> st.header
+    level 2  -> st.subheader
+    level 3+ -> bold markdown
+    """
+    if level == 1:
+        st.header(text)
+    elif level == 2:
+        st.subheader(text)
+    else:
+        st.markdown(f"**{text}**")
+
+def p(text:str):
+    """Body copy with a little bottom padding so items never stick together."""
+    st.markdown(f"{text}\n")
+
+# -----------------------------------------------------------------------------
 with st.expander("📚 Your Evidence-Based Game Plan", expanded=False):
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "The Big Three to Win At Nutrition 🏆", "Level Up Your Progress Tracking 📊",
-        "Mindset Is Everything 🧠", "🧗 Own Your Energy", "The Science Behind the Magic 🔬"
-    ])
 
+    # --------------  TAB DEFINITION  ----------------------------------------
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["The Big Three to Win At Nutrition 🏆",
+         "Level Up Your Progress Tracking 📊",
+         "Mindset Is Everything 🧠",
+         "🧗 Own Your Energy",
+         "The Science Behind the Magic 🔬"]
+    )
+
+    # --------------  TAB 1  --------------------------------------------------
     with tab1:
-        # Heading
-        st.subheader("💧 Master Your Hydration Game")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['hydration']:
-            st.markdown(f"• {tip}")
-        
-        # Divider between sections
+        with st.container():
+            h("💧 Master Your Hydration Game", 2)
+            for tip in TIPS_CONTENT['hydration']:
+                p(f"• {tip}")
         st.divider()
 
-        # Heading
-        st.subheader("😴 Sleep Like Your Goals Depend on It")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['sleep']:
-            st.markdown(f"• {tip}")
-
-        # Divider between sections
+        with st.container():
+            h("😴 Sleep Like Your Goals Depend on It", 2)
+            for tip in TIPS_CONTENT['sleep']:
+                p(f"• {tip}")
         st.divider()
 
-        # Heading
-        st.subheader("📅 Follow Your Wins")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['tracking_wins']:
-            st.markdown(f"• {tip}")
+        with st.container():
+            h("📅 Follow Your Wins", 2)
+            for tip in TIPS_CONTENT['tracking_wins']:
+                p(f"• {tip}")
 
+    # --------------  TAB 2  --------------------------------------------------
     with tab2:
-        # Heading
-        st.subheader("📸 Go Beyond the Scale")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['beyond_the_scale']:
-            st.markdown(f"• {tip}")
+        with st.container():
+            h("📸 Go Beyond the Scale", 2)
+            for tip in TIPS_CONTENT['beyond_the_scale']:
+                p(f"• {tip}")
+        st.divider()
 
+    # --------------  TAB 3  --------------------------------------------------
     with tab3:
-        # Heading
-        st.subheader("🧠 Mindset Is Everything")
-        
-        # Main content paragraph
-        st.markdown("""
-        The 80/20 principle is your best defense against the perfectionist trap. It is about ditching that mindset that makes you throw in the towel after one "bad" meal. Instead of trying to master everything at once, build your habits gradually and you will be far more likely to stick with them for the long haul.
-        
-        **Start Small, Win Big:**
-        • **Weeks 1–2**: Your only job is to focus on hitting your calorie targets. Do not worry about anything else!
-        • **Weeks 3–4**: Once calories feel like second nature, start layering in protein tracking.
-        • **Week 5 and Beyond**: With calories and protein in the bag, you can now fine-tune your carb and fat intake.
-        """)
-        
-        # Divider between sections
+        with st.container():
+            h("🧠 Mindset Is Everything", 2)
+            p("""
+The 80/20 principle is your best defense against the perfectionist trap. It is
+about ditching that mindset that makes you throw in the towel after one "bad"
+meal. Instead of trying to master everything at once, build your habits
+gradually and you will be far more likely to stick with them for the long haul.
+""")
+            h("Start Small, Win Big:", 3)
+            p("* **Weeks 1–2** – Focus only on hitting calories\n"
+              "* **Weeks 3–4** – Layer in protein tracking\n"
+              "* **Week 5 +** – Fine-tune carbs & fat once the first two feel easy")
+
         st.divider()
 
-        # Subheading
-        st.subheader("🔄 When Progress Stalls")
-        
-        # Sub-subheading
-        st.markdown("#### Hit a Weight Loss Plateau?")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['weight_loss_plateau']:
-            st.markdown(f"• {tip}")
-        
-        # Sub-subheading
-        st.markdown("#### Struggling to Gain Weight?")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['weight_gain_stalls']:
-            st.markdown(f"• {tip}")
+        # --- Plateau / Stall advice -----------------------------------------
+        with st.container():
+            h("🔄 When Progress Stalls", 2)
+            h("Hit a Weight-Loss Plateau?", 3)
+            for tip in TIPS_CONTENT['weight_loss_plateau']:
+                p(f"• {tip}")
+            st.divider()
+            h("Struggling to Gain Weight?", 3)
+            for tip in TIPS_CONTENT['weight_gain_stalls']:
+                p(f"• {tip}")
 
-        # Divider between sections
         st.divider()
 
-        # Subheading
-        st.subheader("💪 Pace Your Protein")
-        
-        # Content with consistent bullet formatting
-        for tip in TIPS_CONTENT['protein_pacing']:
-            st.markdown(f"• {tip}")
+        with st.container():
+            h("💪 Pace Your Protein", 2)
+            for tip in TIPS_CONTENT['protein_pacing']:
+                p(f"• {tip}")
 
+    # --------------  TAB 4  --------------------------------------------------
     with tab4:
-        # Heading
-        st.subheader("🧗 Own Your Energy")
-        
-        # Sub-subheading
-        st.markdown("#### Build Your Foundation with Resistance Training")
-        
-        # Main content paragraph
-        st.markdown("""
-        This is your non-negotiable, no matter your goal. Lifting weights (or using your bodyweight!) tells your body to build or hold onto precious muscle, which is the engine of your metabolism.
-        
-        • **🎯 For Fat Loss**: More muscle means you burn more calories even while you are chilling on the couch. It is the secret to keeping the weight off for good.
-        • **💪 For Bulking Up**: Exercise tells your body where to send all that protein you are eating. Without it, you are just a shaky tent in a windstorm.
-        • **💡 The Game Plan**: A good starting point is **2-3 sessions of 20-40 minutes** a week. Push, pull, squat—make those muscles sing!
-        • **❤️ Find What You Love**: If it feels like torture, switch it up. Fitness should spark joy, not dread! Dance, bike, chase your dog. Pick whatever makes you grin!
-        """)
-
-        # Divider between sections
+        with st.container():
+            h("Build Your Foundation with Resistance Training", 2)
+            p("""
+This is your non-negotiable, no matter your goal. Lifting weights (or using
+body-weight) tells your body to build or hold onto precious muscle, which is
+the engine of your metabolism.
+* **🎯 Fat-loss** – More muscle = higher calorie burn at rest  
+* **💪 Bulking** – Training directs where those surplus calories go  
+* **Game-Plan** – 2–3 sessions · 20–40 min each
+""")
         st.divider()
-        
-        # Sub-subheading
-        st.markdown("#### NEAT: Your Sneaky Fitness Piggy Bank")
-        
-        # Main content paragraph
-        st.markdown("""
-        NEAT stands for Non-Exercise Activity Thermogenesis. It is a fancy term for all the calories you burn just by living your life.
-        
-        • Adding just **10-20 minutes of walking** to your day can be the difference between a plateau and progress. It is low-stress and the results add up big time.
-        
-        **Pro Tip**: The best workout is the one you will actually do. Make it fun, and you are golden!
-        """)
 
+        with st.container():
+            h("NEAT: Your Sneaky Fitness Piggy Bank", 2)
+            p("""
+NEAT stands for *Non-Exercise Activity Thermogenesis*—all the calories you burn
+just by living your life. Adding **10-20 min** of walking every day can tip the
+scales between plateau and progress.
+""")
+
+    # --------------  TAB 5  --------------------------------------------------
     with tab5:
-        # Heading
-        st.subheader("🔬 Understanding Your Metabolism")
-        
-        # Main content paragraph
-        st.markdown("""
-        Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the lights on. Your Total Daily Energy Expenditure (TDEE) builds on that baseline by factoring in how active you are throughout the day.
-        """)
-
-        # Divider between sections
+        with st.container():
+            h("🔬 Understanding Your Metabolism", 2)
+            p("""
+Your Basal Metabolic Rate (BMR) is the energy your body needs just to keep the
+lights on. Your Total Daily Energy Expenditure (TDEE) stacks activity on top of
+that baseline.
+""")
         st.divider()
 
-        # Sub-subheading
-        st.markdown("#### The Smart Eater's Cheat Sheet")
-        
-        # Main content paragraph
-        st.markdown("""
-        Not all calories are created equal. Some foods fill you up, while others leave you rummaging through the pantry an hour later. Here is the pecking order:
-        
-        • **Protein**: Protein is the undisputed king of fullness! It digests slowly, steadies blood sugar, and even burns a few extra calories in the process. Eggs, Greek yogurt, chicken, tofu, and lentils are all your hunger-busting best friends.
-        • **Fiber-Rich Carbohydrates**: Veggies, fruits, and whole grains are the unsung heroes of fullness. They fill you up, slow things down, and bulk up meals without blowing your calorie budget.
-        • **Healthy Fats**: Think of nuts, olive oil, and avocados as the smooth operators delivering steady, long-lasting energy that keeps you powered throughout the day.
-        • **Processed Stuff**: These foods promise the world but leave you hanging. They are fine for a cameo appearance, but you cannot build a winning strategy around them.
-        
-        As a great rule of thumb, aim for 14 grams of fiber for every 1,000 calories you consume, which usually lands between 25 and 38 grams daily. Ramp up gradually to avoid digestive drama.
-        """)
-
-        # Divider between sections
+        with st.container():
+            h("The Smart Eater's Cheat Sheet", 3)
+            p("""
+Not all calories are created equal. Some foods fill you up, others leave you
+rummaging through the pantry an hour later. Here is the pecking order:
+* **Protein** – king of fullness  
+* **Fiber-Rich Carbs** – veggies, fruit, whole grains  
+* **Healthy Fats** – nuts, olive oil, avocado  
+* **Processed Stuff** – fine for cameos, not for the lead role  
+""")
         st.divider()
 
-        # Sub-subheading
-        st.markdown("#### Your Nutritional Supporting Cast")
-        
-        # Main content paragraph
-        st.markdown("""
-        Going plant-based? There are a few tiny but mighty micronutrients to keep an eye on. They may not get top billing, but they are essential for keeping the show running smoothly.
-        
-        **The Watch List:**
-        
-        • **B₁₂**: B₁₂ keeps your cells and nerves firing like a well-oiled machine. It is almost exclusively found in animal products, so if you are running a plant-powered show, you will need reinforcements. A trusty supplement is often the easiest way to keep your levels topped up and your brain buzzing.
-        • **Iron**: Iron is the taxi service that shuttles oxygen all over your body. When it is running low, you will feel like a sloth on a Monday morning. Load up on leafy greens, lentils, and fortified grains, and team them with a hit of vitamin C—think bell peppers or citrus—to supercharge absorption.
-        • **Calcium**: This multitasker helps build bones, power muscles, and keeps your heart thumping to a steady beat. While dairy is the classic go-to, you can also get your fix from kale, almonds, tofu, and fortified plant milks.
-        • **Zinc**: Think of zinc as your immune system's personal security detail. You will find it hanging out in nuts, seeds, and whole grains. Keep your zinc levels up, and you will be dodging colds like a ninja.
-        • **Iodine**: Your thyroid is the command center for your metabolism, and iodine is its right-hand mineral. A pinch of iodized salt is usually all it takes.
-        • **Omega-3s (EPA/DHA)**: These healthy fats are premium fuel for your brain, heart, and emotional well-being. If fish is not on your plate, fortified foods or supplements can help you stay sharp and serene.
-        
-        The good news? Fortified foods and targeted supplements have your back. Plant milks, cereals, and nutritional yeast are often spiked with B₁₂, calcium, or iodine. Supplements are a safety net, but do not overdo it. It is always best to chat with a doctor or dietitian to build a plan that is right for you.
-        """)
+        with st.container():
+            h("Your Nutritional Supporting Cast", 3)
+            p("""
+Going plant-based? Keep an eye on these micronutrients: **B₁₂, Iron, Calcium,
+Zinc, Iodine, Omega-3s**. Fortified foods & smart supplementation have your
+back—run changes past a qualified pro first.
+""")
 
 # -----------------------------------------------------------------------------
 # Cell 12: Food Selection Interface
