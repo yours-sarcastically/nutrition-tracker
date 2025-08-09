@@ -1219,7 +1219,7 @@ if st.session_state.show_motivational_message and user_has_entered_info:
     )
     st.success(message)
 
-    if st.button("Got It! ✨", key="dismiss_message"):
+    if st.button("Got It! ✨", key="dismiss_message", type="primary"):
         st.session_state.show_motivational_message = False
         st.rerun()
 
