@@ -263,7 +263,7 @@ METRIC_TOOLTIPS = {
     ),
     'Protein': 'Essential for building muscle, repair, and satiety',
     'Carbohydrates': (
-        'The body’s preferred energy source for brain and muscle function'
+        'The body's preferred energy source for brain and muscle function'
     ),
     'Fat': 'Important for hormone production, nutrient absorption, and health'
 }
@@ -318,7 +318,7 @@ def initialize_session_state():
     """Initializes all required session state variables if not present."""
     session_vars = (
         ['food_selections', 'form_submitted', 'show_motivational_message',
-         'food_search', 'form_errors'] +
+         'food_search', 'form_errors', 'food_input_modes'] +
         [f'user_{field}' for field in CONFIG['form_fields'].keys()] +
         ['user_units']
     )
@@ -326,6 +326,8 @@ def initialize_session_state():
     for var in session_vars:
         if var not in st.session_state:
             if var == 'food_selections':
+                st.session_state[var] = {}
+            elif var == 'food_input_modes':
                 st.session_state[var] = {}
             elif var == 'user_units':
                 st.session_state[var] = 'metric'
@@ -889,7 +891,8 @@ def load_food_database(file_path):
             foods[category].append({
                 'name': f"{row['name']} ({row['serving_unit']})",
                 'calories': row['calories'], 'protein': row['protein'],
-                'carbs': row['carbs'], 'fat': row['fat']
+                'carbs': row['carbs'], 'fat': row['fat'],
+                'serving_size_g': row.get('serving_size_g', 100)  # Add serving size
             })
     return foods
 
@@ -968,49 +971,144 @@ def filter_foods_by_search(foods, search_term):
     return filtered_foods
 
 
+def get_food_input_mode(food_name):
+    """Gets the current input mode for a food item."""
+    return st.session_state.food_input_modes.get(food_name, 'servings')
+
+
+def set_food_input_mode(food_name, mode):
+    """Sets the input mode for a food item."""
+    st.session_state.food_input_modes[food_name] = mode
+
+
 def render_food_item(food, category):
-    """Renders a single food item with its interaction controls."""
+    """Renders a single food item with its interaction controls and mode toggle."""
     with st.container(border=True):
-        # Add emoji with its corresponding tooltip
-        emoji_with_tooltip = food.get('emoji', '')
-        st.subheader(f"{emoji_with_tooltip} {food['name']}")
-        if emoji_with_tooltip and emoji_with_tooltip in EMOJI_TOOLTIPS:
-            st.caption(EMOJI_TOOLTIPS[emoji_with_tooltip])
+        # Header with emoji and toggle
+        col_title, col_toggle = st.columns([3, 1])
+        
+        with col_title:
+            emoji_with_tooltip = food.get('emoji', '')
+            st.subheader(f"{emoji_with_tooltip} {food['name']}")
+            if emoji_with_tooltip and emoji_with_tooltip in EMOJI_TOOLTIPS:
+                st.caption(EMOJI_TOOLTIPS[emoji_with_tooltip])
+        
+        with col_toggle:
+            # Mode toggle switch
+            food_name = food['name']
+            current_mode = get_food_input_mode(food_name)
+            
+            # Create toggle with icons
+            mode_toggle = st.toggle(
+                "⚖️ 100g",
+                value=(current_mode == 'grams'),
+                key=f"mode_toggle_{category}_{food_name}",
+                help="Toggle between servings (🥄) and grams (⚖️) input mode"
+            )
+            
+            new_mode = 'grams' if mode_toggle else 'servings'
+            if new_mode != current_mode:
+                set_food_input_mode(food_name, new_mode)
+                st.rerun()
 
         key_prefix = f"{category}_{food['name']}"
         current_serving = st.session_state.food_selections.get(food['name'], 0.0)
-        col1, col2 = st.columns([2, 1.2])
-
-        with col1:
-            button_cols = st.columns(5)
-            for k in range(1, 6):
-                with button_cols[k - 1]:
-                    btn_type = "primary" if current_serving == float(k) else "secondary"
-                    if st.button(
-                        f"{k}", key=f"{key_prefix}_{k}", type=btn_type,
-                        help=f"Set to {k} servings", use_container_width=True
-                    ):
-                        st.session_state.food_selections[food['name']] = float(k)
-                        st.rerun()
-
-        with col2:
-            custom_serving = st.number_input(
-                "Custom", min_value=0.0, max_value=20.0,
-                value=float(current_serving), step=0.5,
-                key=f"{key_prefix}_custom", label_visibility="collapsed"
+        
+        # Display nutritional info based on mode
+        serving_size_g = food.get('serving_size_g', 100)
+        
+        if current_mode == 'servings':
+            # Servings mode
+            st.caption(
+                f"Per Serving ({serving_size_g}g): {food['calories']} kcal | "
+                f"{food['protein']}g protein | {food['carbs']}g carbs | {food['fat']}g fat"
             )
+            
+            col1, col2 = st.columns([2, 1.2])
+            
+            with col1:
+                button_cols = st.columns(5)
+                for k in range(1, 6):
+                    with button_cols[k - 1]:
+                        btn_type = "primary" if current_serving == float(k) else "secondary"
+                        if st.button(
+                            f"{k}", key=f"{key_prefix}_serving_{k}", type=btn_type,
+                            help=f"Set to {k} servings", use_container_width=True
+                        ):
+                            st.session_state.food_selections[food['name']] = float(k)
+                            st.rerun()
+            
+            with col2:
+                custom_serving = st.number_input(
+                    "Custom", min_value=0.0, max_value=20.0,
+                    value=float(current_serving), step=0.5,
+                    key=f"{key_prefix}_custom_serving", label_visibility="collapsed"
+                )
+        
+        else:
+            # Grams mode
+            # Calculate per 100g values
+            cal_per_100g = (food['calories'] / serving_size_g) * 100
+            protein_per_100g = (food['protein'] / serving_size_g) * 100
+            carbs_per_100g = (food['carbs'] / serving_size_g) * 100
+            fat_per_100g = (food['fat'] / serving_size_g) * 100
+            
+            st.caption(
+                f"Per 100g: {cal_per_100g:.0f} kcal | {protein_per_100g:.1f}g protein | "
+                f"{carbs_per_100g:.1f}g carbs | {fat_per_100g:.1f}g fat"
+            )
+            
+            # Show conversion hint
+            equivalent_servings = current_serving
+            grams_equivalent = equivalent_servings * serving_size_g
+            if grams_equivalent > 0:
+                st.caption(f"💡 {grams_equivalent:.0f}g = {equivalent_servings:.1f} servings")
+            
+            col1, col2 = st.columns([2, 1.2])
+            
+            with col1:
+                button_cols = st.columns(5)
+                gram_amounts = [25, 50, 100, 150, 200]
+                
+                for i, grams in enumerate(gram_amounts):
+                    with button_cols[i]:
+                        # Convert grams to servings for comparison and storage
+                        servings_equivalent = grams / serving_size_g
+                        btn_type = "primary" if abs(current_serving - servings_equivalent) < 0.01 else "secondary"
+                        
+                        if st.button(
+                            f"{grams}g", key=f"{key_prefix}_gram_{grams}", type=btn_type,
+                            help=f"Set to {grams}g ({servings_equivalent:.1f} servings)", 
+                            use_container_width=True
+                        ):
+                            st.session_state.food_selections[food['name']] = servings_equivalent
+                            st.rerun()
+            
+            with col2:
+                # Custom gram input
+                current_grams = current_serving * serving_size_g
+                custom_grams = st.number_input(
+                    "Custom (g)", min_value=0.0, max_value=500.0,
+                    value=float(current_grams), step=5.0,
+                    key=f"{key_prefix}_custom_grams", label_visibility="collapsed"
+                )
+                custom_serving = custom_grams / serving_size_g
 
-        if custom_serving != current_serving:
-            if custom_serving > 0:
-                st.session_state.food_selections[food['name']] = custom_serving
-            elif food['name'] in st.session_state.food_selections:
-                del st.session_state.food_selections[food['name']]
-            st.rerun()
-
-        st.caption(
-            f"Per Serving: {food['calories']} kcal | {food['protein']}g protein | "
-            f"{food['carbs']}g carbs | {food['fat']}g fat"
-        )
+        # Handle input changes
+        if current_mode == 'servings':
+            if custom_serving != current_serving:
+                if custom_serving > 0:
+                    st.session_state.food_selections[food['name']] = custom_serving
+                elif food['name'] in st.session_state.food_selections:
+                    del st.session_state.food_selections[food['name']]
+                st.rerun()
+        else:
+            if abs(custom_serving - current_serving) > 0.01:
+                if custom_serving > 0:
+                    st.session_state.food_selections[food['name']] = custom_serving
+                elif food['name'] in st.session_state.food_selections:
+                    del st.session_state.food_selections[food['name']]
+                st.rerun()
 
 
 def render_food_grid(items, category, columns=2):
@@ -1498,7 +1596,8 @@ with reset_col:
 
 st.markdown(
     "Select the number of servings for each food to see how your choices "
-    "compare to your daily targets."
+    "compare to your daily targets. Use the toggle switch (🥄 Servings | ⚖️ 100g) "
+    "to switch between serving-based and gram-based input modes."
 )
 
 # ------ Emoji Guide Expander ------
@@ -1512,6 +1611,7 @@ if st.button(
     "Start Fresh: Reset All Food Selections 🔄", type="primary", key="reset_foods"
 ):
     st.session_state.food_selections = {}
+    st.session_state.food_input_modes = {}
     st.rerun()
 
 # ------ Filter and Display Food Items ------
